@@ -1,0 +1,66 @@
+# Flutter & Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+ios/
+android/
+linux/
+macos/
+windows/
+web/
+*.iml
+*.idea/
+*.xcworkspace
+*.xcodeproj
+
+# Build outputs
+**/build/
+*.apk
+*.aab
+*.ipa
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.config.dart
+*.inject.dart
+*.g.dart
+
+# Local configuration
+local.properties
+*.log
+*.hprof
+
+# Android Studio / IntelliJ
+.idea/
+*.iws
+*.iml
+.gradle/
+local.properties
+captures/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Gradle
+.gradle/
+**/gradle-wrapper.jar
+
+# iOS specific
+Pods/
+Podfile.lock
+*.xcworkspace
+*.xcodeproj
+Flutter/Flutter.framework
+Flutter/Flutter.podspec
+Flutter/engine
