@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/koreanhwa?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Ho_Chi_Minh
+    username: root        # nếu bạn đặt pass thì để root, không thì để lại root
+    password:             # để trống nếu không có mật khẩu, hoặc điền pass thật
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update    # lần đầu dùng update để tự tạo bảng, sau này đổi thành validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect   # quan trọng!
+
+  sql:
+    init:
+      mode: always        # bắt buộc để chạy data.sql
+      platform: mysql
