@@ -22,7 +22,7 @@ class MainBottomNavBar extends StatelessWidget {
   static const _navItems = <MainNavItem, ({IconData icon, String label})>{
     MainNavItem.home: (icon: Icons.home_rounded, label: 'Home'),
     MainNavItem.curriculum: (icon: Icons.menu_book_rounded, label: 'Giáo trình'),
-    MainNavItem.lessons: (icon: Icons.school_rounded, label: 'Bài học'),
+    MainNavItem.lessons: (icon: Icons.school_rounded, label: 'Khóa học'),
     MainNavItem.vocabulary: (icon: Icons.translate_rounded, label: 'Từ vựng'),
     MainNavItem.settings: (icon: Icons.settings_rounded, label: 'Cài đặt'),
   };

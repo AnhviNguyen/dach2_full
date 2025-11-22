@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:koreanhwa_flutter/models/blog_model.dart';
+import 'package:koreanhwa_flutter/features/blog/data/models/blog_post.dart';
+import 'package:koreanhwa_flutter/features/blog/data/models/blog_author.dart';
 
 class BlogService {
   static List<BlogPost> _posts = [

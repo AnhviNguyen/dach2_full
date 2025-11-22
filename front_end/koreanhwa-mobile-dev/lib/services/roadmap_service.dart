@@ -1,4 +1,6 @@
-import 'package:koreanhwa_flutter/models/roadmap_model.dart';
+import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_placement_result.dart';
+import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_section.dart';
+import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_day.dart';
 
 class RoadmapService {
   static RoadmapPlacementResult? _placementResult;

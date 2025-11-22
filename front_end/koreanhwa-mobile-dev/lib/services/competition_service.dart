@@ -1,4 +1,9 @@
-import 'package:koreanhwa_flutter/models/competition_model.dart';
+import 'package:koreanhwa_flutter/features/competition/data/models/competition.dart';
+import 'package:koreanhwa_flutter/features/competition/data/models/competition_question.dart';
+import 'package:koreanhwa_flutter/features/competition/data/models/competition_result.dart';
+import 'package:koreanhwa_flutter/features/competition/data/models/competition_submission.dart';
+import 'package:koreanhwa_flutter/features/competition/data/models/competition_stats.dart';
+import 'package:koreanhwa_flutter/features/competition/data/models/prize_claim_info.dart';
 
 class CompetitionService {
   static List<Competition> _competitions = [

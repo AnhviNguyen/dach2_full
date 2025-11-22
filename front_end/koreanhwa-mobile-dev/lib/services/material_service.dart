@@ -1,4 +1,4 @@
-import 'package:koreanhwa_flutter/models/material_model.dart';
+import 'package:koreanhwa_flutter/features/material/data/models/learning_material.dart';
 
 class MaterialService {
   static int _userPoints = 1250;
