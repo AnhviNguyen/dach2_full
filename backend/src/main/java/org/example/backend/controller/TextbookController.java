@@ -71,5 +71,13 @@ public class TextbookController {
         TextbookResponse response = textbookService.getTextbookProgress(textbookId, userId);
         return ResponseEntity.ok(response);
     }
+
+    // Debug endpoint - Xem tất cả IDs trong database
+    @GetMapping("/debug/all-ids")
+    public ResponseEntity<?> getAllIds() {
+        return ResponseEntity.ok(textbookService.getAllTextbooks(
+            org.springframework.data.domain.PageRequest.of(0, 100)
+        ));
+    }
 }
 

@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 public class UserAchievement {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

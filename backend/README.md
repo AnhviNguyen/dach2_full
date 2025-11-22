@@ -154,6 +154,186 @@ Với danh sách có phân trang:
 - **BlogPost** - Bài viết blog (ManyToOne với User, OneToMany với BlogTag, BlogLike)
 - **DashboardStats** - Thống kê dashboard (OneToOne với User)
 
+## Hướng dẫn Test API
+
+### Bước 1: Khởi động Server
+
+1. Đảm bảo MySQL đang chạy và database `koreanhwa_db` đã được tạo
+2. Kiểm tra cấu hình trong `application.properties` (username, password MySQL)
+3. Chạy ứng dụng:
+   ```bash
+   ./gradlew bootRun
+   ```
+   Hoặc trên Windows:
+   ```bash
+   gradlew.bat bootRun
+   ```
+4. Đợi đến khi thấy log: `Started BackendApplication in X.XXX seconds`
+5. Server sẽ chạy tại: `http://localhost:8080`
+
+### Bước 2: Test API Textbook
+
+Sau khi đã tạo data trong bảng `textbooks` của MySQL, bạn có thể test các API sau:
+
+#### Cách 1: Sử dụng Postman (Khuyến nghị)
+
+**1. Test GET - Lấy danh sách tất cả giáo trình:**
+- Method: `GET`
+- URL: `http://localhost:8080/api/textbooks`
+- Headers: Không cần
+- Response mong đợi:
+  ```json
+  {
+    "content": [
+      {
+        "bookNumber": 1,
+        "title": "Tiếng Hàn Quyển 1",
+        "subtitle": "Cơ bản",
+        "totalLessons": 20,
+        "completedLessons": 0,
+        "isCompleted": false,
+        "isLocked": false,
+        "color": "#FF5733"
+      }
+    ],
+    "page": 0,
+    "size": 10,
+    "totalElements": 1,
+    "totalPages": 1,
+    "hasNext": false,
+    "hasPrevious": false
+  }
+  ```
+
+**2. Test GET với phân trang:**
+- Method: `GET`
+- URL: `http://localhost:8080/api/textbooks?page=0&size=5&sortBy=bookNumber&direction=ASC`
+
+**3. Test GET - Lấy giáo trình theo ID:**
+- Method: `GET`
+- URL: `http://localhost:8080/api/textbooks/1`
+  (Thay `1` bằng ID thực tế trong database của bạn)
+
+**4. Test GET - Lấy giáo trình theo số quyển:**
+- Method: `GET`
+- URL: `http://localhost:8080/api/textbooks/book-number/1`
+  (Thay `1` bằng bookNumber thực tế)
+
+**5. Test POST - Tạo giáo trình mới:**
+- Method: `POST`
+- URL: `http://localhost:8080/api/textbooks`
+- Headers: 
+  ```
+  Content-Type: application/json
+  ```
+- Body (raw JSON):
+  ```json
+  {
+    "bookNumber": 2,
+    "title": "Tiếng Hàn Quyển 2",
+    "subtitle": "Trung cấp",
+    "totalLessons": 25,
+    "color": "#33FF57"
+  }
+  ```
+
+**6. Test PUT - Cập nhật giáo trình:**
+- Method: `PUT`
+- URL: `http://localhost:8080/api/textbooks/1`
+  (Thay `1` bằng ID cần cập nhật)
+- Headers: 
+  ```
+  Content-Type: application/json
+  ```
+- Body (raw JSON):
+  ```json
+  {
+    "bookNumber": 1,
+    "title": "Tiếng Hàn Quyển 1 - Đã cập nhật",
+    "subtitle": "Cơ bản nâng cao",
+    "totalLessons": 22,
+    "color": "#FF5733"
+  }
+  ```
+
+**7. Test DELETE - Xóa giáo trình:**
+- Method: `DELETE`
+- URL: `http://localhost:8080/api/textbooks/1`
+  (Thay `1` bằng ID cần xóa)
+- Response: Status 204 (No Content)
+
+**8. Test GET - Lấy tiến độ học:**
+- Method: `GET`
+- URL: `http://localhost:8080/api/textbooks/1/progress/1`
+  (Thay `1` đầu tiên là textbookId, `1` thứ hai là userId)
+
+#### Cách 2: Sử dụng cURL (Command Line)
+
+Mở Terminal/PowerShell và chạy các lệnh sau:
+
+**1. Lấy danh sách giáo trình:**
+```bash
+curl -X GET http://localhost:8080/api/textbooks
+```
+
+**2. Lấy giáo trình theo ID:**
+```bash
+curl -X GET http://localhost:8080/api/textbooks/1
+```
+
+**3. Tạo giáo trình mới:**
+```bash
+curl -X POST http://localhost:8080/api/textbooks ^
+  -H "Content-Type: application/json" ^
+  -d "{\"bookNumber\": 2, \"title\": \"Tiếng Hàn Quyển 2\", \"subtitle\": \"Trung cấp\", \"totalLessons\": 25, \"color\": \"#33FF57\"}"
+```
+
+**4. Cập nhật giáo trình:**
+```bash
+curl -X PUT http://localhost:8080/api/textbooks/1 ^
+  -H "Content-Type: application/json" ^
+  -d "{\"bookNumber\": 1, \"title\": \"Tiếng Hàn Quyển 1 - Đã cập nhật\", \"subtitle\": \"Cơ bản\", \"totalLessons\": 22, \"color\": \"#FF5733\"}"
+```
+
+**5. Xóa giáo trình:**
+```bash
+curl -X DELETE http://localhost:8080/api/textbooks/1
+```
+
+#### Cách 3: Sử dụng Browser (Chỉ cho GET requests)
+
+Chỉ có thể test các endpoint GET bằng cách mở trình duyệt:
+
+1. Lấy danh sách: `http://localhost:8080/api/textbooks`
+2. Lấy theo ID: `http://localhost:8080/api/textbooks/1`
+3. Lấy theo số quyển: `http://localhost:8080/api/textbooks/book-number/1`
+
+### Bước 3: Kiểm tra kết quả
+
+- **Status 200 (OK)**: Request thành công
+- **Status 201 (Created)**: Tạo mới thành công (POST)
+- **Status 204 (No Content)**: Xóa thành công (DELETE)
+- **Status 404 (Not Found)**: Không tìm thấy resource
+- **Status 400 (Bad Request)**: Dữ liệu request không hợp lệ
+- **Status 500 (Internal Server Error)**: Lỗi server
+
+### Lưu ý khi test
+
+1. **Kiểm tra ID thực tế**: Trước khi test GET/PUT/DELETE theo ID, hãy kiểm tra ID thực tế trong database:
+   ```sql
+   SELECT * FROM textbooks;
+   ```
+
+2. **Kiểm tra bookNumber unique**: Khi tạo mới, đảm bảo `bookNumber` chưa tồn tại (trường này là unique)
+
+3. **Xem logs**: Kiểm tra console log để xem SQL queries và lỗi (nếu có)
+
+4. **Test theo thứ tự**: 
+   - Đầu tiên test GET để xem data đã có
+   - Sau đó test POST để tạo mới
+   - Tiếp theo test PUT để cập nhật
+   - Cuối cùng test DELETE (cẩn thận, sẽ xóa data)
+
 ## Lưu ý
 
 - Tất cả DTOs sử dụng Java Records

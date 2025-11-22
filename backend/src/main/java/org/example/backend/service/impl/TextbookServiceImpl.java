@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,8 +54,22 @@ public class TextbookServiceImpl implements TextbookService {
 
     @Override
     public TextbookResponse getTextbookById(Long id) {
-        Textbook textbook = textbookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Textbook not found with id: " + id));
+        // Debug: Log để kiểm tra
+        System.out.println("DEBUG: Searching for textbook with id: " + id);
+        System.out.println("DEBUG: Total textbooks in DB: " + textbookRepository.count());
+        
+        Optional<Textbook> optionalTextbook = textbookRepository.findById(id);
+        if (optionalTextbook.isEmpty()) {
+            // Debug: List all IDs để xem có gì trong database
+            System.out.println("DEBUG: Textbook not found. Available IDs:");
+            textbookRepository.findAll().forEach(t -> 
+                System.out.println("  - ID: " + t.getId() + ", BookNumber: " + t.getBookNumber() + ", Title: " + t.getTitle())
+            );
+            throw new RuntimeException("Textbook not found with id: " + id);
+        }
+        
+        Textbook textbook = optionalTextbook.get();
+        System.out.println("DEBUG: Found textbook - ID: " + textbook.getId() + ", Title: " + textbook.getTitle());
         return toTextbookResponse(textbook);
     }
 
@@ -116,6 +131,7 @@ public class TextbookServiceImpl implements TextbookService {
                 });
         
         return new TextbookResponse(
+            textbook.getId(),
             textbook.getBookNumber(),
             textbook.getTitle(),
             textbook.getSubtitle(),
@@ -129,6 +145,7 @@ public class TextbookServiceImpl implements TextbookService {
 
     private TextbookResponse toTextbookResponse(Textbook textbook) {
         return new TextbookResponse(
+            textbook.getId(),
             textbook.getBookNumber(),
             textbook.getTitle(),
             textbook.getSubtitle(),

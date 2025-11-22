@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "textbook_progress", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "textbook_id"})
+        @UniqueConstraint(columnNames = { "user_id", "textbook_id" })
 })
 @Data
 @NoArgsConstructor
@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class TextbookProgress {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -34,4 +35,3 @@ public class TextbookProgress {
     @Column(name = "is_locked", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean isLocked = false;
 }
-
