@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/shared/widgets/main_bottom_nav.dart';
-import 'package:koreanhwa_flutter/features/course_detail_screen.dart';
-import 'package:koreanhwa_flutter/features/course_list_screen.dart';
-import 'package:koreanhwa_flutter/features/achievements_screen.dart';
-import 'package:koreanhwa_flutter/features/ranking_screen.dart';
-import 'package:koreanhwa_flutter/features/textbook_screen.dart';
-import 'package:koreanhwa_flutter/features/topik/topik_library_screen.dart';
-import 'package:koreanhwa_flutter/features/vocabulary_screen.dart';
+import 'package:koreanhwa_flutter/screens/course_detail_screen.dart';
+import 'package:koreanhwa_flutter/screens/course_list_screen.dart';
+import 'package:koreanhwa_flutter/screens/achievements_screen.dart';
+import 'package:koreanhwa_flutter/screens/ranking_screen.dart';
+import 'package:koreanhwa_flutter/screens/textbook_screen.dart';
+import 'package:koreanhwa_flutter/screens/topik/topik_library_screen.dart';
+import 'package:koreanhwa_flutter/screens/vocabulary_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

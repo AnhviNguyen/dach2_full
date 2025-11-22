@@ -3,9 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/models/blog_model.dart';
 import 'package:koreanhwa_flutter/services/blog_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
-import 'package:koreanhwa_flutter/features/blog/blog_detail_screen.dart';
-import 'package:koreanhwa_flutter/features/blog/blog_create_screen.dart';
-import 'package:koreanhwa_flutter/features/blog/blog_manage_screen.dart';
+import 'package:koreanhwa_flutter/screens/blog/blog_detail_screen.dart';
+import 'package:koreanhwa_flutter/screens/blog/blog_create_screen.dart';
+import 'package:koreanhwa_flutter/screens/blog/blog_manage_screen.dart';
 
 class BlogScreen extends StatefulWidget {
   const BlogScreen({super.key});

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/services/vocabulary_service.dart';
-import 'package:koreanhwa_flutter/features/vocabulary/flashcard_screen.dart';
-import 'package:koreanhwa_flutter/features/vocabulary/match_screen.dart';
-import 'package:koreanhwa_flutter/features/vocabulary/pronunciation_screen.dart';
-import 'package:koreanhwa_flutter/features/vocabulary/quiz_screen.dart';
-import 'package:koreanhwa_flutter/features/vocabulary/listen_write_screen.dart';
-import 'package:koreanhwa_flutter/features/vocabulary/vocab_test_screen.dart';
+import 'package:koreanhwa_flutter/screens/vocabulary/flashcard_screen.dart';
+import 'package:koreanhwa_flutter/screens/vocabulary/match_screen.dart';
+import 'package:koreanhwa_flutter/screens/vocabulary/pronunciation_screen.dart';
+import 'package:koreanhwa_flutter/screens/vocabulary/quiz_screen.dart';
+import 'package:koreanhwa_flutter/screens/vocabulary/listen_write_screen.dart';
+import 'package:koreanhwa_flutter/screens/vocabulary/vocab_test_screen.dart';
 
 class VocabularyScreen extends StatefulWidget {
   final int bookId;

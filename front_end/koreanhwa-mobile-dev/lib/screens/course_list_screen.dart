@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:koreanhwa_flutter/features/course_detail_screen.dart';
+import 'package:koreanhwa_flutter/screens/course_detail_screen.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 
 class CourseListScreen extends StatefulWidget {

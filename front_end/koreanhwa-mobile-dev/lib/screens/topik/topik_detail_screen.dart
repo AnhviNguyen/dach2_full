@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/models/exam_model.dart';
-import 'package:koreanhwa_flutter/features/topik/topik_test_form_screen.dart';
+import 'package:koreanhwa_flutter/screens/topik/topik_test_form_screen.dart';
 
 class TopikDetailScreen extends StatefulWidget {
   final String examId;

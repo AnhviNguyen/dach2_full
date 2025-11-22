@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:koreanhwa_flutter/features/course_classroom_screen.dart';
+import 'package:koreanhwa_flutter/screens/course_classroom_screen.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 
 enum _PaymentStage { form, success, error }

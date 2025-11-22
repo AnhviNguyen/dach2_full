@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
-import 'package:koreanhwa_flutter/features/topik/exam_result_screen.dart';
+import 'package:koreanhwa_flutter/screens/topik/exam_result_screen.dart';
 import 'dart:async';
 
 class TopikTestFormScreen extends StatefulWidget {

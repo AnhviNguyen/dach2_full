@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
-import 'package:koreanhwa_flutter/features/learning_curriculum_screen.dart';
-import 'package:koreanhwa_flutter/features/vocabulary_screen.dart';
+import 'package:koreanhwa_flutter/screens/learning_curriculum_screen.dart';
+import 'package:koreanhwa_flutter/screens/vocabulary_screen.dart';
 
 class TextbookScreen extends StatefulWidget {
   const TextbookScreen({super.key});

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
-import 'package:koreanhwa_flutter/features/payment_screen.dart';
-import 'package:koreanhwa_flutter/features/course_classroom_screen.dart';
+import 'package:koreanhwa_flutter/screens/payment_screen.dart';
+import 'package:koreanhwa_flutter/screens/course_classroom_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final String courseTitle;

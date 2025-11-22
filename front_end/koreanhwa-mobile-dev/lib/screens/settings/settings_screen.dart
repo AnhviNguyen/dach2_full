@@ -3,13 +3,13 @@ import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/models/settings_model.dart';
 import 'package:koreanhwa_flutter/services/settings_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
-import 'package:koreanhwa_flutter/features/settings/settings_profile_tab.dart';
-import 'package:koreanhwa_flutter/features/settings/settings_motivation_tab.dart';
-import 'package:koreanhwa_flutter/features/settings/settings_notifications_tab.dart';
-import 'package:koreanhwa_flutter/features/settings/settings_privacy_tab.dart';
-import 'package:koreanhwa_flutter/features/settings/settings_appearance_tab.dart';
-import 'package:koreanhwa_flutter/features/settings/settings_language_tab.dart';
-import 'package:koreanhwa_flutter/features/settings/settings_study_tab.dart';
+import 'package:koreanhwa_flutter/screens/settings/settings_profile_tab.dart';
+import 'package:koreanhwa_flutter/screens/settings/settings_motivation_tab.dart';
+import 'package:koreanhwa_flutter/screens/settings/settings_notifications_tab.dart';
+import 'package:koreanhwa_flutter/screens/settings/settings_privacy_tab.dart';
+import 'package:koreanhwa_flutter/screens/settings/settings_appearance_tab.dart';
+import 'package:koreanhwa_flutter/screens/settings/settings_language_tab.dart';
+import 'package:koreanhwa_flutter/screens/settings/settings_study_tab.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});

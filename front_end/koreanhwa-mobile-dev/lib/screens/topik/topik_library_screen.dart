@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/models/exam_model.dart';
 import 'package:koreanhwa_flutter/services/exam_service.dart';
-import 'package:koreanhwa_flutter/features/topik/topik_detail_screen.dart';
+import 'package:koreanhwa_flutter/screens/topik/topik_detail_screen.dart';
 import 'package:koreanhwa_flutter/shared/widgets/exam_card.dart';
 
 class TopikLibraryScreen extends StatefulWidget {

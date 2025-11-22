@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/services/roadmap_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
-import 'package:koreanhwa_flutter/features/roadmap/roadmap_detail_screen.dart';
+import 'package:koreanhwa_flutter/screens/roadmap/roadmap_detail_screen.dart';
 import 'dart:async';
 
 class RoadmapTestScreen extends StatefulWidget {
