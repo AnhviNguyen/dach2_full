@@ -106,36 +106,6 @@ Tất cả các endpoint danh sách hỗ trợ phân trang với các tham số:
 - `sortBy` (default: "id") - Trường sắp xếp
 - `direction` (default: "ASC") - Hướng sắp xếp (ASC/DESC)
 
-Ví dụ:
-```
-GET /api/courses?page=0&size=20&sortBy=title&direction=ASC
-```
-
-## Response Format
-
-Tất cả response đều trả về JSON format giống với Flutter mock data:
-
-```json
-{
-  "id": 1,
-  "title": "...",
-  "instructor": "...",
-  ...
-}
-```
-
-Với danh sách có phân trang:
-```json
-{
-  "content": [...],
-  "page": 0,
-  "size": 10,
-  "totalElements": 100,
-  "totalPages": 10,
-  "hasNext": true,
-  "hasPrevious": false
-}
-```
 
 ## Entities và Relationships
 

@@ -35,12 +35,14 @@ CREATE TABLE IF NOT EXISTS courses (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Course Enrollments Table
+-- FIXED: Added completed_lessons field (merged from CourseCard)
 CREATE TABLE IF NOT EXISTS course_enrollments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     course_id BIGINT NOT NULL,
     progress DECIMAL(5,4) DEFAULT 0.0,
     is_enrolled BOOLEAN DEFAULT TRUE,
+    completed_lessons INT DEFAULT 0,
     enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
@@ -277,29 +279,32 @@ CREATE TABLE IF NOT EXISTS tasks (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Lesson Cards Table
+-- FIXED: Added lesson_id FK, removed duplicate title field (now accessed via lesson.title)
 CREATE TABLE IF NOT EXISTS lesson_cards (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    title VARCHAR(500) NOT NULL,
+    lesson_id BIGINT NOT NULL,
     date VARCHAR(50),
     tag VARCHAR(100),
     accent_color VARCHAR(50),
     background_color VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Course Cards Table
+-- FIXED: Added course_id FK, removed duplicate fields (title, progress, lessons, accent_color)
+-- FIXED: These fields are now accessed via course relationship or CourseEnrollment
+-- NOTE: This table is deprecated - use CourseEnrollment instead
 CREATE TABLE IF NOT EXISTS course_cards (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    title VARCHAR(500) NOT NULL,
-    progress DECIMAL(5,4) DEFAULT 0.0,
-    lessons INT DEFAULT 0,
+    course_id BIGINT NOT NULL,
     completed INT DEFAULT 0,
-    accent_color VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Skill Progress Table

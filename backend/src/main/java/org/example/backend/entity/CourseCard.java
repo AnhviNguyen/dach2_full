@@ -7,34 +7,37 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+// FIXED: This entity is deprecated - use CourseEnrollment instead (both track same user-course relationship)
+// FIXED: Merged CourseCard functionality into CourseEnrollment
 @Entity
 @Table(name = "course_cards")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Deprecated
 public class CourseCard {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, length = 500)
-    private String title;
+    // FIXED: Added @ManyToOne to Course since entity name contains "Course"
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
 
-    @Column(columnDefinition = "DECIMAL(5,4) DEFAULT 0.0")
-    private Double progress = 0.0;
+    // FIXED: Removed duplicate fields (title, lessons, accentColor) - now accessed
+    // via course relationship
+    // FIXED: Removed progress - use CourseEnrollment.progress instead
+    // FIXED: Removed lessons - use Course.lessons instead
+    // FIXED: Removed accentColor - use Course.accentColor instead
 
     @Column(columnDefinition = "INT DEFAULT 0")
-    private Integer lessons = 0;
-
-    @Column(columnDefinition = "INT DEFAULT 0")
-    private Integer completed = 0;
-
-    @Column(name = "accent_color", length = 50)
-    private String accentColor;
+    private Integer completed = 0; // User-specific completed lessons count
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -44,4 +47,3 @@ public class CourseCard {
         createdAt = LocalDateTime.now();
     }
 }
-

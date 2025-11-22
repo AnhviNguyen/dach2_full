@@ -34,6 +34,11 @@ public class CourseEnrollment {
     @Column(name = "is_enrolled", columnDefinition = "BOOLEAN DEFAULT TRUE")
     private Boolean isEnrolled = true;
 
+    // FIXED: Added fields from CourseCard to merge user-course relationship tracking
+    // FIXED: Both CourseCard and CourseEnrollment track same relationship - merged into CourseEnrollment
+    @Column(columnDefinition = "INT DEFAULT 0")
+    private Integer completedLessons = 0; // User-specific completed lessons count
+
     @Column(name = "enrolled_at")
     private LocalDateTime enrolledAt;
 

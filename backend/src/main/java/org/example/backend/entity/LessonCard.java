@@ -15,14 +15,19 @@ import java.time.LocalDateTime;
 public class LessonCard {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, length = 500)
-    private String title;
+    // FIXED: Added @ManyToOne to Lesson since entity name contains "Lesson"
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lesson_id", nullable = false)
+    private Lesson lesson;
+
+    // FIXED: Removed duplicate title field - now accessed via lesson.title
 
     @Column(length = 50)
     private String date;
