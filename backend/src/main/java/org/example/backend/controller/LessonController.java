@@ -21,26 +21,26 @@ public class LessonController {
 
     @GetMapping
     public ResponseEntity<PageResponse<LessonResponse>> getAllLessons(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sortBy,
-            @RequestParam(defaultValue = "ASC") Sort.Direction direction) {
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sortBy", defaultValue = "id") String sortBy,
+            @RequestParam(value = "direction", defaultValue = "ASC") Sort.Direction direction) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
         PageResponse<LessonResponse> response = lessonService.getAllLessons(pageable);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<LessonResponse> getLessonById(@PathVariable Long id) {
+    public ResponseEntity<LessonResponse> getLessonById(@PathVariable(value = "id") Long id) {
         LessonResponse response = lessonService.getLessonById(id);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/textbook/{textbookId}")
     public ResponseEntity<PageResponse<LessonResponse>> getLessonsByTextbookId(
-            @PathVariable Long textbookId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @PathVariable(value = "textbookId") Long textbookId,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
         PageResponse<LessonResponse> response = lessonService.getLessonsByTextbookId(textbookId, pageable);
         return ResponseEntity.ok(response);
@@ -48,9 +48,9 @@ public class LessonController {
 
     @GetMapping("/course/{courseId}")
     public ResponseEntity<PageResponse<LessonResponse>> getLessonsByCourseId(
-            @PathVariable Long courseId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @PathVariable(value = "courseId") Long courseId,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
         PageResponse<LessonResponse> response = lessonService.getLessonsByCourseId(courseId, pageable);
         return ResponseEntity.ok(response);

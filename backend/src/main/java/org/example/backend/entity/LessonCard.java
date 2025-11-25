@@ -22,10 +22,14 @@ public class LessonCard {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // FIXED: Added @ManyToOne to Lesson since entity name contains "Lesson"
+    // Can reference either curriculum_lesson or course_lesson
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lesson_id", nullable = false)
-    private Lesson lesson;
+    @JoinColumn(name = "curriculum_lesson_id")
+    private CurriculumLesson curriculumLesson;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_lesson_id")
+    private CourseLesson courseLesson;
 
     // FIXED: Removed duplicate title field - now accessed via lesson.title
 

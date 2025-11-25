@@ -14,5 +14,41 @@ class TaskItem {
     required this.progressColor,
     required this.progressPercent,
   });
+
+  factory TaskItem.fromJson(Map<String, dynamic> json) {
+    IconData parseIcon(String? iconName) {
+      switch (iconName) {
+        case 'book':
+        case 'book_outlined':
+          return Icons.book_outlined;
+        case 'translate':
+          return Icons.translate;
+        case 'menu_book':
+        case 'menu_book_outlined':
+          return Icons.menu_book_outlined;
+        default:
+          return Icons.task;
+      }
+    }
+
+    Color parseColor(String? colorStr) {
+      if (colorStr == null || colorStr.isEmpty) {
+        return Colors.grey;
+      }
+      try {
+        return Color(int.parse(colorStr.replaceFirst('#', '0xFF')));
+      } catch (e) {
+        return Colors.grey;
+      }
+    }
+
+    return TaskItem(
+      title: json['title'] as String? ?? '',
+      icon: parseIcon(json['icon'] as String?),
+      color: parseColor(json['color'] as String?),
+      progressColor: parseColor(json['progressColor'] as String?),
+      progressPercent: (json['progressPercent'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
 }
 

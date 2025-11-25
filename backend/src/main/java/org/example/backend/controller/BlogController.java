@@ -23,11 +23,11 @@ public class BlogController {
 
     @GetMapping("/posts")
     public ResponseEntity<PageResponse<BlogPostResponse>> getAllPosts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "DESC") Sort.Direction direction,
-            @RequestParam(required = false) Long currentUserId) {
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(value = "direction", defaultValue = "DESC") Sort.Direction direction,
+            @RequestParam(value = "currentUserId", required = false) Long currentUserId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
         PageResponse<BlogPostResponse> response = blogService.getAllPosts(pageable);
         return ResponseEntity.ok(response);
@@ -35,8 +35,8 @@ public class BlogController {
 
     @GetMapping("/posts/{id}")
     public ResponseEntity<BlogPostResponse> getPostById(
-            @PathVariable Long id,
-            @RequestParam(required = false) Long currentUserId) {
+            @PathVariable(value = "id") Long id,
+            @RequestParam(value = "currentUserId", required = false) Long currentUserId) {
         BlogPostResponse response = blogService.getPostById(id, currentUserId);
         return ResponseEntity.ok(response);
     }
@@ -49,23 +49,23 @@ public class BlogController {
 
     @PutMapping("/posts/{id}")
     public ResponseEntity<BlogPostResponse> updatePost(
-            @PathVariable Long id,
+            @PathVariable(value = "id") Long id,
             @RequestBody BlogPostRequest request) {
         BlogPostResponse response = blogService.updatePost(id, request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/posts/{id}")
-    public ResponseEntity<Void> deletePost(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePost(@PathVariable(value = "id") Long id) {
         blogService.deletePost(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/posts/author/{authorId}")
     public ResponseEntity<PageResponse<BlogPostResponse>> getPostsByAuthor(
-            @PathVariable Long authorId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @PathVariable(value = "authorId") Long authorId,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
         PageResponse<BlogPostResponse> response = blogService.getPostsByAuthor(authorId, pageable);
         return ResponseEntity.ok(response);
@@ -73,8 +73,8 @@ public class BlogController {
 
     @PostMapping("/posts/{postId}/like/{userId}")
     public ResponseEntity<BlogPostResponse> toggleLike(
-            @PathVariable Long postId,
-            @PathVariable Long userId) {
+            @PathVariable(value = "postId") Long postId,
+            @PathVariable(value = "userId") Long userId) {
         BlogPostResponse response = blogService.toggleLike(postId, userId);
         return ResponseEntity.ok(response);
     }

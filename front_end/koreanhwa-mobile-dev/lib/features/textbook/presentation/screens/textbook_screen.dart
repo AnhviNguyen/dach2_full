@@ -4,7 +4,7 @@ import 'package:koreanhwa_flutter/features/learning_curriculum/presentation/scre
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/vocabulary_screen.dart';
 import 'package:koreanhwa_flutter/features/textbook/data/models/textbook.dart';
 import 'package:koreanhwa_flutter/features/textbook/data/models/lesson_progress.dart';
-import 'package:koreanhwa_flutter/features/textbook/data/textbook_mock_data.dart';
+import 'package:koreanhwa_flutter/features/textbook/data/services/textbook_api_service.dart';
 import 'package:koreanhwa_flutter/features/textbook/presentation/widgets/continue_learning_card.dart';
 import 'package:koreanhwa_flutter/features/textbook/presentation/widgets/lesson_button.dart';
 
@@ -20,22 +20,52 @@ class _TextbookScreenState extends State<TextbookScreen> {
   int currentLesson = 8;
   int? expandedBookId;
   final Map<String, LessonProgress> lessonProgress = {};
-  late final List<Textbook> textbooks;
+  List<Textbook> textbooks = [];
+  bool isLoading = true;
+  final TextbookApiService _apiService = TextbookApiService();
 
   @override
   void initState() {
     super.initState();
-    textbooks = TextbookMockData.generateTextbooks();
-    for (int book = 1; book <= 6; book++) {
-      for (int lesson = 1; lesson <= 15; lesson++) {
-        final key = '$book-$lesson';
-        final isUnlocked = book == 1 || (book == 2 && lesson <= 8);
-        lessonProgress[key] = LessonProgress(
-          unlocked: isUnlocked,
-          learn: book == 1 || (book == 2 && lesson < 8),
-          vocab: book == 1 || (book == 2 && lesson < 8),
-          grammar: book == 1 || (book == 2 && lesson < 8),
-          chat: false,
+    _loadTextbooks();
+  }
+
+  Future<void> _loadTextbooks() async {
+    try {
+      final response = await _apiService.getTextbooks(size: 100);
+      setState(() {
+        textbooks = response.content;
+        isLoading = false;
+        if (textbooks.isNotEmpty) {
+          currentBook = textbooks.firstWhere(
+            (t) => !t.isLocked && t.completedLessons < t.totalLessons,
+            orElse: () => textbooks.first,
+          ).bookNumber;
+        }
+      });
+      
+      // Initialize lesson progress
+      for (final textbook in textbooks) {
+        for (int lesson = 1; lesson <= textbook.totalLessons; lesson++) {
+          final key = '${textbook.bookNumber}-$lesson';
+          final isUnlocked = !textbook.isLocked && 
+              (lesson <= textbook.completedLessons + 1);
+          lessonProgress[key] = LessonProgress(
+            unlocked: isUnlocked,
+            learn: lesson <= textbook.completedLessons,
+            vocab: lesson <= textbook.completedLessons,
+            grammar: lesson <= textbook.completedLessons,
+            chat: false,
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải dữ liệu: ${e.toString()}')),
         );
       }
     }
@@ -126,7 +156,58 @@ class _TextbookScreenState extends State<TextbookScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentTextbook = textbooks[currentBook - 1];
+    if (isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryWhite,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          ),
+          title: const Text(
+            'Giáo trình',
+            style: TextStyle(
+              color: AppColors.primaryBlack,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (textbooks.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryWhite,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          ),
+          title: const Text(
+            'Giáo trình',
+            style: TextStyle(
+              color: AppColors.primaryBlack,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: const Center(child: Text('Không có giáo trình')),
+      );
+    }
+
+    final currentTextbook = textbooks.firstWhere(
+      (t) => t.bookNumber == currentBook,
+      orElse: () => textbooks.first,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.primaryWhite,

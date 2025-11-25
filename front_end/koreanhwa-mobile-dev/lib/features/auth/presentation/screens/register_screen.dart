@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/auth/presentation/widgets/auth_header.dart';
 import 'package:koreanhwa_flutter/features/auth/presentation/widgets/social_login_section.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
+import 'package:koreanhwa_flutter/features/auth/data/services/google_sign_in_service.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -30,7 +33,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _handleRegister() {
+  Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
       if (!_agreeToTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -42,16 +45,86 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return;
       }
 
-      // TODO: Implement register logic
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đăng ký thành công!')),
+      final authNotifier = ref.read(authProvider.notifier);
+      final success = await authNotifier.register(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
       );
-      context.go('/home');
+
+      if (mounted) {
+        if (success) {
+          // Router sẽ tự động redirect về /home khi auth state thay đổi
+          // Không cần gọi context.go('/home') ở đây
+        } else {
+          final error = ref.read(authProvider).error;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error ?? 'Đăng ký thất bại'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    try {
+      final googleService = GoogleSignInService();
+      final result = await googleService.signIn();
+
+      if (result.success && result.idToken != null) {
+        final authNotifier = ref.read(authProvider.notifier);
+        final success = await authNotifier.signInWithGoogle(
+          idToken: result.idToken!,
+          accessToken: result.accessToken,
+        );
+
+        if (mounted) {
+          if (success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Đăng nhập Google thành công!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            context.go('/home');
+          } else {
+            final error = ref.read(authProvider).error;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(error ?? 'Đăng nhập Google thất bại'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        }
+      } else if (result.error != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error!),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi đăng nhập Google: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final isLoading = authState.isLoading;
+
     return Scaffold(
       backgroundColor: AppColors.primaryWhite,
       body: SafeArea(
@@ -296,7 +369,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 32),
                       ElevatedButton(
-                        onPressed: _handleRegister,
+                        onPressed: isLoading ? null : _handleRegister,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryYellow,
                           foregroundColor: AppColors.primaryBlack,
@@ -306,17 +379,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          'Sign up',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryWhite,
-                          ),
-                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.primaryWhite,
+                                  ),
+                                ),
+                              )
+                            : const Text(
+                                'Sign up',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryWhite,
+                                ),
+                              ),
                       ),
                       const SizedBox(height: 24),
-                      const SocialLoginSection(),
+                      SocialLoginSection(
+                        onSocialLogin: (provider) {
+                          if (provider == 'google') {
+                            _handleGoogleLogin();
+                          }
+                        },
+                      ),
                       const SizedBox(height: 32),
                     ],
                   ),

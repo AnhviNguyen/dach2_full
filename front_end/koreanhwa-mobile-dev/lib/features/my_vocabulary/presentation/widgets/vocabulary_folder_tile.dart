@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koreanhwa_flutter/models/vocabulary_folder_model.dart';
-import 'package:koreanhwa_flutter/services/vocabulary_folder_service.dart';
+import 'package:koreanhwa_flutter/features/my_vocabulary/data/services/vocabulary_folder_api_service.dart';
 import 'package:koreanhwa_flutter/features/my_vocabulary/presentation/screen/folder_detail_screen.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
-class VocabularyFolderTile extends StatelessWidget {
+class VocabularyFolderTile extends ConsumerWidget {
   final VocabularyFolder folder;
   final VoidCallback onDeleted;
 
@@ -14,7 +16,8 @@ class VocabularyFolderTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final apiService = VocabularyFolderApiService();
     final colors = [
       [const Color(0xFFFFE5E5), const Color(0xFFFF6B6B)],
       [const Color(0xFFE5F5FF), const Color(0xFF4DA8FF)],
@@ -118,10 +121,30 @@ class VocabularyFolderTile extends StatelessWidget {
                         ),
                       ),
                       TextButton(
-                        onPressed: () {
-                          VocabularyFolderService.deleteFolder(folder.id);
-                          onDeleted();
-                          Navigator.pop(context);
+                        onPressed: () async {
+                          try {
+                            final userId = ref.read(authProvider).user?.id;
+                            if (userId == null) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Vui lòng đăng nhập')),
+                                );
+                              }
+                              return;
+                            }
+
+                            await apiService.deleteFolder(folder.id, userId);
+                            if (context.mounted) {
+                              onDeleted();
+                              Navigator.pop(context);
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Lỗi: ${e.toString()}')),
+                              );
+                            }
+                          }
                         },
                         child: const Text(
                           'Xóa',

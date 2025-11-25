@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/features/blog/data/models/blog_post.dart';
 import 'package:koreanhwa_flutter/services/blog_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
 
-class BlogManageScreen extends StatefulWidget {
+class BlogManageScreen extends ConsumerStatefulWidget {
   const BlogManageScreen({super.key});
 
   @override
-  State<BlogManageScreen> createState() => _BlogManageScreenState();
+  ConsumerState<BlogManageScreen> createState() => _BlogManageScreenState();
 }
 
-class _BlogManageScreenState extends State<BlogManageScreen> {
+class _BlogManageScreenState extends ConsumerState<BlogManageScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'all';
   List<BlogPost> _myPosts = [];
@@ -29,10 +31,31 @@ class _BlogManageScreenState extends State<BlogManageScreen> {
     super.dispose();
   }
 
-  void _loadPosts() {
-    setState(() {
-      _myPosts = BlogService.getPosts(tab: 'my');
-    });
+  final BlogService _blogService = BlogService();
+  bool _isLoading = true;
+
+  Future<void> _loadPosts() async {
+    final userId = ref.read(authProvider).user?.id;
+    if (userId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final response = await _blogService.getPostsByAuthor(userId);
+      setState(() {
+        _myPosts = response.content;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải dữ liệu: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   List<BlogPost> get _filteredPosts {
@@ -323,10 +346,10 @@ class _BlogManageScreenState extends State<BlogManageScreen> {
                           child: const Text('Hủy'),
                         ),
                         TextButton(
-                          onPressed: () {
-                            BlogService.deletePost(post.id);
+                          onPressed: () async {   // THÊM async Ở ĐÂY
+                            await _blogService.deletePost(post.id);
                             _loadPosts();
-                            Navigator.pop(context);
+                            Navigator.pop(context); // có thể để trước hoặc sau await đều được
                           },
                           child: const Text('Xóa', style: TextStyle(color: Colors.red)),
                         ),

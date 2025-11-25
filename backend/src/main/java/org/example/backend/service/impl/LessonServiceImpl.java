@@ -16,16 +16,13 @@ import java.util.stream.Collectors;
 @Transactional
 public class LessonServiceImpl implements LessonService {
     private final LessonRepository lessonRepository;
-    private final VocabularyRepository vocabularyRepository;
     private final GrammarRepository grammarRepository;
     private final ExerciseRepository exerciseRepository;
 
     public LessonServiceImpl(LessonRepository lessonRepository,
-                             VocabularyRepository vocabularyRepository,
                              GrammarRepository grammarRepository,
                              ExerciseRepository exerciseRepository) {
         this.lessonRepository = lessonRepository;
-        this.vocabularyRepository = vocabularyRepository;
         this.grammarRepository = grammarRepository;
         this.exerciseRepository = exerciseRepository;
     }
@@ -92,18 +89,19 @@ public class LessonServiceImpl implements LessonService {
     }
 
     private LessonResponse toLessonResponse(Lesson lesson) {
-        List<Vocabulary> vocabularies = vocabularyRepository.findByLessonId(lesson.getId());
-        List<Grammar> grammars = grammarRepository.findByLessonId(lesson.getId());
-        List<Exercise> exercises = exerciseRepository.findByLessonId(lesson.getId());
+        // Note: This service is deprecated. Use CurriculumLessonService or CourseLessonService instead.
+        // For now, we'll return empty lists as Lesson entity is being phased out
+        // Vocabulary is no longer available for old Lesson entity
+        List<Grammar> grammars = lesson.getCourse() != null 
+            ? grammarRepository.findByCourseLessonId(lesson.getId())
+            : List.of();
+        List<Exercise> exercises = lesson.getCourse() != null
+            ? exerciseRepository.findByCourseLessonId(lesson.getId())
+            : List.of();
         
-        List<VocabularyItemResponse> vocabularyResponses = vocabularies.stream()
-                .map(v -> new VocabularyItemResponse(
-                    v.getKorean(),
-                    v.getVietnamese(),
-                    v.getPronunciation(),
-                    v.getExample()
-                ))
-                .collect(Collectors.toList());
+        // Vocabulary is no longer available for old Lesson entity
+        // Use CurriculumLessonService or CourseLessonService for vocabulary
+        List<VocabularyItemResponse> vocabularyResponses = List.of();
         
         List<GrammarItemResponse> grammarResponses = grammars.stream()
                 .map(g -> {
@@ -140,6 +138,7 @@ public class LessonServiceImpl implements LessonService {
             lesson.getLevel(),
             lesson.getDuration(),
             lesson.getProgress(),
+            lesson.getLessonNumber(),
             vocabularyResponses,
             grammarResponses,
             exerciseResponses

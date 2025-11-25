@@ -6,8 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "lessons")
@@ -49,14 +47,8 @@ public class Lesson {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Vocabulary> vocabularies = new ArrayList<>();
-
-    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Grammar> grammars = new ArrayList<>();
-
-    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Exercise> exercises = new ArrayList<>();
+    // NOTE: This entity is deprecated. Use CurriculumLesson or CourseLesson instead.
+    // Relationships removed because Vocabulary, Grammar, and Exercise no longer reference Lesson.
 
     @PrePersist
     protected void onCreate() {

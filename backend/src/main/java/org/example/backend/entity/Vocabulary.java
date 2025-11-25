@@ -7,6 +7,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * @deprecated This entity is deprecated. Use CurriculumVocabulary instead.
+ * The old vocabulary table is no longer used in the new schema.
+ */
+@Deprecated
 @Entity
 @Table(name = "vocabulary")
 @Data
@@ -18,9 +23,8 @@ public class Vocabulary {
     @Column(name = "id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lesson_id")
-    private Lesson lesson;
+    // NOTE: Relationship removed - Vocabulary entity is deprecated
+    // Use CurriculumVocabulary instead which references CurriculumLesson
 
     @Column(nullable = false, length = 500)
     private String korean;

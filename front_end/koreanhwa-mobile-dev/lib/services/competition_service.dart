@@ -176,18 +176,24 @@ class CompetitionService {
     final rank = _calculateRank(score);
     final isWinner = score >= 80 && rank <= 3; // Winner if score >= 80% and top 3
     final prizeAmount = isWinner ? (competition.totalPrize ~/ 3) : null; // Top 3 share prize
+    final wrongCount = questions.length - correctCount;
+    final accuracy = questions.isEmpty ? 0.0 : (correctCount / questions.length);
     
     final result = CompetitionResult(
       competitionId: competitionId,
       competitionTitle: competition.title,
       totalQuestions: questions.length,
       correctAnswers: correctCount,
+      wrongAnswers: wrongCount,
+      skippedAnswers: 0,
       score: score,
       rank: rank,
       isWinner: isWinner,
       prizeAmount: prizeAmount,
       submittedAt: DateTime.now(),
       evaluationStatus: 'evaluating',
+      accuracy: accuracy,
+      questionResults: [],
     );
 
     _results.add(result);
@@ -238,6 +244,8 @@ class CompetitionService {
         competitionTitle: oldResult.competitionTitle,
         totalQuestions: oldResult.totalQuestions,
         correctAnswers: oldResult.correctAnswers,
+        wrongAnswers: oldResult.wrongAnswers,
+        skippedAnswers: oldResult.skippedAnswers,
         score: oldResult.score,
         rank: rank ?? oldResult.rank,
         isWinner: isWinner ?? oldResult.isWinner,
@@ -245,6 +253,8 @@ class CompetitionService {
         submittedAt: oldResult.submittedAt,
         evaluatedAt: DateTime.now(),
         evaluationStatus: status,
+        accuracy: oldResult.accuracy,
+        questionResults: oldResult.questionResults,
       );
     }
   }
@@ -291,6 +301,8 @@ class CompetitionService {
         competitionTitle: oldResult.competitionTitle,
         totalQuestions: oldResult.totalQuestions,
         correctAnswers: oldResult.correctAnswers,
+        wrongAnswers: oldResult.wrongAnswers,
+        skippedAnswers: oldResult.skippedAnswers,
         score: oldResult.score,
         rank: oldResult.rank,
         isWinner: oldResult.isWinner,
@@ -298,6 +310,8 @@ class CompetitionService {
         submittedAt: oldResult.submittedAt,
         evaluatedAt: DateTime.now(),
         evaluationStatus: 'completed',
+        accuracy: oldResult.accuracy,
+        questionResults: oldResult.questionResults,
       );
     }
   }

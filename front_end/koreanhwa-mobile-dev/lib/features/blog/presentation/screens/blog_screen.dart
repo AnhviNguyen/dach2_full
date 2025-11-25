@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/services/blog_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
@@ -6,15 +7,16 @@ import 'package:koreanhwa_flutter/features/blog/data/models/blog_post.dart';
 import 'package:koreanhwa_flutter/features/blog/presentation/widgets/blog_stat_card.dart';
 import 'package:koreanhwa_flutter/features/blog/presentation/widgets/blog_tab_button.dart';
 import 'package:koreanhwa_flutter/features/blog/presentation/widgets/blog_post_card.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
-class BlogScreen extends StatefulWidget {
+class BlogScreen extends ConsumerStatefulWidget {
   const BlogScreen({super.key});
 
   @override
-  State<BlogScreen> createState() => _BlogScreenState();
+  ConsumerState<BlogScreen> createState() => _BlogScreenState();
 }
 
-class _BlogScreenState extends State<BlogScreen> {
+class _BlogScreenState extends ConsumerState<BlogScreen> {
   String _activeTab = 'all';
   String _selectedSkill = 'all';
   final TextEditingController _searchController = TextEditingController();
@@ -25,19 +27,104 @@ class _BlogScreenState extends State<BlogScreen> {
     super.dispose();
   }
 
-  List<BlogPost> get _filteredPosts {
-    return BlogService.getPosts(
-      searchQuery: _searchController.text.isEmpty ? null : _searchController.text,
-      skill: _selectedSkill,
-      tab: _activeTab,
-    );
+  final BlogService _blogService = BlogService();
+  List<BlogPost> _allPosts = [];
+  List<BlogPost> _myPosts = [];
+  List<BlogPost> _favoritePosts = [];
+  List<BlogPost> _filteredPosts = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPosts();
+  }
+
+  Future<void> _loadPosts() async {
+    final userId = ref.read(authProvider).user?.id;
+    if (userId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final all = await _blogService.getPosts(currentUserId: userId);
+      final my = await _blogService.getPostsByAuthor(userId);
+      final favorites = await _blogService.getPosts(currentUserId: userId);
+      
+      setState(() {
+        _allPosts = all;
+        _myPosts = my.content;
+        _favoritePosts = favorites.where((p) => p.isLiked).toList();
+        _updateFilteredPosts();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải dữ liệu: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  void _updateFilteredPosts() {
+    List<BlogPost> baseList;
+    switch (_activeTab) {
+      case 'my':
+        baseList = _myPosts;
+        break;
+      case 'favorites':
+        baseList = _favoritePosts;
+        break;
+      default:
+        baseList = _allPosts;
+    }
+
+    var filtered = baseList;
+
+    if (_searchController.text.isNotEmpty) {
+      filtered = filtered.where((post) {
+        return post.title.toLowerCase().contains(_searchController.text.toLowerCase()) ||
+            post.content.toLowerCase().contains(_searchController.text.toLowerCase());
+      }).toList();
+    }
+
+    if (_selectedSkill != 'all') {
+      filtered = filtered.where((post) => post.skill == _selectedSkill).toList();
+    }
+
+    setState(() {
+      _filteredPosts = filtered;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final allPosts = BlogService.getPosts();
-    final myPosts = BlogService.getPosts(tab: 'my');
-    final favoritePosts = BlogService.getPosts(tab: 'favorites');
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryWhite,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => context.pop(),
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          ),
+          title: const Text(
+            'Blog học viên',
+            style: TextStyle(
+              color: AppColors.primaryBlack,
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+            ),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.primaryWhite,
@@ -100,7 +187,7 @@ class _BlogScreenState extends State<BlogScreen> {
                   Expanded(
                     child: BlogStatCard(
                       icon: Icons.article,
-                      value: '${allPosts.length}',
+                      value: '${_allPosts.length}',
                       label: 'Tổng bài viết',
                       color: Colors.blue,
                     ),
@@ -109,7 +196,7 @@ class _BlogScreenState extends State<BlogScreen> {
                   Expanded(
                     child: BlogStatCard(
                       icon: Icons.person,
-                      value: '${myPosts.length}',
+                      value: '${_myPosts.length}',
                       label: 'Bài viết của tôi',
                       color: Colors.purple,
                     ),
@@ -118,7 +205,7 @@ class _BlogScreenState extends State<BlogScreen> {
                   Expanded(
                     child: BlogStatCard(
                       icon: Icons.favorite,
-                      value: '${favoritePosts.length}',
+                      value: '${_favoritePosts.length}',
                       label: 'Bài yêu thích',
                       color: Colors.pink,
                     ),
@@ -144,7 +231,10 @@ class _BlogScreenState extends State<BlogScreen> {
                       label: 'Tất cả bài viết',
                       value: 'all',
                       isSelected: _activeTab == 'all',
-                      onTap: () => setState(() => _activeTab = 'all'),
+                      onTap: () {
+                        setState(() => _activeTab = 'all');
+                        _updateFilteredPosts();
+                      },
                     ),
                   ),
                   Expanded(
@@ -152,7 +242,10 @@ class _BlogScreenState extends State<BlogScreen> {
                       label: 'Bài viết của tôi',
                       value: 'my',
                       isSelected: _activeTab == 'my',
-                      onTap: () => setState(() => _activeTab = 'my'),
+                      onTap: () {
+                        setState(() => _activeTab = 'my');
+                        _updateFilteredPosts();
+                      },
                     ),
                   ),
                   Expanded(
@@ -160,7 +253,10 @@ class _BlogScreenState extends State<BlogScreen> {
                       label: 'Yêu thích',
                       value: 'favorites',
                       isSelected: _activeTab == 'favorites',
-                      onTap: () => setState(() => _activeTab = 'favorites'),
+                      onTap: () {
+                        setState(() => _activeTab = 'favorites');
+                        _updateFilteredPosts();
+                      },
                     ),
                   ),
                 ],
@@ -199,7 +295,7 @@ class _BlogScreenState extends State<BlogScreen> {
                           ),
                         ),
                       ),
-                      onChanged: (_) => setState(() {}),
+                      onChanged: (_) => _updateFilteredPosts(),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -225,6 +321,7 @@ class _BlogScreenState extends State<BlogScreen> {
                         setState(() {
                           _selectedSkill = value ?? 'all';
                         });
+                        _updateFilteredPosts();
                       },
                     ),
                   ),
@@ -232,7 +329,7 @@ class _BlogScreenState extends State<BlogScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            if (_filteredPosts.isEmpty)
+            if (_filteredPosts.isEmpty && !_isLoading)
               Padding(
                 padding: const EdgeInsets.all(32),
                 child: Column(
@@ -294,7 +391,7 @@ class _BlogScreenState extends State<BlogScreen> {
                         Expanded(
                           child: _buildManagementCard(
                             Icons.edit,
-                            '${myPosts.length}',
+                            '${_myPosts.length}',
                             'Bài viết',
                           ),
                         ),

@@ -1,35 +1,103 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/features/material/data/models/learning_material.dart';
-import 'package:koreanhwa_flutter/services/material_service.dart';
+import 'package:koreanhwa_flutter/features/material/data/services/material_api_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class MaterialDetailScreen extends StatefulWidget {
+class MaterialDetailScreen extends ConsumerStatefulWidget {
   final int materialId;
 
   const MaterialDetailScreen({super.key, required this.materialId});
 
   @override
-  State<MaterialDetailScreen> createState() => _MaterialDetailScreenState();
+  ConsumerState<MaterialDetailScreen> createState() => _MaterialDetailScreenState();
 }
 
-class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
+class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
   bool _sidebarOpen = true;
   int _currentPage = 21;
   final int _totalPages = 384;
   double _zoomLevel = 100.0;
   bool _bookmarked = false;
+  final MaterialApiService _apiService = MaterialApiService();
+  LearningMaterial? _material;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMaterial();
+  }
+
+  Future<void> _loadMaterial() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final userId = ref.read(authProvider).user?.id;
+      final material = await _apiService.getMaterialById(widget.materialId, currentUserId: userId);
+      setState(() {
+        _material = material;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi tải dữ liệu: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final material = MaterialService.getMaterialById(widget.materialId);
-    if (material == null) {
+    if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Lỗi')),
-        body: const Center(child: Text('Không tìm thấy tài liệu')),
+        backgroundColor: AppColors.primaryBlack,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryBlack,
+          title: const Text('Đang tải...', style: TextStyle(color: AppColors.primaryWhite)),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
+
+    if (_errorMessage != null || _material == null) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryBlack,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryBlack,
+          title: const Text('Lỗi', style: TextStyle(color: AppColors.primaryWhite)),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _errorMessage ?? 'Không tìm thấy tài liệu',
+                style: const TextStyle(color: AppColors.primaryWhite),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadMaterial,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryYellow,
+                  foregroundColor: AppColors.primaryBlack,
+                ),
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final material = _material!;
 
     final pdfUrl = material.pdfUrl ?? 'https://kanata.edu.vn/wp-content/uploads/2022/10/Giao-trinh-Tieng-Han-Tong-hop-so-cap-1.pdf';
 

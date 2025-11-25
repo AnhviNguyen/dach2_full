@@ -23,23 +23,23 @@ public class TextbookController {
 
     @GetMapping
     public ResponseEntity<PageResponse<TextbookResponse>> getAllTextbooks(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "bookNumber") String sortBy,
-            @RequestParam(defaultValue = "ASC") Sort.Direction direction) {
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sortBy", defaultValue = "bookNumber") String sortBy,
+            @RequestParam(value = "direction", defaultValue = "ASC") Sort.Direction direction) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
         PageResponse<TextbookResponse> response = textbookService.getAllTextbooks(pageable);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TextbookResponse> getTextbookById(@PathVariable Long id) {
+    public ResponseEntity<TextbookResponse> getTextbookById(@PathVariable(value = "id") Long id) {
         TextbookResponse response = textbookService.getTextbookById(id);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/book-number/{bookNumber}")
-    public ResponseEntity<TextbookResponse> getTextbookByBookNumber(@PathVariable Integer bookNumber) {
+    public ResponseEntity<TextbookResponse> getTextbookByBookNumber(@PathVariable(value = "bookNumber") Integer bookNumber) {
         TextbookResponse response = textbookService.getTextbookByBookNumber(bookNumber);
         return ResponseEntity.ok(response);
     }
@@ -52,22 +52,22 @@ public class TextbookController {
 
     @PutMapping("/{id}")
     public ResponseEntity<TextbookResponse> updateTextbook(
-            @PathVariable Long id,
+            @PathVariable(value = "id") Long id,
             @RequestBody TextbookRequest request) {
         TextbookResponse response = textbookService.updateTextbook(id, request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTextbook(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteTextbook(@PathVariable(value = "id") Long id) {
         textbookService.deleteTextbook(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{textbookId}/progress/{userId}")
     public ResponseEntity<TextbookResponse> getTextbookProgress(
-            @PathVariable Long textbookId,
-            @PathVariable Long userId) {
+            @PathVariable(value = "textbookId") Long textbookId,
+            @PathVariable(value = "userId") Long userId) {
         TextbookResponse response = textbookService.getTextbookProgress(textbookId, userId);
         return ResponseEntity.ok(response);
     }

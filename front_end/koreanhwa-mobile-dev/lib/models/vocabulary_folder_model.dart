@@ -24,6 +24,22 @@ class VocabularyFolder {
       words: words ?? this.words,
     );
   }
+
+  factory VocabularyFolder.fromJson(Map<String, dynamic> json) {
+    List<VocabularyWord> words = [];
+    if (json['words'] != null && json['words'] is List) {
+      words = (json['words'] as List<dynamic>)
+          .map((w) => VocabularyWord.fromJson(w as Map<String, dynamic>))
+          .toList();
+    }
+
+    return VocabularyFolder(
+      id: json['id'] as int,
+      name: json['name'] as String? ?? '',
+      icon: json['icon'] as String? ?? '📁',
+      words: words,
+    );
+  }
 }
 
 class VocabularyWord {
@@ -54,6 +70,16 @@ class VocabularyWord {
       vietnamese: vietnamese ?? this.vietnamese,
       pronunciation: pronunciation ?? this.pronunciation,
       example: example ?? this.example,
+    );
+  }
+
+  factory VocabularyWord.fromJson(Map<String, dynamic> json) {
+    return VocabularyWord(
+      id: json['id'] as int,
+      korean: json['korean'] as String? ?? '',
+      vietnamese: json['vietnamese'] as String? ?? '',
+      pronunciation: json['pronunciation'] as String? ?? '',
+      example: json['example'] as String? ?? '',
     );
   }
 }

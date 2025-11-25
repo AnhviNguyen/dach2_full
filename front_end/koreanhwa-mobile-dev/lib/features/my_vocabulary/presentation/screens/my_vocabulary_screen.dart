@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/models/vocabulary_folder_model.dart';
-import 'package:koreanhwa_flutter/services/vocabulary_folder_service.dart';
+import 'package:koreanhwa_flutter/features/my_vocabulary/data/services/vocabulary_folder_api_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/my_vocabulary/presentation/widgets/curriculum_vocabulary_card.dart';
 import 'package:koreanhwa_flutter/features/my_vocabulary/presentation/widgets/vocabulary_folder_tile.dart';
 import 'package:koreanhwa_flutter/features/my_vocabulary/presentation/widgets/empty_folders_state.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
-class MyVocabularyScreen extends StatefulWidget {
+class MyVocabularyScreen extends ConsumerStatefulWidget {
   const MyVocabularyScreen({super.key});
 
   @override
-  State<MyVocabularyScreen> createState() => _MyVocabularyScreenState();
+  ConsumerState<MyVocabularyScreen> createState() => _MyVocabularyScreenState();
 }
 
-class _MyVocabularyScreenState extends State<MyVocabularyScreen> {
+class _MyVocabularyScreenState extends ConsumerState<MyVocabularyScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final VocabularyFolderApiService _apiService = VocabularyFolderApiService();
   List<VocabularyFolder> _folders = [];
   bool _personalExpanded = true;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -31,10 +36,29 @@ class _MyVocabularyScreenState extends State<MyVocabularyScreen> {
     super.dispose();
   }
 
-  void _loadFolders() {
+  Future<void> _loadFolders() async {
     setState(() {
-      _folders = VocabularyFolderService.getFolders();
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    try {
+      final userId = ref.read(authProvider).user?.id;
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final folders = await _apiService.getFoldersByUserId(userId);
+      setState(() {
+        _folders = folders;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi tải dữ liệu: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
   }
 
   List<VocabularyFolder> get _filteredFolders {
@@ -98,17 +122,33 @@ class _MyVocabularyScreenState extends State<MyVocabularyScreen> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (nameController.text.trim().isNotEmpty) {
-                final newFolder = VocabularyFolder(
-                  id: DateTime.now().millisecondsSinceEpoch,
-                  name: nameController.text.trim(),
-                  icon: '📁',
-                  words: [],
-                );
-                VocabularyFolderService.addFolder(newFolder);
-                _loadFolders();
-                Navigator.pop(context);
+                try {
+                  final userId = ref.read(authProvider).user?.id;
+                  if (userId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Vui lòng đăng nhập')),
+                    );
+                    return;
+                  }
+
+                  await _apiService.createFolder(
+                    name: nameController.text.trim(),
+                    icon: '📁',
+                    userId: userId,
+                  );
+                  await _loadFolders();
+                  if (mounted) {
+                    Navigator.pop(context);
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Lỗi: ${e.toString()}')),
+                    );
+                  }
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -355,7 +395,31 @@ class _MyVocabularyScreenState extends State<MyVocabularyScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            if (_filteredFolders.isEmpty)
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_errorMessage != null)
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: AppColors.primaryBlack),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadFolders,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryYellow,
+                        foregroundColor: AppColors.primaryBlack,
+                      ),
+                      child: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              )
+            else if (_filteredFolders.isEmpty)
               EmptyFoldersState(onCreateFolder: _showAddFolderDialog)
             else
               ListView.separated(

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koreanhwa_flutter/features/courses/presentation/screen/course_detail_screen.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/features/courses/data/services/course_api_service.dart';
+import 'package:koreanhwa_flutter/features/courses/data/models/course_info.dart';
+import 'package:koreanhwa_flutter/features/courses/data/models/dashboard_stats.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
-class CourseListScreen extends StatefulWidget {
+class CourseListScreen extends ConsumerStatefulWidget {
   final String title;
 
   const CourseListScreen({
@@ -11,28 +16,48 @@ class CourseListScreen extends StatefulWidget {
   });
 
   @override
-  State<CourseListScreen> createState() => _CourseListScreenState();
+  ConsumerState<CourseListScreen> createState() => _CourseListScreenState();
 }
 
-class _CourseListScreenState extends State<CourseListScreen> {
-  late final List<_CourseInfo> _courses;
-  final _DashboardStats _stats = const _DashboardStats(
-    totalCourses: 80,
-    completedCourses: 0,
-    totalVideos: 2572,
-    watchedVideos: 82,
-    totalExams: 36,
-    completedExams: 18,
-    totalWatchTime: '737:23:52',
-    completedWatchTime: '56:26:54',
-    lastAccess: '2025-09-13 19:13:56',
-    endDate: '4762-07-11',
-  );
+class _CourseListScreenState extends ConsumerState<CourseListScreen> {
+  final CourseApiService _courseApiService = CourseApiService();
+  List<CourseInfo> _courses = [];
+  DashboardStats? _stats;
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _courses = _mockCourses;
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final authState = ref.read(authProvider);
+      final userId = authState.user?.id;
+
+      final coursesFuture = _courseApiService.getAllCourses();
+      final statsFuture = _courseApiService.getDashboardStats(userId: userId);
+
+      final results = await Future.wait([coursesFuture, statsFuture]);
+
+      setState(() {
+        _courses = results[0] as List<CourseInfo>;
+        _stats = results[1] as DashboardStats;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -57,31 +82,43 @@ class _CourseListScreenState extends State<CourseListScreen> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 12),
-              _buildNoticeCard(),
-              const SizedBox(height: 16),
-              _buildStatsGrid(),
-              const SizedBox(height: 12),
-              _buildProgressRing(),
-              const SizedBox(height: 16),
-              _buildVideoStats(),
-              const SizedBox(height: 20),
-              _buildCourseSection('Khóa học đang học'),
-              const SizedBox(height: 20),
-              _buildCourseSection('Khóa học đã học'),
-              const SizedBox(height: 20),
-              _buildCourseSection('Khóa học quan tâm'),
-              const SizedBox(height: 20),
-              _buildCourseTable(),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Lỗi: $_error'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadData,
+                          child: const Text('Thử lại'),
+                        ),
+                      ],
+                    ),
+                  )
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Column(
+                      children: [
+                        _buildHeader(),
+                        const SizedBox(height: 12),
+                        _buildNoticeCard(),
+                        const SizedBox(height: 16),
+                        if (_stats != null) ...[
+                          _buildStatsGrid(),
+                          const SizedBox(height: 12),
+                          _buildProgressRing(),
+                          const SizedBox(height: 16),
+                          _buildVideoStats(),
+                        ],
+                        const SizedBox(height: 20),
+                        _buildCourseList(),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
       ),
     );
   }
@@ -167,48 +204,121 @@ class _CourseListScreenState extends State<CourseListScreen> {
     );
   }
 
+  Widget _buildCourseList() {
+    if (_courses.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Text('Chưa có khóa học nào'),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Danh sách khóa học',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryBlack,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ..._courses.map((course) => _buildCourseCard(course)),
+      ],
+    );
+  }
+
+  Widget _buildCourseCard(CourseInfo course) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        title: Text(course.title),
+        subtitle: Text('${course.level} • ${course.lessons} bài học'),
+        trailing: course.isEnrolled
+            ? const Icon(Icons.check_circle, color: Colors.green)
+            : const Icon(Icons.add_circle_outline),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CourseDetailScreen(
+                courseTitle: course.title,
+                instructorName: course.instructor,
+                price: _parsePrice(course.price),
+                originalPrice: _parsePrice(course.price) * 1.3,
+                discount: 24,
+                rating: course.rating,
+                reviewCount: 0,
+                lessonCount: course.lessons,
+                studentCount: course.students,
+                daysAccess: 90,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  double _parsePrice(String priceStr) {
+    try {
+      // Remove currency symbols and parse
+      final cleaned = priceStr.replaceAll(RegExp(r'[^\d.]'), '');
+      return double.parse(cleaned);
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
   Widget _buildStatsGrid() {
+    if (_stats == null) return const SizedBox.shrink();
+    
     return Column(
       children: [
         _StatTile(
           icon: Icons.menu_book,
           title: 'Số khóa học',
-          value: '${_stats.totalCourses}',
-          progressLabel: '${_stats.completedCourses}/${_stats.totalCourses}',
-          progress: _stats.totalCourses == 0
+          value: '${_stats!.totalCourses}',
+          progressLabel: '${_stats!.completedCourses}/${_stats!.totalCourses}',
+          progress: _stats!.totalCourses == 0
               ? 0
-              : _stats.completedCourses / _stats.totalCourses,
+              : _stats!.completedCourses / _stats!.totalCourses,
         ),
         const SizedBox(height: 10),
         _StatTile(
           icon: Icons.play_circle_fill,
           title: 'Video bài giảng',
-          value: '${_stats.totalVideos}',
-          progressLabel: '${_stats.watchedVideos}/${_stats.totalVideos}',
-          progress: _stats.totalVideos == 0
+          value: '${_stats!.totalVideos}',
+          progressLabel: '${_stats!.watchedVideos}/${_stats!.totalVideos}',
+          progress: _stats!.totalVideos == 0
               ? 0
-              : _stats.watchedVideos / _stats.totalVideos,
+              : _stats!.watchedVideos / _stats!.totalVideos,
         ),
         const SizedBox(height: 10),
         _StatTile(
           icon: Icons.quiz_outlined,
           title: 'Số đề thi',
-          value: '${_stats.totalExams}',
-          progressLabel: '${_stats.completedExams}/${_stats.totalExams}',
-          progress: _stats.totalExams == 0
+          value: '${_stats!.totalExams}',
+          progressLabel: '${_stats!.completedExams}/${_stats!.totalExams}',
+          progress: _stats!.totalExams == 0
               ? 0
-              : _stats.completedExams / _stats.totalExams,
+              : _stats!.completedExams / _stats!.totalExams,
         ),
       ],
     );
   }
 
   Widget _buildProgressRing() {
+    if (_stats == null) return const SizedBox.shrink();
+    
     return _StatDonut(
       label: 'Tiến độ',
-      percent: _stats.completedCourses == 0
+      percent: _stats!.completedCourses == 0
           ? 0.032
-          : _stats.completedCourses / (_stats.totalCourses == 0 ? 1 : _stats.totalCourses),
+          : _stats!.completedCourses / (_stats!.totalCourses == 0 ? 1 : _stats!.totalCourses),
     );
   }
 
@@ -257,16 +367,16 @@ class _CourseListScreenState extends State<CourseListScreen> {
         _InfoCard(
           icon: Icons.schedule,
           title: 'Tổng thời lượng video',
-          value: _stats.totalWatchTime,
+          value: _stats?.totalWatchTime ?? '0:00:00',
           accent: AppColors.primaryYellow,
         ),
         const SizedBox(height: 10),
         _InfoCard(
           icon: Icons.access_time_filled,
           title: 'Truy cập gần nhất',
-          value: _stats.lastAccess,
+          value: _stats?.lastAccess ?? 'Chưa có',
           accent: AppColors.primaryBlack,
-          secondary: _stats.endDate,
+          secondary: _stats?.endDate,
         ),
       ],
     );
@@ -344,10 +454,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
           const SizedBox(height: 16),
           ..._courses.map((course) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: _CourseCard(
-              course: course,
-              onTap: () => _openCourse(course),
-            ),
+            child: _buildCourseCard(course),
           )),
         ],
       ),
@@ -394,7 +501,25 @@ class _CourseListScreenState extends State<CourseListScreen> {
             final course = entry.value;
             final isEven = entry.key % 2 == 0;
             return InkWell(
-              onTap: () => _openCourse(course),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CourseDetailScreen(
+                      courseTitle: course.title,
+                      instructorName: course.instructor,
+                      price: _parsePrice(course.price),
+                      originalPrice: _parsePrice(course.price) * 1.3,
+                      discount: 24,
+                      rating: course.rating,
+                      reviewCount: 0,
+                      lessonCount: course.lessons,
+                      studentCount: course.students,
+                      daysAccess: 90,
+                    ),
+                  ),
+                );
+              },
               child: Container(
                 color: isEven ? Colors.white : const Color(0xFFFFF7E5),
                 padding: const EdgeInsets.all(12),
@@ -437,7 +562,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                course.subtitle,
+                                course.level,
                                 style: const TextStyle(
                                   color: AppColors.primaryYellow,
                                   fontWeight: FontWeight.w600,
@@ -455,20 +580,20 @@ class _CourseListScreenState extends State<CourseListScreen> {
                       children: [
                         _TableInfo(
                           label: 'Bài học',
-                          value: '${course.totalLessons}',
+                          value: '${course.lessons}',
                         ),
                         _TableInfo(
                           label: 'Tiến độ',
-                          value: '${course.progress}%',
+                          value: '${(course.progress * 100).toStringAsFixed(0)}%',
                         ),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                course.status,
+                                course.isEnrolled ? 'Đã đăng ký' : 'Chưa đăng ký',
                                 style: TextStyle(
-                                  color: _statusColor(course.statusType),
+                                  color: course.isEnrolled ? Colors.green : Colors.orange,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 11,
                                 ),
@@ -489,30 +614,6 @@ class _CourseListScreenState extends State<CourseListScreen> {
     );
   }
 
-  Color _statusColor(String statusType) {
-    switch (statusType) {
-      case 'urgent':
-        return Colors.red;
-      case 'new':
-        return Colors.blue;
-      default:
-        return Colors.green;
-    }
-  }
-
-  void _openCourse(_CourseInfo course) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CourseDetailScreen(
-          courseTitle: course.title,
-          lessonCount: course.totalLessons,
-          daysAccess: 90,
-          price: 1250000,
-        ),
-      ),
-    );
-  }
 }
 
 class _TableInfo extends StatelessWidget {
@@ -546,70 +647,6 @@ class _TableInfo extends StatelessWidget {
   }
 }
 
-class _CourseInfo {
-  final int id;
-  final String title;
-  final String subtitle;
-  final int totalLessons;
-  final int progress;
-  final String duration;
-  final String status;
-  final String statusType;
-
-  const _CourseInfo({
-    required this.id,
-    required this.title,
-    required this.subtitle,
-    required this.totalLessons,
-    required this.progress,
-    required this.duration,
-    required this.status,
-    required this.statusType,
-  });
-}
-
-const List<_CourseInfo> _mockCourses = [
-  _CourseInfo(
-    id: 1,
-    title: '[Gonggatm] Tiếng Hàn Sơ Cấp 2 (100 Bài Giảng)',
-    subtitle: '(Sơ Cấp)',
-    totalLessons: 100,
-    progress: 4,
-    duration: '2025-08-22 ~ 2026-03-20',
-    status: 'Còn 189 ngày',
-    statusType: 'active',
-  ),
-  _CourseInfo(
-    id: 2,
-    title: '[-30%] Tiếng Hàn Sơ Cấp 1 (100 Bài Giảng) - OFF',
-    subtitle: '(Mới)',
-    totalLessons: 100,
-    progress: 0,
-    duration: '2025-06-25 ~ 2030-12-16',
-    status: 'Còn 1.943 ngày',
-    statusType: 'new',
-  ),
-  _CourseInfo(
-    id: 3,
-    title: '[-30%] Tiếng Hàn Sơ Cấp 1 (100 Bài Giảng*)',
-    subtitle: '(Mới)',
-    totalLessons: 100,
-    progress: 7,
-    duration: '2025-08-22 ~ 2026-03-21',
-    status: 'Còn 190 ngày',
-    statusType: 'active',
-  ),
-  _CourseInfo(
-    id: 4,
-    title: '[NEW_Học thử MIỄN PHÍ] Bằng chữ cái tiếng Hàn (8 bài giảng)',
-    subtitle: '(Sơ Cấp)',
-    totalLessons: 8,
-    progress: 21,
-    duration: '2025-08-14 ~ 2025-09-22',
-    status: 'Còn 10 ngày',
-    statusType: 'urgent',
-  ),
-];
 
 class _DashboardStats {
   final int totalCourses;
@@ -892,213 +929,5 @@ class _InfoCard extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _CourseCard extends StatelessWidget {
-  final _CourseInfo course;
-  final VoidCallback onTap;
-
-  const _CourseCard({required this.course, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFFFFFBEB),
-              Colors.white,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.primaryYellow.withOpacity(0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primaryBlack.withOpacity(0.03),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    course.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: AppColors.primaryBlack,
-                      height: 1.3,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryYellow.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 12,
-                    color: AppColors.primaryBlack,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryYellow,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    course.subtitle,
-                    style: const TextStyle(
-                      color: AppColors.primaryBlack,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Row(
-                    children: [
-                      Icon(Icons.video_library, size: 14, color: Colors.grey.shade600),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${course.totalLessons} bài',
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.access_time, size: 14, color: Colors.grey.shade600),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    course.duration,
-                    style: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Tiến độ học tập',
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      '${course.progress}%',
-                      style: const TextStyle(
-                        color: AppColors.primaryBlack,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: (course.progress / 100).clamp(0, 1),
-                    minHeight: 8,
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: const AlwaysStoppedAnimation(AppColors.primaryYellow),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: _statusColor(course.statusType),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      course.status,
-                      style: TextStyle(
-                        color: _statusColor(course.statusType),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  'Chi tiết →',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _statusColor(String statusType) {
-    switch (statusType) {
-      case 'urgent':
-        return Colors.red;
-      case 'new':
-        return Colors.blue;
-      default:
-        return Colors.green;
-    }
   }
 }

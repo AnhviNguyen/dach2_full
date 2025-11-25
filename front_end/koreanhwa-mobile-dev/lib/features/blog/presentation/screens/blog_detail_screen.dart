@@ -1,41 +1,82 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/features/blog/data/models/blog_post.dart';
 import 'package:koreanhwa_flutter/services/blog_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
-class BlogDetailScreen extends StatefulWidget {
+class BlogDetailScreen extends ConsumerStatefulWidget {
   final BlogPost? post;
 
   const BlogDetailScreen({super.key, this.post});
 
   @override
-  State<BlogDetailScreen> createState() => _BlogDetailScreenState();
+  ConsumerState<BlogDetailScreen> createState() => _BlogDetailScreenState();
 }
 
-class _BlogDetailScreenState extends State<BlogDetailScreen> {
+class _BlogDetailScreenState extends ConsumerState<BlogDetailScreen> {
   BlogPost? _post;
   bool _isLiked = false;
   bool _isBookmarked = false;
   int _likeCount = 0;
+  bool _isLoading = false;
+  final BlogService _blogService = BlogService();
 
   @override
   void initState() {
     super.initState();
-    _post = widget.post ?? BlogService.getPostById(1);
+    _post = widget.post;
     if (_post != null) {
       _isLiked = _post!.isLiked;
       _likeCount = _post!.likes;
+    } else {
+      _loadPost(1);
     }
   }
 
-  void _toggleLike() {
-    if (_post != null) {
-      BlogService.toggleLike(_post!.id);
+  Future<void> _loadPost(int id) async {
+    final userId = ref.read(authProvider).user?.id;
+    setState(() => _isLoading = true);
+    try {
+      final post = await _blogService.getPostById(id, currentUserId: userId);
       setState(() {
-        _isLiked = !_isLiked;
-        _likeCount = _isLiked ? _likeCount + 1 : _likeCount - 1;
+        _post = post;
+        if (post != null) {
+          _isLiked = post.isLiked;
+          _likeCount = post.likes;
+        }
+        _isLoading = false;
       });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải bài viết: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    if (_post != null) {
+      final userId = ref.read(authProvider).user?.id;
+      if (userId == null) return;
+      
+      try {
+        final updatedPost = await _blogService.toggleLike(_post!.id, userId);
+        setState(() {
+          _post = updatedPost;
+          _isLiked = updatedPost.isLiked;
+          _likeCount = updatedPost.likes;
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Lỗi: ${e.toString()}')),
+          );
+        }
+      }
     }
   }
 

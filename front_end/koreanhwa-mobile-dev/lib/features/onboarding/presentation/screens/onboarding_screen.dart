@@ -4,6 +4,7 @@ import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/onboarding/data/onboarding_mock_data.dart';
 import 'package:koreanhwa_flutter/features/onboarding/presentation/widgets/onboarding_page_content.dart';
 import 'package:koreanhwa_flutter/features/onboarding/presentation/widgets/onboarding_page_indicator.dart';
+import 'package:koreanhwa_flutter/core/storage/app_storage_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -33,8 +34,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _goToLogin() {
-    context.go('/login');
+  Future<void> _goToLogin() async {
+    // Lưu trạng thái đã hoàn thành onboarding
+    await AppStorageService.setOnboardingCompleted(true);
+    await AppStorageService.setFirstLaunch(false);
+    if (mounted) {
+      context.go('/login');
+    }
   }
 
   @override

@@ -1,27 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/match_screen.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/quiz_screen.dart';
 import 'package:koreanhwa_flutter/models/vocabulary_folder_model.dart';
-import 'package:koreanhwa_flutter/services/vocabulary_folder_service.dart';
+import 'package:koreanhwa_flutter/features/my_vocabulary/data/services/vocabulary_folder_api_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/flashcard_screen.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/pronunciation_screen.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/listen_write_screen.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/vocab_test_screen.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
-class FolderDetailScreen extends StatefulWidget {
+class FolderDetailScreen extends ConsumerStatefulWidget {
   final int folderId;
 
   const FolderDetailScreen({super.key, required this.folderId});
 
   @override
-  State<FolderDetailScreen> createState() => _FolderDetailScreenState();
+  ConsumerState<FolderDetailScreen> createState() => _FolderDetailScreenState();
 }
 
-class _FolderDetailScreenState extends State<FolderDetailScreen> {
+class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
+  final VocabularyFolderApiService _apiService = VocabularyFolderApiService();
   VocabularyFolder? _folder;
   VocabularyWord? _editingWord;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -29,10 +34,29 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
     _loadFolder();
   }
 
-  void _loadFolder() {
+  Future<void> _loadFolder() async {
     setState(() {
-      _folder = VocabularyFolderService.getFolderById(widget.folderId);
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    try {
+      final userId = ref.read(authProvider).user?.id;
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final folder = await _apiService.getFolderById(widget.folderId, userId);
+      setState(() {
+        _folder = folder;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi tải dữ liệu: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
   }
 
   void _showAddWordDialog() {
@@ -129,19 +153,39 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
             child: const Text('Hủy', style: TextStyle(color: AppColors.primaryBlack)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (koreanController.text.trim().isNotEmpty &&
                   vietnameseController.text.trim().isNotEmpty) {
-                final newWord = VocabularyWord(
-                  id: DateTime.now().millisecondsSinceEpoch,
-                  korean: koreanController.text.trim(),
-                  vietnamese: vietnameseController.text.trim(),
-                  pronunciation: pronunciationController.text.trim(),
-                  example: exampleController.text.trim(),
-                );
-                VocabularyFolderService.addWordToFolder(widget.folderId, newWord);
-                _loadFolder();
-                Navigator.pop(context);
+                try {
+                  final userId = ref.read(authProvider).user?.id;
+                  if (userId == null) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Vui lòng đăng nhập')),
+                      );
+                    }
+                    return;
+                  }
+
+                  await _apiService.addWordToFolder(
+                    folderId: widget.folderId,
+                    korean: koreanController.text.trim(),
+                    vietnamese: vietnameseController.text.trim(),
+                    pronunciation: pronunciationController.text.trim(),
+                    example: exampleController.text.trim(),
+                    userId: userId,
+                  );
+                  await _loadFolder();
+                  if (mounted) {
+                    Navigator.pop(context);
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Lỗi: ${e.toString()}')),
+                    );
+                  }
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -252,19 +296,39 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
             child: const Text('Hủy', style: TextStyle(color: AppColors.primaryBlack)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (koreanController.text.trim().isNotEmpty &&
                   vietnameseController.text.trim().isNotEmpty) {
-                final updatedWord = VocabularyWord(
-                  id: word.id,
-                  korean: koreanController.text.trim(),
-                  vietnamese: vietnameseController.text.trim(),
-                  pronunciation: pronunciationController.text.trim(),
-                  example: exampleController.text.trim(),
-                );
-                VocabularyFolderService.updateWordInFolder(widget.folderId, updatedWord);
-                _loadFolder();
-                Navigator.pop(context);
+                try {
+                  final userId = ref.read(authProvider).user?.id;
+                  if (userId == null) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Vui lòng đăng nhập')),
+                      );
+                    }
+                    return;
+                  }
+
+                  await _apiService.updateWord(
+                    wordId: word.id,
+                    korean: koreanController.text.trim(),
+                    vietnamese: vietnameseController.text.trim(),
+                    pronunciation: pronunciationController.text.trim(),
+                    example: exampleController.text.trim(),
+                    userId: userId,
+                  );
+                  await _loadFolder();
+                  if (mounted) {
+                    Navigator.pop(context);
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Lỗi: ${e.toString()}')),
+                    );
+                  }
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -344,12 +408,51 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_folder == null) {
+    if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Folder không tồn tại'),
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          ),
         ),
-        body: const Center(child: Text('Folder không tồn tại')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorMessage != null || _folder == null) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _errorMessage ?? 'Folder không tồn tại',
+                style: const TextStyle(color: AppColors.primaryBlack),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadFolder,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryYellow,
+                  foregroundColor: AppColors.primaryBlack,
+                ),
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -602,13 +705,30 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
                                         child: const Text('Hủy'),
                                       ),
                                       TextButton(
-                                        onPressed: () {
-                                          VocabularyFolderService.deleteWordFromFolder(
-                                            widget.folderId,
-                                            word.id,
-                                          );
-                                          _loadFolder();
-                                          Navigator.pop(context);
+                                        onPressed: () async {
+                                          try {
+                                            final userId = ref.read(authProvider).user?.id;
+                                            if (userId == null) {
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('Vui lòng đăng nhập')),
+                                                );
+                                              }
+                                              return;
+                                            }
+
+                                            await _apiService.deleteWord(word.id, userId);
+                                            await _loadFolder();
+                                            if (mounted) {
+                                              Navigator.pop(context);
+                                            }
+                                          } catch (e) {
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text('Lỗi: ${e.toString()}')),
+                                              );
+                                            }
+                                          }
                                         },
                                         child: const Text('Xóa', style: TextStyle(color: Colors.red)),
                                       ),

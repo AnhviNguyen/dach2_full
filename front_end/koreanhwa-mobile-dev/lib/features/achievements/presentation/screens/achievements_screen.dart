@@ -1,16 +1,126 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
-import 'package:koreanhwa_flutter/features/achievements/data/achievements_mock_data.dart';
+import 'package:koreanhwa_flutter/features/achievements/data/models/achievement_item.dart';
+import 'package:koreanhwa_flutter/features/achievements/data/services/achievement_api_service.dart';
 import 'package:koreanhwa_flutter/features/achievements/presentation/widgets/achievement_card.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
-class AchievementsScreen extends StatelessWidget {
+
+class AchievementsScreen extends ConsumerStatefulWidget {
   const AchievementsScreen({super.key});
 
   @override
+  ConsumerState<AchievementsScreen> createState() => _AchievementsScreenState();
+}
+
+class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
+  final AchievementApiService _apiService = AchievementApiService();
+  List<AchievementItem> _achievements = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAchievements();
+  }
+
+  Future<void> _loadAchievements() async {
+    final userId = ref.read(authProvider).user?.id;
+    if (userId == null) {
+      setState(() {
+        _error = 'User not authenticated';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final achievements = await _apiService.getUserAchievements(userId);
+      setState(() {
+        _achievements = achievements;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final achievements = AchievementsMockData.achievements;
-    final completedCount = achievements.where((a) => a.isCompleted).length;
-    final totalProgress = achievements.fold<double>(0, (sum, a) => sum + a.progress) / achievements.length;
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryWhite,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          ),
+          title: const Text(
+            'Thành tích',
+            style: TextStyle(
+              color: AppColors.primaryBlack,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryWhite,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          ),
+          title: const Text(
+            'Thành tích',
+            style: TextStyle(
+              color: AppColors.primaryBlack,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Error: $_error'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadAchievements,
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final completedCount = _achievements.where((a) => a.isCompleted).length;
+    final totalProgress = _achievements.isEmpty
+        ? 0.0
+        : _achievements.fold<double>(0, (sum, a) => sum + a.progress) / _achievements.length;
 
     return Scaffold(
       backgroundColor: AppColors.primaryWhite,
@@ -78,7 +188,7 @@ class AchievementsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '$completedCount/${achievements.length} thành tích đã đạt được',
+                          '$completedCount/${_achievements.length} thành tích đã đạt được',
                           style: TextStyle(
                             fontSize: 14,
                             color: AppColors.primaryBlack.withOpacity(0.8),
@@ -106,10 +216,10 @@ class AchievementsScreen extends StatelessWidget {
               children: [
                 Column(
                   children: List.generate(
-                    achievements.length,
+                    _achievements.length,
                     (index) {
-                      final achievement = achievements[index];
-                      final isLast = index == achievements.length - 1;
+                      final achievement = _achievements[index];
+                      final isLast = index == _achievements.length - 1;
                       return Column(
                         children: [
                           Container(
@@ -162,8 +272,8 @@ class AchievementsScreen extends StatelessWidget {
                                   colors: achievement.isCompleted
                                       ? [
                                           achievement.color,
-                                          achievements[index + 1].isCompleted
-                                              ? achievements[index + 1].color
+                                          _achievements[index + 1].isCompleted
+                                              ? _achievements[index + 1].color
                                               : AppColors.primaryBlack.withOpacity(0.2),
                                         ]
                                       : [
@@ -183,21 +293,25 @@ class AchievementsScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 20),
                 Expanded(
-                  child: Column(
-                    children: achievements.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final achievement = entry.value;
-                      return Padding(
-                        padding: EdgeInsets.only(
-                          bottom: index < achievements.length - 1 ? 20 : 0,
+                  child: _achievements.isEmpty
+                      ? const Center(
+                          child: Text('Chưa có thành tích nào'),
+                        )
+                      : Column(
+                          children: _achievements.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final achievement = entry.value;
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                bottom: index < _achievements.length - 1 ? 20 : 0,
+                              ),
+                              child: AchievementCard(
+                                achievement: achievement,
+                                index: index,
+                              ),
+                            );
+                          }).toList(),
                         ),
-                        child: AchievementCard(
-                          achievement: achievement,
-                          index: index,
-                        ),
-                      );
-                    }).toList(),
-                  ),
                 ),
               ],
             ),

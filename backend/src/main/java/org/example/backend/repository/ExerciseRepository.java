@@ -11,7 +11,9 @@ import java.util.List;
 @Repository
 public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
     Page<Exercise> findAll(Pageable pageable);
-    List<Exercise> findByLessonId(Long lessonId);
-    Page<Exercise> findByLessonId(Long lessonId, Pageable pageable);
+    List<Exercise> findByCurriculumLessonId(Long curriculumLessonId);
+    List<Exercise> findByCourseLessonId(Long courseLessonId);
+    Page<Exercise> findByCurriculumLessonId(Long curriculumLessonId, Pageable pageable);
+    Page<Exercise> findByCourseLessonId(Long courseLessonId, Pageable pageable);
 }
 

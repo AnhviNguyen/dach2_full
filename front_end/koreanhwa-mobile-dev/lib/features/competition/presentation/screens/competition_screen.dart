@@ -1,39 +1,117 @@
 import 'package:flutter/material.dart';
-import 'package:koreanhwa_flutter/services/competition_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/competition/data/models/competition.dart';
+import 'package:koreanhwa_flutter/features/competition/data/services/competition_api_service.dart';
 import 'package:koreanhwa_flutter/features/competition/data/competition_mock_data.dart';
 import 'package:koreanhwa_flutter/features/competition/presentation/widgets/competition_card.dart';
 import 'package:koreanhwa_flutter/features/competition/presentation/widgets/competition_status_tab.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
-class CompetitionScreen extends StatefulWidget {
+class CompetitionScreen extends ConsumerStatefulWidget {
   const CompetitionScreen({super.key});
 
   @override
-  State<CompetitionScreen> createState() => _CompetitionScreenState();
+  ConsumerState<CompetitionScreen> createState() => _CompetitionScreenState();
 }
 
-class _CompetitionScreenState extends State<CompetitionScreen> {
+class _CompetitionScreenState extends ConsumerState<CompetitionScreen> {
   String _selectedCategory = 'all';
   String _selectedStatus = 'active';
   String _sortBy = 'recent';
   String _searchQuery = '';
+  final CompetitionApiService _apiService = CompetitionApiService();
+  List<Competition> _competitions = [];
+  List<Competition> _activeCompetitions = [];
+  List<Competition> _upcomingCompetitions = [];
+  List<Competition> _completedCompetitions = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCompetitions();
+  }
+
+  Future<void> _loadCompetitions() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final userId = ref.read(authProvider).user?.id;
+
+      // Load all statuses
+      final activeResponse = await _apiService.getCompetitionsByStatus('active', currentUserId: userId, size: 100);
+      final upcomingResponse = await _apiService.getCompetitionsByStatus('upcoming', currentUserId: userId, size: 100);
+      final completedResponse = await _apiService.getCompetitionsByStatus('completed', currentUserId: userId, size: 100);
+
+      setState(() {
+        _activeCompetitions = activeResponse.content;
+        _upcomingCompetitions = upcomingResponse.content;
+        _completedCompetitions = completedResponse.content;
+        _updateFilteredCompetitions();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi tải dữ liệu: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _updateFilteredCompetitions() {
+    List<Competition> source = [];
+    switch (_selectedStatus) {
+      case 'active':
+        source = _activeCompetitions;
+        break;
+      case 'upcoming':
+        source = _upcomingCompetitions;
+        break;
+      case 'completed':
+        source = _completedCompetitions;
+        break;
+      default:
+        source = _activeCompetitions;
+    }
+
+    _competitions = source.where((c) {
+      // Filter by category
+      if (_selectedCategory != 'all' && c.category != _selectedCategory) {
+        return false;
+      }
+      // Filter by search query
+      if (_searchQuery.isNotEmpty) {
+        return c.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            c.description.toLowerCase().contains(_searchQuery.toLowerCase());
+      }
+      return true;
+    }).toList();
+
+    // Sort
+    switch (_sortBy) {
+      case 'popular':
+        _competitions.sort((a, b) => b.participants.compareTo(a.participants));
+        break;
+      case 'deadline':
+        _competitions.sort((a, b) => a.deadline.compareTo(b.deadline));
+        break;
+      case 'prize':
+        _competitions.sort((a, b) => b.totalPrize.compareTo(a.totalPrize));
+        break;
+      case 'recent':
+      default:
+        _competitions.sort((a, b) => b.deadline.compareTo(a.deadline));
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final competitions = CompetitionService.getCompetitions(
-      category: _selectedCategory == 'all' ? null : _selectedCategory,
-      status: _selectedStatus,
-      sortBy: _sortBy,
-    ).where((c) {
-      if (_searchQuery.isEmpty) return true;
-      return c.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          c.description.toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
-
-    final activeCount = CompetitionService.getCompetitions(status: 'active').length;
-    final upcomingCount = CompetitionService.getCompetitions(status: 'upcoming').length;
-    final completedCount = CompetitionService.getCompetitions(status: 'completed').length;
 
     return Scaffold(
       backgroundColor: AppColors.primaryWhite,
@@ -79,6 +157,7 @@ class _CompetitionScreenState extends State<CompetitionScreen> {
                   ),
                   onChanged: (value) {
                     setState(() => _searchQuery = value);
+                    _updateFilteredCompetitions();
                   },
                 ),
                 const SizedBox(height: 12),
@@ -97,6 +176,7 @@ class _CompetitionScreenState extends State<CompetitionScreen> {
                         selected: isSelected,
                         onSelected: (selected) {
                           setState(() => _selectedCategory = category.id);
+                          _updateFilteredCompetitions();
                         },
                         selectedColor: AppColors.primaryYellow,
                         checkmarkColor: AppColors.primaryBlack,
@@ -124,7 +204,10 @@ class _CompetitionScreenState extends State<CompetitionScreen> {
                           DropdownMenuItem(value: 'prize', child: Text('Giải thưởng')),
                         ],
                         onChanged: (value) {
-                          if (value != null) setState(() => _sortBy = value);
+                          if (value != null) {
+                            setState(() => _sortBy = value);
+                            _updateFilteredCompetitions();
+                          }
                         },
                       ),
                     ),
@@ -143,60 +226,93 @@ class _CompetitionScreenState extends State<CompetitionScreen> {
                   value: 'active',
                   label: 'Đang diễn ra',
                   icon: Icons.trending_up,
-                  count: activeCount,
+                  count: _activeCompetitions.length,
                   isSelected: _selectedStatus == 'active',
-                  onTap: () => setState(() => _selectedStatus = 'active'),
+                  onTap: () {
+                    setState(() => _selectedStatus = 'active');
+                    _updateFilteredCompetitions();
+                  },
                 ),
                 const SizedBox(width: 8),
                 CompetitionStatusTab(
                   value: 'upcoming',
                   label: 'Sắp diễn ra',
                   icon: Icons.schedule,
-                  count: upcomingCount,
+                  count: _upcomingCompetitions.length,
                   isSelected: _selectedStatus == 'upcoming',
-                  onTap: () => setState(() => _selectedStatus = 'upcoming'),
+                  onTap: () {
+                    setState(() => _selectedStatus = 'upcoming');
+                    _updateFilteredCompetitions();
+                  },
                 ),
                 const SizedBox(width: 8),
                 CompetitionStatusTab(
                   value: 'completed',
                   label: 'Đã kết thúc',
                   icon: Icons.check_circle,
-                  count: completedCount,
+                  count: _completedCompetitions.length,
                   isSelected: _selectedStatus == 'completed',
-                  onTap: () => setState(() => _selectedStatus = 'completed'),
+                  onTap: () {
+                    setState(() => _selectedStatus = 'completed');
+                    _updateFilteredCompetitions();
+                  },
                 ),
               ],
             ),
           ),
           Expanded(
-            child: competitions.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.emoji_events_outlined,
-                          size: 64,
-                          color: AppColors.primaryBlack.withOpacity(0.3),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _errorMessage != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: AppColors.primaryBlack),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _loadCompetitions,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryYellow,
+                                foregroundColor: AppColors.primaryBlack,
+                              ),
+                              child: const Text('Thử lại'),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Không tìm thấy cuộc thi',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: AppColors.primaryBlack.withOpacity(0.6),
+                      )
+                    : _competitions.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.emoji_events_outlined,
+                                  size: 64,
+                                  color: AppColors.primaryBlack.withOpacity(0.3),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Không tìm thấy cuộc thi',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: AppColors.primaryBlack.withOpacity(0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            itemCount: _competitions.length,
+                            itemBuilder: (context, index) {
+                              return CompetitionCard(competition: _competitions[index]);
+                            },
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: competitions.length,
-                    itemBuilder: (context, index) {
-                      return CompetitionCard(competition: competitions[index]);
-                    },
-                  ),
           ),
         ],
       ),

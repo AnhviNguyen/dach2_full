@@ -24,17 +24,17 @@ public class CourseController {
 
     @GetMapping
     public ResponseEntity<PageResponse<CourseInfoResponse>> getAllCourses(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sortBy,
-            @RequestParam(defaultValue = "ASC") Sort.Direction direction) {
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sortBy", defaultValue = "id") String sortBy,
+            @RequestParam(value = "direction", defaultValue = "ASC") Sort.Direction direction) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
         PageResponse<CourseInfoResponse> response = courseService.getAllCourses(pageable);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CourseInfoResponse> getCourseById(@PathVariable Long id) {
+    public ResponseEntity<CourseInfoResponse> getCourseById(@PathVariable(value = "id") Long id) {
         CourseInfoResponse response = courseService.getCourseById(id);
         return ResponseEntity.ok(response);
     }
@@ -47,38 +47,38 @@ public class CourseController {
 
     @PutMapping("/{id}")
     public ResponseEntity<CourseInfoResponse> updateCourse(
-            @PathVariable Long id,
+            @PathVariable(value = "id") Long id,
             @RequestBody CourseRequest request) {
         CourseInfoResponse response = courseService.updateCourse(id, request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCourse(@PathVariable(value = "id") Long id) {
         courseService.deleteCourse(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/level/{level}")
     public ResponseEntity<PageResponse<CourseInfoResponse>> getCoursesByLevel(
-            @PathVariable String level,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @PathVariable(value = "level") String level,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
         PageResponse<CourseInfoResponse> response = courseService.getCoursesByLevel(level, pageable);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/dashboard-stats/{userId}")
-    public ResponseEntity<DashboardStatsResponse> getDashboardStats(@PathVariable Long userId) {
+    public ResponseEntity<DashboardStatsResponse> getDashboardStats(@PathVariable(value = "userId") Long userId) {
         DashboardStatsResponse response = courseService.getDashboardStats(userId);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{courseId}/enroll/{userId}")
     public ResponseEntity<CourseInfoResponse> enrollUser(
-            @PathVariable Long courseId,
-            @PathVariable Long userId) {
+            @PathVariable(value = "courseId") Long courseId,
+            @PathVariable(value = "userId") Long userId) {
         CourseInfoResponse response = courseService.enrollUser(courseId, userId);
         return ResponseEntity.ok(response);
     }

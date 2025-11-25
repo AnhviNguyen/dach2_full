@@ -21,8 +21,12 @@ public class Grammar {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lesson_id")
-    private Lesson lesson;
+    @JoinColumn(name = "curriculum_lesson_id")
+    private CurriculumLesson curriculumLesson;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_lesson_id")
+    private CourseLesson courseLesson;
 
     @Column(nullable = false, length = 500)
     private String title;

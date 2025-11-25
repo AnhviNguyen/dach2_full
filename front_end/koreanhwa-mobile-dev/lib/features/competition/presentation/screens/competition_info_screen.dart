@@ -1,28 +1,126 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/features/competition/data/models/competition.dart';
-import 'package:koreanhwa_flutter/services/competition_service.dart';
+import 'package:koreanhwa_flutter/features/competition/data/services/competition_api_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
-class CompetitionInfoScreen extends StatefulWidget {
+class CompetitionInfoScreen extends ConsumerStatefulWidget {
+  final int? competitionId;
   final Competition? competition;
 
-  const CompetitionInfoScreen({super.key, this.competition});
+  const CompetitionInfoScreen({super.key, this.competitionId, this.competition});
 
   @override
-  State<CompetitionInfoScreen> createState() => _CompetitionInfoScreenState();
+  ConsumerState<CompetitionInfoScreen> createState() => _CompetitionInfoScreenState();
 }
 
-class _CompetitionInfoScreenState extends State<CompetitionInfoScreen> {
+class _CompetitionInfoScreenState extends ConsumerState<CompetitionInfoScreen> {
   String _activeTab = 'overview';
+  final CompetitionApiService _apiService = CompetitionApiService();
+  Competition? _competition;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.competition != null) {
+      _competition = widget.competition;
+      _isLoading = false;
+    } else if (widget.competitionId != null) {
+      _loadCompetition();
+    } else {
+      _isLoading = false;
+    }
+  }
+
+  Future<void> _loadCompetition() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final userId = ref.read(authProvider).user?.id;
+      final competition = await _apiService.getCompetitionById(widget.competitionId!, currentUserId: userId);
+      setState(() {
+        _competition = competition;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi tải dữ liệu: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final competition = widget.competition;
-    if (competition == null) {
+    if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Cuộc thi không tồn tại')),
-        body: const Center(child: Text('Cuộc thi không tồn tại')),
+        backgroundColor: AppColors.primaryWhite,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            onPressed: () => context.pop(),
+          ),
+          title: const Text(
+            'Đang tải...',
+            style: TextStyle(
+              color: AppColors.primaryBlack,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final competition = _competition;
+    if (competition == null || _errorMessage != null) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryWhite,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            onPressed: () => context.pop(),
+          ),
+          title: const Text(
+            'Lỗi',
+            style: TextStyle(
+              color: AppColors.primaryBlack,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _errorMessage ?? 'Cuộc thi không tồn tại',
+                style: const TextStyle(color: AppColors.primaryBlack),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: widget.competitionId != null ? _loadCompetition : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryYellow,
+                  foregroundColor: AppColors.primaryBlack,
+                ),
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -89,7 +187,7 @@ class _CompetitionInfoScreenState extends State<CompetitionInfoScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          CompetitionService.getCategoryName(competition.category),
+                          competition.category,
                           style: const TextStyle(
                             color: AppColors.primaryWhite,
                             fontSize: 12,
@@ -284,7 +382,7 @@ class _CompetitionInfoScreenState extends State<CompetitionInfoScreen> {
                 const SizedBox(height: 12),
                 _buildDetailRow(Icons.calendar_today, 'Hạn chót:', _formatDate(competition.deadline)),
                 const SizedBox(height: 12),
-                _buildDetailRow(Icons.category, 'Danh mục:', CompetitionService.getCategoryName(competition.category)),
+                _buildDetailRow(Icons.category, 'Danh mục:', competition.category),
               ],
             ),
           ),
@@ -411,7 +509,7 @@ class _CompetitionInfoScreenState extends State<CompetitionInfoScreen> {
   }
 
   Widget _buildLeaderboardTab(Competition competition) {
-    final leaderboard = CompetitionService.getLeaderboard(competition.id);
+    // TODO: Load leaderboard from API when endpoint is available
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -426,83 +524,21 @@ class _CompetitionInfoScreenState extends State<CompetitionInfoScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          if (leaderboard.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    Icon(Icons.emoji_events, size: 64, color: AppColors.grayLight),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Chưa có dữ liệu xếp hạng',
-                      style: TextStyle(color: AppColors.grayLight),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            ...leaderboard.asMap().entries.map((entry) {
-              final index = entry.key;
-              final result = entry.value;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: index < 3 ? AppColors.primaryYellow.withOpacity(0.1) : AppColors.primaryWhite,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: index < 3 ? AppColors.primaryYellow : AppColors.primaryBlack.withOpacity(0.1),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                children: [
+                  Icon(Icons.emoji_events, size: 64, color: AppColors.grayLight),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Chưa có dữ liệu xếp hạng',
+                    style: TextStyle(color: AppColors.grayLight),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: index < 3 ? AppColors.primaryYellow : AppColors.grayLight,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${index + 1}',
-                          style: TextStyle(
-                            color: index < 3 ? AppColors.primaryBlack : AppColors.primaryWhite,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            result.competitionTitle,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Text(
-                            'Điểm: ${result.score}/${result.totalQuestions}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.grayLight,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (result.rank != null && result.rank! <= 3)
-                      Icon(Icons.emoji_events, color: AppColors.primaryYellow, size: 24),
-                  ],
-                ),
-              );
-            }),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

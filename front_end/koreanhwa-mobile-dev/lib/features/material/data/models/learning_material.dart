@@ -36,5 +36,27 @@ class LearningMaterial {
     this.videoUrl,
     this.audioUrl,
   });
+
+  factory LearningMaterial.fromJson(Map<String, dynamic> json) {
+    return LearningMaterial(
+      id: json['id'] as int,
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      level: json['level'] as String? ?? 'beginner',
+      skill: json['skill'] as String? ?? 'vocabulary',
+      type: json['type'] as String? ?? 'pdf',
+      thumbnail: json['thumbnail'] as String? ?? '📚',
+      downloads: json['downloads'] as int? ?? 0,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      size: json['size'] as String? ?? '0 MB',
+      points: json['points'] as int? ?? 0,
+      isDownloaded: json['isDownloaded'] as bool? ?? false,
+      isFeatured: json['isFeatured'] as bool? ?? false,
+      duration: json['duration'] as String?,
+      pdfUrl: json['pdfUrl'] as String?,
+      videoUrl: json['videoUrl'] as String?,
+      audioUrl: json['audioUrl'] as String?,
+    );
+  }
 }
 

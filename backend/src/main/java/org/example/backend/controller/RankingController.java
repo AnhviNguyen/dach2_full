@@ -22,8 +22,8 @@ public class RankingController {
 
     @GetMapping
     public ResponseEntity<PageResponse<RankingEntryResponse>> getAllRankings(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
         PageResponse<RankingEntryResponse> response = rankingService.getAllRankings(pageable);
         return ResponseEntity.ok(response);
@@ -36,7 +36,7 @@ public class RankingController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<RankingEntryResponse> getRankingByUserId(@PathVariable Long userId) {
+    public ResponseEntity<RankingEntryResponse> getRankingByUserId(@PathVariable(value = "userId") Long userId) {
         RankingEntryResponse response = rankingService.getRankingByUserId(userId);
         return ResponseEntity.ok(response);
     }

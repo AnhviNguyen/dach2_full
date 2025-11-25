@@ -22,5 +22,20 @@ class DashboardStats {
     required this.lastAccess,
     required this.endDate,
   });
+
+  factory DashboardStats.fromJson(Map<String, dynamic> json) {
+    return DashboardStats(
+      totalCourses: json['totalCourses'] as int? ?? 0,
+      completedCourses: json['completedCourses'] as int? ?? 0,
+      totalVideos: json['totalVideos'] as int? ?? 0,
+      watchedVideos: json['watchedVideos'] as int? ?? 0,
+      totalExams: json['totalExams'] as int? ?? 0,
+      completedExams: json['completedExams'] as int? ?? 0,
+      totalWatchTime: json['totalWatchTime'] as String? ?? '',
+      completedWatchTime: json['completedWatchTime'] as String? ?? '',
+      lastAccess: json['lastAccess'] as String? ?? '',
+      endDate: json['endDate'] as String? ?? '',
+    );
+  }
 }
 

@@ -1,30 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/features/competition/data/models/competition.dart';
 import 'package:koreanhwa_flutter/features/competition/data/models/competition_question.dart';
-import 'package:koreanhwa_flutter/services/competition_service.dart';
+import 'package:koreanhwa_flutter/features/competition/data/services/competition_api_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
-class CompetitionJoinScreen extends StatefulWidget {
+class CompetitionJoinScreen extends ConsumerStatefulWidget {
   final Competition? competition;
+  final int? competitionId;
 
-  const CompetitionJoinScreen({super.key, this.competition});
+  const CompetitionJoinScreen({super.key, this.competition, this.competitionId});
 
   @override
-  State<CompetitionJoinScreen> createState() => _CompetitionJoinScreenState();
+  ConsumerState<CompetitionJoinScreen> createState() => _CompetitionJoinScreenState();
 }
 
-class _CompetitionJoinScreenState extends State<CompetitionJoinScreen> {
+class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
   int _currentQuestion = 0;
-  Map<int, int> _answers = {};
+  Map<int, String> _answers = {}; // Changed to Map<int, String> to match API
   int _timeLeft = 300; // 5 minutes per question
   bool _isPlaying = false;
   double _audioProgress = 0;
+  final CompetitionApiService _apiService = CompetitionApiService();
+  Competition? _competition;
+  List<CompetitionQuestion> _questions = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _startTimer();
+    if (widget.competition != null) {
+      _competition = widget.competition;
+      _loadQuestions();
+    } else if (widget.competitionId != null) {
+      _loadCompetitionAndQuestions();
+    } else {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Không tìm thấy cuộc thi';
+      });
+    }
+  }
+
+  Future<void> _loadCompetitionAndQuestions() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final userId = ref.read(authProvider).user?.id;
+      final competition = await _apiService.getCompetitionById(widget.competitionId!, currentUserId: userId);
+      setState(() {
+        _competition = competition;
+      });
+      await _loadQuestions();
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi tải dữ liệu: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadQuestions() async {
+    if (_competition == null) return;
+
+    try {
+      final questions = await _apiService.getCompetitionQuestions(_competition!.id);
+      setState(() {
+        _questions = questions;
+        _isLoading = false;
+      });
+      _startTimer();
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi tải câu hỏi: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
   }
 
   void _startTimer() {
@@ -36,17 +93,48 @@ class _CompetitionJoinScreenState extends State<CompetitionJoinScreen> {
     });
   }
 
-  List<CompetitionQuestion> get _questions {
-    return CompetitionService.getQuestions(widget.competition?.id ?? 0);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final competition = widget.competition;
-    if (competition == null || _questions.isEmpty) {
+    if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Lỗi')),
-        body: const Center(child: Text('Không tìm thấy cuộc thi')),
+        backgroundColor: const Color(0xFF0A0A0A),
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: const Text('Đang tải...', style: TextStyle(color: Colors.white)),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final competition = _competition;
+    if (competition == null || _questions.isEmpty || _errorMessage != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF0A0A0A),
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: const Text('Lỗi', style: TextStyle(color: Colors.white)),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _errorMessage ?? 'Không tìm thấy cuộc thi',
+                style: const TextStyle(color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: widget.competitionId != null ? _loadCompetitionAndQuestions : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryYellow,
+                  foregroundColor: AppColors.primaryBlack,
+                ),
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -583,12 +671,13 @@ class _CompetitionJoinScreenState extends State<CompetitionJoinScreen> {
 
                           // Answer Options
                           ...List.generate(question.options.length, (index) {
-                            final isSelected = _answers[_currentQuestion] == index;
+                            final selectedAnswer = _answers[question.id];
+                            final isSelected = selectedAnswer == question.options[index];
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12),
                               child: InkWell(
                                 onTap: () {
-                                  setState(() => _answers[_currentQuestion] = index);
+                                  setState(() => _answers[question.id] = question.options[index]);
                                 },
                                 borderRadius: BorderRadius.circular(12),
                                 child: AnimatedContainer(
@@ -700,7 +789,7 @@ class _CompetitionJoinScreenState extends State<CompetitionJoinScreen> {
                                   ],
                                 ),
                                 ElevatedButton(
-                                  onPressed: _answers.containsKey(_currentQuestion)
+                                  onPressed: _answers.containsKey(question.id)
                                       ? () {
                                     if (_currentQuestion < _questions.length - 1) {
                                       setState(() {
@@ -794,13 +883,41 @@ class _CompetitionJoinScreenState extends State<CompetitionJoinScreen> {
     }
   }
 
-  void _submitCompetition() {
-    if (widget.competition != null) {
-      CompetitionService.submitCompetition(
-        widget.competition!.id,
-        _answers,
+  Future<void> _submitCompetition() async {
+    if (_competition == null) return;
+
+    final userId = ref.read(authProvider).user?.id;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng đăng nhập để tham gia cuộc thi')),
       );
-      context.pushReplacement('/competition/evaluating', extra: widget.competition);
+      return;
+    }
+
+    try {
+      // Convert answers to Map<int, String> format for API
+      final answersMap = <int, String>{};
+      for (final entry in _answers.entries) {
+        // Find question ID by answer
+        final question = _questions.firstWhere(
+          (q) => q.options.contains(entry.value),
+          orElse: () => _questions.first,
+        );
+        answersMap[question.id] = entry.value;
+      }
+
+      await _apiService.submitCompetition(
+        competitionId: _competition!.id,
+        answers: answersMap,
+        userId: userId,
+      );
+
+      // Navigate to result screen
+      context.pushReplacement('/competition/evaluating', extra: _competition);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi nộp bài: ${e.toString()}')),
+      );
     }
   }
 

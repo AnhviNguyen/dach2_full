@@ -5,6 +5,11 @@ import 'package:koreanhwa_flutter/features/learning_curriculum/presentation/widg
 import 'package:koreanhwa_flutter/features/learning_curriculum/presentation/widgets/vocabulary_card.dart';
 import 'package:koreanhwa_flutter/features/learning_curriculum/presentation/widgets/grammar_card.dart';
 import 'package:koreanhwa_flutter/features/learning_curriculum/presentation/widgets/exercise_card.dart';
+import 'package:koreanhwa_flutter/features/lessons/data/services/lesson_api_service.dart';
+import 'package:koreanhwa_flutter/features/lessons/data/models/lesson_response.dart';
+import 'package:koreanhwa_flutter/features/learning_curriculum/data/models/vocabulary_item.dart' as local;
+import 'package:koreanhwa_flutter/features/learning_curriculum/data/models/grammar_item.dart' as local;
+import 'package:koreanhwa_flutter/features/learning_curriculum/data/models/exercise_item.dart' as local;
 
 class LearningCurriculumScreen extends StatefulWidget {
   final int bookId;
@@ -27,17 +32,88 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
   String _activeTab = 'video';
   bool _isMuted = false;
   bool _isFullscreen = false;
+  final LessonApiService _lessonApiService = LessonApiService();
+  LessonResponse? _lessonData;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLessonData();
+  }
+
+  Future<void> _loadLessonData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Sử dụng getCurriculumLessonById vì đây là màn hình học giáo trình
+      final lesson = await _lessonApiService.getCurriculumLessonById(widget.lessonId);
+      setState(() {
+        _lessonData = lesson;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Không thể tải dữ liệu bài học: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final lessonData = LearningCurriculumMockData.lessonData;
     final tabs = LearningCurriculumMockData.tabs;
+
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryWhite,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryWhite,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: AppColors.primaryBlack),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadLessonData,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryYellow,
+                  foregroundColor: AppColors.primaryBlack,
+                ),
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_lessonData == null) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryWhite,
+        body: const Center(child: Text('Không tìm thấy dữ liệu bài học')),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.primaryWhite,
       body: Column(
         children: [
-          _buildHeader(lessonData),
+          _buildHeader(_lessonData!),
           _buildTabs(tabs),
           Expanded(
             child: SingleChildScrollView(
@@ -50,7 +126,7 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
     );
   }
 
-  Widget _buildHeader(Map<String, dynamic> lessonData) {
+  Widget _buildHeader(LessonResponse lessonData) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -78,7 +154,7 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    lessonData['title'] as String,
+                    lessonData.title,
                     style: const TextStyle(
                       color: AppColors.primaryWhite,
                       fontWeight: FontWeight.bold,
@@ -86,7 +162,7 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
                     ),
                   ),
                   Text(
-                    '${lessonData['level']} • ${lessonData['duration']}',
+                    '${lessonData.level} • ${lessonData.duration}',
                     style: const TextStyle(
                       color: AppColors.primaryYellow,
                       fontSize: 12,
@@ -107,7 +183,7 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
-                      value: (lessonData['progress'] as int) / 100,
+                      value: lessonData.progress / 100,
                       backgroundColor: Colors.transparent,
                       valueColor: const AlwaysStoppedAnimation<Color>(
                           AppColors.primaryYellow),
@@ -116,7 +192,7 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${lessonData['progress']}%',
+                  '${lessonData.progress}%',
                   style: const TextStyle(
                     color: AppColors.primaryWhite,
                     fontSize: 12,
@@ -182,7 +258,8 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
   }
 
   Widget _buildVideoTab() {
-    final lessonData = LearningCurriculumMockData.lessonData;
+    if (_lessonData == null) return const SizedBox.shrink();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -254,7 +331,7 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(2),
                             child: LinearProgressIndicator(
-                              value: 0.3,
+                              value: _lessonData!.progress / 100,
                               backgroundColor: Colors.transparent,
                               valueColor: const AlwaysStoppedAnimation<Color>(
                                   AppColors.primaryYellow),
@@ -283,7 +360,7 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          lessonData['title'] as String,
+          _lessonData!.title,
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -295,7 +372,15 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
   }
 
   Widget _buildVocabularyTab() {
-    final vocabulary = LearningCurriculumMockData.vocabulary;
+    if (_lessonData == null) return const SizedBox.shrink();
+    
+    final vocabulary = _lessonData!.vocabulary.map((v) => local.VocabularyItem(
+      korean: v.korean,
+      vietnamese: v.vietnamese,
+      pronunciation: v.pronunciation,
+      example: v.example,
+    )).toList();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -330,20 +415,22 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.2,
-          ),
-          itemCount: vocabulary.length,
-          itemBuilder: (context, index) {
-            return VocabularyCard(vocabulary: vocabulary[index]);
-          },
-        ),
+        vocabulary.isEmpty
+            ? const Center(child: Text('Chưa có từ vựng'))
+            : GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.2,
+                ),
+                itemCount: vocabulary.length,
+                itemBuilder: (context, index) {
+                  return VocabularyCard(vocabulary: vocabulary[index]);
+                },
+              ),
       ],
     );
   }
@@ -460,7 +547,14 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
   }
 
   Widget _buildGrammarTab() {
-    final grammar = LearningCurriculumMockData.grammar;
+    if (_lessonData == null) return const SizedBox.shrink();
+    
+    final grammar = _lessonData!.grammar.map((g) => local.GrammarItem(
+      title: g.title,
+      explanation: g.explanation,
+      examples: g.examples,
+    )).toList();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -473,13 +567,27 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        ...grammar.map((item) => GrammarCard(grammar: item)),
+        grammar.isEmpty
+            ? const Center(child: Text('Chưa có ngữ pháp'))
+            : Column(
+                children: grammar.map((item) => GrammarCard(grammar: item)).toList(),
+              ),
       ],
     );
   }
 
   Widget _buildExerciseTab() {
-    final exercises = LearningCurriculumMockData.exercises;
+    if (_lessonData == null) return const SizedBox.shrink();
+    
+    final exercises = _lessonData!.exercises.map((e) => local.ExerciseItem(
+      id: e.id,
+      type: e.type,
+      question: e.question,
+      options: e.options,
+      correct: e.correct,
+      answer: e.answer,
+    )).toList();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -492,12 +600,16 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        ...exercises.asMap().entries.map((entry) {
-          return ExerciseCard(
-            exercise: entry.value,
-            index: entry.key,
-          );
-        }).toList(),
+        exercises.isEmpty
+            ? const Center(child: Text('Chưa có bài tập'))
+            : Column(
+                children: exercises.asMap().entries.map((entry) {
+                  return ExerciseCard(
+                    exercise: entry.value,
+                    index: entry.key,
+                  );
+                }).toList(),
+              ),
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,

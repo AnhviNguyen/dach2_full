@@ -1,14 +1,70 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
-import 'package:koreanhwa_flutter/features/ranking/data/ranking_mock_data.dart';
 import 'package:koreanhwa_flutter/features/ranking/data/models/ranking_entry.dart';
+import 'package:koreanhwa_flutter/features/ranking/data/services/ranking_api_service.dart';
 
-class RankingScreen extends StatelessWidget {
+class RankingScreen extends StatefulWidget {
   const RankingScreen({super.key});
 
   @override
+  State<RankingScreen> createState() => _RankingScreenState();
+}
+
+class _RankingScreenState extends State<RankingScreen> {
+  List<RankingEntry> rankingEntries = [];
+  bool isLoading = true;
+  final RankingApiService _apiService = RankingApiService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRankings();
+  }
+
+  Future<void> _loadRankings() async {
+    try {
+      final entries = await _apiService.getAllRankings();
+      setState(() {
+        rankingEntries = entries;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải dữ liệu: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final rankingEntries = RankingMockData.rankingEntries;
+    if (isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.primaryWhite,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          ),
+          title: const Text(
+            'Bảng xếp hạng',
+            style: TextStyle(
+              color: AppColors.primaryBlack,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.primaryWhite,

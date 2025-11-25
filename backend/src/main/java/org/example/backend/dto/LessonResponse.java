@@ -8,6 +8,7 @@ public record LessonResponse(
     String level,
     String duration,
     Integer progress,
+    Integer lessonNumber,
     List<VocabularyItemResponse> vocabulary,
     List<GrammarItemResponse> grammar,
     List<ExerciseItemResponse> exercises

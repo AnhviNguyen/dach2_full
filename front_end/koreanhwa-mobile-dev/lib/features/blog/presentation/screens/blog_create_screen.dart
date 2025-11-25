@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:koreanhwa_flutter/services/blog_service.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 import 'dart:io';
 
 // Model cho Block
@@ -23,14 +26,15 @@ class Category {
   Category({required this.id, required this.name});
 }
 
-class CreateBlogScreen extends StatefulWidget {
+class CreateBlogScreen extends ConsumerStatefulWidget {
   const CreateBlogScreen({Key? key}) : super(key: key);
 
   @override
-  State<CreateBlogScreen> createState() => _CreateBlogScreenState();
+  ConsumerState<CreateBlogScreen> createState() => _CreateBlogScreenState();
 }
 
-class _CreateBlogScreenState extends State<CreateBlogScreen> {
+class _CreateBlogScreenState extends ConsumerState<CreateBlogScreen> {
+  final BlogService _blogService = BlogService();
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _tagController = TextEditingController();
@@ -130,30 +134,72 @@ class _CreateBlogScreenState extends State<CreateBlogScreen> {
 
   Future<void> _handleSubmit() async {
     if (_formKey.currentState!.validate()) {
+      final userId = ref.read(authProvider).user?.id;
+      if (userId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Vui lòng đăng nhập để tạo bài viết'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
       setState(() {
         isSubmitting = true;
       });
 
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
+      try {
+        // Convert blocks to content string
+        final content = blocks.map((block) {
+          if (block.type == 'text') {
+            return block.content;
+          } else if (block.type == 'image' && block.content.isNotEmpty) {
+            return '[IMAGE: ${block.content}]';
+          }
+          return '';
+        }).where((text) => text.isNotEmpty).join('\n\n');
 
-      // Log data (in real app, send to backend)
-      print('Title: ${_titleController.text}');
-      print('Category: $selectedCategory');
-      print('Tags: $tags');
-      print('Blocks: ${blocks.length}');
+        // Prepare request data
+        final requestData = {
+          'title': _titleController.text.trim(),
+          'content': content,
+          'authorId': userId,
+          'skill': selectedCategory.isEmpty ? 'vocabulary' : selectedCategory,
+          'tags': tags,
+          'featuredImage': featuredImage?.path ?? '',
+        };
 
-      setState(() {
-        isSubmitting = false;
-      });
+        await _blogService.addPost(requestData);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Blog đã được lưu thành công!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        setState(() {
+          isSubmitting = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Blog đã được lưu thành công!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        setState(() {
+          isSubmitting = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }

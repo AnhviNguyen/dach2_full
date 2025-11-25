@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/features/courses/presentation/screen/course_detail_screen.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
@@ -6,6 +7,20 @@ import 'package:koreanhwa_flutter/shared/widgets/main_bottom_nav.dart';
 import 'package:koreanhwa_flutter/features/achievements/presentation/screens/achievements_screen.dart';
 import 'package:koreanhwa_flutter/features/ranking/presentation/screens/ranking_screen.dart';
 import 'package:koreanhwa_flutter/features/home/data/home_mock_data.dart';
+import 'package:koreanhwa_flutter/features/home/data/models/task_item.dart';
+import 'package:koreanhwa_flutter/features/home/data/models/skill_progress.dart';
+import 'package:koreanhwa_flutter/features/home/data/services/task_api_service.dart';
+import 'package:koreanhwa_flutter/features/home/data/services/skill_progress_api_service.dart';
+import 'package:koreanhwa_flutter/features/achievements/data/models/achievement_item.dart';
+import 'package:koreanhwa_flutter/features/achievements/data/services/achievement_api_service.dart';
+import 'package:koreanhwa_flutter/features/ranking/data/services/ranking_api_service.dart';
+import 'package:koreanhwa_flutter/features/home/data/models/ranking_entry.dart' as HomeRankingEntry;
+import 'package:koreanhwa_flutter/features/ranking/data/models/ranking_entry.dart';
+import 'package:koreanhwa_flutter/core/models/page_response.dart';
+import 'package:koreanhwa_flutter/features/courses/data/models/course_info.dart';
+import 'package:koreanhwa_flutter/features/courses/data/services/course_api_service.dart';
+import 'package:koreanhwa_flutter/features/textbook/data/models/textbook.dart';
+import 'package:koreanhwa_flutter/features/textbook/data/services/textbook_api_service.dart';
 import 'package:koreanhwa_flutter/features/home/presentation/widgets/today_mission_card.dart';
 import 'package:koreanhwa_flutter/features/home/presentation/widgets/quick_access_grid.dart';
 import 'package:koreanhwa_flutter/features/home/presentation/widgets/daily_task_tile.dart';
@@ -13,18 +28,114 @@ import 'package:koreanhwa_flutter/features/home/presentation/widgets/stat_chips.
 import 'package:koreanhwa_flutter/features/home/presentation/widgets/streak_section.dart';
 import 'package:koreanhwa_flutter/features/home/presentation/widgets/schedule_tabs.dart';
 import 'package:koreanhwa_flutter/features/home/presentation/widgets/section_header.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
+import 'package:koreanhwa_flutter/features/home/data/models/lesson_card_data.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _showNavigationMenu = false;
   MainNavItem _currentNavItem = MainNavItem.home;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  
+  List<TaskItem> _dailyTasks = [];
+  List<SkillProgress> _skills = [];
+  List<AchievementItem> _recentAchievements = [];
+  List<RankingEntry> _topRankings = [];
+  List<CourseInfo> _enrolledCourses = [];
+  List<Textbook> _textbooks = [];
+  bool _isLoadingTasks = false;
+  bool _isLoadingSkills = false;
+  bool _isLoadingAchievements = false;
+  bool _isLoadingRankings = false;
+  bool _isLoadingCourses = false;
+  bool _isLoadingTextbooks = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAllData();
+  }
+
+  Future<void> _loadAllData() async {
+    final userId = ref.read(authProvider).user?.id;
+    if (userId == null) return;
+
+    setState(() {
+      _isLoadingTasks = true;
+      _isLoadingSkills = true;
+      _isLoadingAchievements = true;
+      _isLoadingRankings = true;
+      _isLoadingCourses = true;
+      _isLoadingTextbooks = true;
+    });
+
+    try {
+      final taskService = TaskApiService();
+      final skillService = SkillProgressApiService();
+      final achievementService = AchievementApiService();
+      final rankingService = RankingApiService();
+      final courseService = CourseApiService();
+      final textbookService = TextbookApiService();
+      
+      final results = await Future.wait([
+        taskService.getUserTasks(userId).catchError((e) => <TaskItem>[]),
+        skillService.getUserSkillProgress(userId).catchError((e) => <SkillProgress>[]),
+        achievementService.getUserAchievements(userId).catchError((e) => <AchievementItem>[]),
+        rankingService.getAllRankings().catchError((e) => <RankingEntry>[]),
+        courseService.getAllCourses().catchError((e) => <CourseInfo>[]),
+        textbookService.getTextbooks(page: 0, size: 10).catchError((e) => PageResponse<Textbook>(content: [], totalElements: 0, totalPages: 0, size: 0, page: 0, hasNext: false, hasPrevious: false)),
+      ]);
+      
+      setState(() {
+        _dailyTasks = results[0] as List<TaskItem>;
+        _skills = results[1] as List<SkillProgress>;
+        final allAchievements = results[2] as List<AchievementItem>;
+        _recentAchievements = allAchievements.where((a) => a.isCompleted).take(3).toList();
+        final allRankings = results[3] as List<RankingEntry>;
+        _topRankings = allRankings.take(3).toList();
+        final allCourses = results[4] as List<CourseInfo>;
+        _enrolledCourses = allCourses.where((c) => c.isEnrolled).take(3).toList();
+        final textbooksPage = results[5] as PageResponse<Textbook>;
+        _textbooks = textbooksPage.content.take(3).toList();
+        _isLoadingTasks = false;
+        _isLoadingSkills = false;
+        _isLoadingAchievements = false;
+        _isLoadingRankings = false;
+        _isLoadingCourses = false;
+        _isLoadingTextbooks = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingTasks = false;
+        _isLoadingSkills = false;
+        _isLoadingAchievements = false;
+        _isLoadingRankings = false;
+        _isLoadingCourses = false;
+        _isLoadingTextbooks = false;
+      });
+      // Fallback to mock data on error
+      _dailyTasks = HomeMockData.dailyTasks;
+      _skills = HomeMockData.skills;
+      _recentAchievements = [];
+      // Convert mock RankingEntry to API RankingEntry
+      _topRankings = HomeMockData.rankingEntries.map((e) => RankingEntry(
+        position: e.position,
+        name: e.name,
+        points: e.points,
+        days: e.days,
+        isCurrentUser: false,
+        color: e.color,
+      )).toList();
+      _enrolledCourses = [];
+      _textbooks = [];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +175,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ...HomeMockData.dailyTasks.map((task) => DailyTaskTile(task: task)),
+                    _isLoadingTasks
+                        ? const Center(child: CircularProgressIndicator())
+                        : _dailyTasks.isEmpty
+                            ? const Center(child: Text('Chưa có nhiệm vụ nào'))
+                            : Column(
+                                children: _dailyTasks.map((task) => DailyTaskTile(task: task)).toList(),
+                              ),
                     const SizedBox(height: 24),
                     StatChips(statChips: HomeMockData.statChips),
                     const SizedBox(height: 24),
@@ -135,7 +252,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTopAppBar() {
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
     const colorRed = Color(0xFFEF4444);
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
@@ -169,17 +289,34 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(30),
             ),
             padding: const EdgeInsets.all(3),
-            child: const CircleAvatar(
+            child: CircleAvatar(
               radius: 24,
-              backgroundImage: AssetImage('lib/utils/images/image.png'),
+              backgroundColor: AppColors.primaryYellow,
+              child: user?.avatar != null && user!.avatar!.isNotEmpty
+                  ? Text(
+                      user.avatar!,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlack,
+                      ),
+                    )
+                  : Text(
+                      user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlack,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
+              children: [
+                const Text(
                   'Xin chào,',
                   style: TextStyle(
                     fontSize: 13,
@@ -188,8 +325,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 Text(
-                  'Livia Vaccaro',
-                  style: TextStyle(
+                  user?.name ?? 'Người dùng',
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primaryBlack,
@@ -230,7 +367,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDrawer() {
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
     const colorRed = Color(0xFFEF4444);
+    
     return Drawer(
       child: Container(
         color: AppColors.primaryWhite,
@@ -260,29 +400,45 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                        child: const CircleAvatar(
+                        child: CircleAvatar(
                           radius: 30,
-                          backgroundImage: AssetImage('lib/utils/images/image.png'),
-                          backgroundColor: AppColors.primaryWhite,
+                          backgroundColor: AppColors.primaryYellow,
+                          child: user?.avatar != null && user!.avatar!.isNotEmpty
+                              ? Text(
+                                  user.avatar!,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryBlack,
+                                  ),
+                                )
+                              : Text(
+                                  user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryBlack,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
-                              'Livia Vaccaro',
-                              style: TextStyle(
+                              user?.name ?? 'Người dùng',
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primaryBlack,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              'Học viên Trung cấp',
-                              style: TextStyle(
+                              user?.level ?? 'Sơ cấp 1',
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.primaryBlack,
                               ),
@@ -296,15 +452,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildDrawerStat('12', 'Streak', Icons.local_fire_department),
+                        child: _buildDrawerStat(
+                          '${user?.streakDays ?? 0}',
+                          'Streak',
+                          Icons.local_fire_department,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _buildDrawerStat('30%', 'Tiến độ', Icons.trending_up),
+                        child: _buildDrawerStat(
+                          '${user?.points ?? 0}',
+                          'Điểm',
+                          Icons.star,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _buildDrawerStat('5', 'Khóa học', Icons.school),
+                        child: _buildDrawerStat(
+                          user?.level?.split(' ').last ?? '1',
+                          'Level',
+                          Icons.school,
+                        ),
                       ),
                     ],
                   ),
@@ -462,12 +630,23 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 12),
         SizedBox(
           height: 220,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: HomeMockData.lessonCards.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 16),
-            itemBuilder: (context, index) {
-              final card = HomeMockData.lessonCards[index];
+          child: _isLoadingTextbooks
+              ? const Center(child: CircularProgressIndicator())
+              : _textbooks.isEmpty
+                  ? const Center(child: Text('Chưa có giáo trình nào'))
+                  : ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _textbooks.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 16),
+                      itemBuilder: (context, index) {
+                        final textbook = _textbooks[index];
+                        final card = LessonCardData(
+                          title: textbook.title,
+                          date: DateTime.now().toString().substring(0, 10),
+                          tag: 'Book ${textbook.bookNumber}',
+                          accentColor: textbook.color,
+                          backgroundColor: textbook.color.withOpacity(0.1),
+                        );
               return Container(
                 width: 200,
                 decoration: BoxDecoration(
@@ -624,12 +803,16 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 12),
         SizedBox(
           height: 230,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: HomeMockData.courseCards.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 16),
-            itemBuilder: (context, index) {
-              final course = HomeMockData.courseCards[index];
+          child: _isLoadingCourses
+              ? const Center(child: CircularProgressIndicator())
+              : _enrolledCourses.isEmpty
+                  ? const Center(child: Text('Chưa có khóa học nào'))
+                  : ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _enrolledCourses.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 16),
+                      itemBuilder: (context, index) {
+                        final course = _enrolledCourses[index];
               return Container(
                 width: 280,
                 padding: const EdgeInsets.all(20),
@@ -690,7 +873,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${course.completed}/${course.lessons} bài học',
+                          '${course.lessons} bài học',
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.primaryBlack.withOpacity(0.6),
@@ -738,6 +921,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             MaterialPageRoute(
                               builder: (context) => CourseDetailScreen(
                                 courseTitle: course.title,
+                                instructorName: course.instructor,
+                                price: _parsePrice(course.price),
+                                originalPrice: _parsePrice(course.price) * 1.25,
+                                discount: 20,
+                                rating: course.rating,
+                                reviewCount: course.students,
+                                lessonCount: course.lessons,
+                                studentCount: course.students,
+                                daysAccess: 90,
                               ),
                             ),
                           );
@@ -798,8 +990,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        Column(
-          children: HomeMockData.recentAchievements.map((achievement) {
+        _isLoadingAchievements
+            ? const Center(child: CircularProgressIndicator())
+            : _recentAchievements.isEmpty
+                ? const Center(child: Text('Chưa có thành tích nào'))
+                : Column(
+                    children: _recentAchievements.map((achievement) {
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
@@ -822,7 +1018,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        achievement.iconLabel,
+                        achievement.iconLabel.isNotEmpty ? achievement.iconLabel : '🏆',
                         style: const TextStyle(
                           fontSize: 26,
                         ),
@@ -870,8 +1066,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             );
-          }).toList(),
-        ),
+                    }).toList(),
+                  ),
       ],
     );
   }
@@ -914,61 +1110,70 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 1,
             ),
           ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: HomeMockData.rankingEntries.map((entry) {
-                  return Column(
-                    children: [
-                      Container(
-                        width: 75,
-                        height: 95,
-                        decoration: BoxDecoration(
-                          color: entry.color,
-                          borderRadius: BorderRadius.circular(20),
+          child: _isLoadingRankings
+              ? const Center(child: CircularProgressIndicator())
+              : _topRankings.isEmpty
+                  ? const Center(child: Text('Chưa có dữ liệu xếp hạng'))
+                  : Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: _topRankings.map((entry) {
+                            final position = entry.position;
+                            return Column(
+                              children: [
+                                Container(
+                                  width: 75,
+                                  height: 95,
+                                  decoration: BoxDecoration(
+                                    color: position == 1 
+                                        ? AppColors.primaryYellow 
+                                        : position == 2 
+                                            ? const Color(0xFFE5E7EB)
+                                            : const Color(0xFFFFEDD5),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '#$position',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: position == 1 ? AppColors.primaryBlack : Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Icon(
+                                        Icons.emoji_events,
+                                        color: position == 1 ? AppColors.primaryBlack : Colors.black87,
+                                        size: 32,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  entry.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                Text(
+                                  '${entry.points} điểm',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.primaryBlack.withOpacity(0.6),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '#${entry.position}',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: entry.position == 1 ? AppColors.primaryBlack : Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Icon(
-                              Icons.emoji_events,
-                              color: entry.position == 1 ? AppColors.primaryBlack : Colors.black87,
-                              size: 32,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        entry.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                      Text(
-                        '${entry.points} điểm',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.primaryBlack.withOpacity(0.6),
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
+                      ],
+                    ),
         ),
       ],
     );
@@ -993,8 +1198,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          child: Column(
-            children: HomeMockData.skills.map((skill) {
+          child: _isLoadingSkills
+              ? const Center(child: CircularProgressIndicator())
+              : _skills.isEmpty
+                  ? const Center(child: Text('Chưa có dữ liệu kỹ năng'))
+                  : Column(
+                      children: _skills.map((skill) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 20),
                 child: Column(
@@ -1186,10 +1395,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: scrollController,
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       children: [
-                        ...HomeMockData.dailyTasks.map((task) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: DailyTaskTile(task: task),
-                            )),
+                        _isLoadingTasks
+                            ? const Center(child: CircularProgressIndicator())
+                            : _dailyTasks.isEmpty
+                                ? const Center(child: Text('Chưa có nhiệm vụ nào'))
+                                : Column(
+                                    children: _dailyTasks.map((task) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 12),
+                                      child: DailyTaskTile(task: task),
+                                    )).toList(),
+                                  ),
                         const SizedBox(height: 16),
                       ],
                     ),
@@ -1226,6 +1441,16 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  double _parsePrice(String priceString) {
+    try {
+      String cleanedPrice = priceString.replaceAll(RegExp(r'[^\d,.]'), '');
+      cleanedPrice = cleanedPrice.replaceAll(',', '.');
+      return double.parse(cleanedPrice);
+    } catch (e) {
+      return 0.0;
+    }
   }
 }
 

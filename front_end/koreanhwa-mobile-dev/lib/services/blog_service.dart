@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:koreanhwa_flutter/core/models/page_response.dart';
 import 'package:koreanhwa_flutter/features/blog/data/models/blog_post.dart';
 import 'package:koreanhwa_flutter/features/blog/data/models/blog_author.dart';
+import 'package:koreanhwa_flutter/features/blog/data/services/blog_api_service.dart';
 
 class BlogService {
+  final BlogApiService _apiService = BlogApiService();
+  
   static List<BlogPost> _posts = [
     BlogPost(
       id: 1,
@@ -62,67 +66,78 @@ class BlogService {
     ),
   ];
 
-  static List<BlogPost> getPosts({
+  Future<List<BlogPost>> getPosts({
     String? searchQuery,
     String? skill,
     String? tab, // 'all', 'my', 'favorites'
-  }) {
-    var filtered = _posts;
+    int? currentUserId,
+    int page = 0,
+    int size = 100,
+  }) async {
+    try {
+      final response = await _apiService.getPosts(
+        page: page,
+        size: size,
+        currentUserId: currentUserId,
+      );
+      
+      var filtered = response.content;
 
-    if (searchQuery != null && searchQuery.isNotEmpty) {
-      filtered = filtered.where((post) {
-        return post.title.toLowerCase().contains(searchQuery.toLowerCase()) ||
-            post.content.toLowerCase().contains(searchQuery.toLowerCase());
-      }).toList();
-    }
-
-    if (skill != null && skill != 'all') {
-      filtered = filtered.where((post) => post.skill == skill).toList();
-    }
-
-    if (tab != null) {
-      if (tab == 'my') {
-        filtered = filtered.where((post) => post.isMyPost).toList();
-      } else if (tab == 'favorites') {
-        filtered = filtered.where((post) => post.isLiked).toList();
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        filtered = filtered.where((post) {
+          return post.title.toLowerCase().contains(searchQuery.toLowerCase()) ||
+              post.content.toLowerCase().contains(searchQuery.toLowerCase());
+        }).toList();
       }
-    }
 
-    return filtered;
+      if (skill != null && skill != 'all') {
+        filtered = filtered.where((post) => post.skill == skill).toList();
+      }
+
+      if (tab != null) {
+        if (tab == 'my') {
+          filtered = filtered.where((post) => post.isMyPost).toList();
+        } else if (tab == 'favorites') {
+          filtered = filtered.where((post) => post.isLiked).toList();
+        }
+      }
+
+      return filtered;
+    } catch (e) {
+      return [];
+    }
   }
 
-  static BlogPost? getPostById(int id) {
+  Future<BlogPost?> getPostById(int id, {int? currentUserId}) async {
     try {
-      return _posts.firstWhere((post) => post.id == id);
+      return await _apiService.getPostById(id, currentUserId: currentUserId);
     } catch (e) {
       return null;
     }
   }
 
-  static void addPost(BlogPost post) {
-    _posts.insert(0, post);
+  Future<BlogPost> addPost(Map<String, dynamic> data) async {
+    return await _apiService.createPost(data);
   }
 
-  static void deletePost(int id) {
-    _posts.removeWhere((post) => post.id == id);
+  Future<void> deletePost(int id) async {
+    await _apiService.deletePost(id);
   }
 
-  static void updatePost(BlogPost updatedPost) {
-    final index = _posts.indexWhere((post) => post.id == updatedPost.id);
-    if (index != -1) {
-      _posts[index] = updatedPost;
-    }
+  Future<BlogPost> updatePost(int id, Map<String, dynamic> data) async {
+    return await _apiService.updatePost(id, data);
   }
 
-  static void toggleLike(int postId) {
-    final post = getPostById(postId);
-    if (post != null) {
-      final updatedPost = post.copyWith(
-        isLiked: !post.isLiked,
-        likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-      );
-      updatePost(updatedPost);
-    }
+  Future<BlogPost> toggleLike(int postId, int userId) async {
+    return await _apiService.toggleLike(postId, userId);
+  }
+
+  Future<PageResponse<BlogPost>> getPostsByAuthor(
+    int authorId, {
+    int page = 0,
+    int size = 100,
+  }) async {
+    return await _apiService.getPostsByAuthor(authorId, page: page, size: size);
   }
 
   static List<String> getSkills() {

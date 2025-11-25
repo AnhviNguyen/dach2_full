@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/match_screen.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/quiz_screen.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
-import 'package:koreanhwa_flutter/services/vocabulary_service.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/flashcard_screen.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/pronunciation_screen.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/listen_write_screen.dart';
@@ -10,6 +9,9 @@ import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/vocab
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/widgets/vocabulary_info_card.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/widgets/learning_mode_button.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/data/models/learning_mode.dart';
+import 'package:koreanhwa_flutter/features/lessons/data/services/lesson_api_service.dart';
+import 'package:koreanhwa_flutter/features/lessons/data/models/lesson_response.dart';
+import 'package:koreanhwa_flutter/features/textbook/data/services/textbook_api_service.dart';
 
 class VocabularyScreen extends StatefulWidget {
   final int bookId;
@@ -26,8 +28,74 @@ class VocabularyScreen extends StatefulWidget {
 }
 
 class _VocabularyScreenState extends State<VocabularyScreen> {
-  List<Map<String, String>> get vocabList {
-    return VocabularyService.getVocabularyList(widget.bookId, widget.lessonId);
+  final LessonApiService _lessonApiService = LessonApiService();
+  final TextbookApiService _textbookApiService = TextbookApiService();
+  List<Map<String, String>> _vocabList = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVocabulary();
+  }
+
+  Future<void> _loadVocabulary() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Lấy curriculumId từ bookNumber
+      final curriculum = await _textbookApiService.getTextbookByBookNumber(widget.bookId);
+      final curriculumId = curriculum.id;
+      
+      if (curriculumId == null) {
+        throw Exception('Không tìm thấy giáo trình với số sách ${widget.bookId}');
+      }
+
+      // Lấy tất cả lessons của curriculum (với size lớn để lấy hết)
+      final lessonsResponse = await _lessonApiService.getCurriculumLessonsByCurriculumId(
+        curriculumId,
+        page: 0,
+        size: 100,
+      );
+      
+      // Tìm lesson có lessonNumber = widget.lessonId
+      // Nếu không tìm thấy, lấy lesson đầu tiên
+      final lesson = lessonsResponse.content.firstWhere(
+        (l) => l.lessonNumber == widget.lessonId,
+        orElse: () {
+          if (lessonsResponse.content.isNotEmpty) {
+            return lessonsResponse.content.first;
+          }
+          throw Exception('Không tìm thấy bài học');
+        },
+      );
+
+      // Lấy chi tiết curriculum lesson để có vocabulary
+      final lessonDetail = await _lessonApiService.getCurriculumLessonById(lesson.id);
+
+      // Convert vocabulary từ API format sang format mà các screens khác đang dùng
+      _vocabList = lessonDetail.vocabulary.map((vocab) {
+        return {
+          'korean': vocab.korean,
+          'vietnamese': vocab.vietnamese,
+          'pronunciation': vocab.pronunciation,
+          'example': vocab.example,
+        };
+      }).toList();
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi tải từ vựng: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -51,7 +119,31 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
         ),
         centerTitle: true,
       ),
-      body: _buildListMode(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: AppColors.primaryBlack),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadVocabulary,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryYellow,
+                          foregroundColor: AppColors.primaryBlack,
+                        ),
+                        child: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                )
+              : _buildListMode(),
     );
   }
 
@@ -100,7 +192,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          VocabularyInfoCard(totalWords: vocabList.length),
+          VocabularyInfoCard(totalWords: _vocabList.length),
           const SizedBox(height: 24),
           const Text(
             'Chọn phương thức học',
@@ -130,7 +222,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                           builder: (context) => FlashcardScreen(
                             bookId: widget.bookId,
                             lessonId: widget.lessonId,
-                            vocabList: vocabList,
+                            vocabList: _vocabList,
                           ),
                         ),
                       );
@@ -142,7 +234,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                           builder: (context) => MatchScreen(
                             bookId: widget.bookId,
                             lessonId: widget.lessonId,
-                            vocabList: vocabList,
+                            vocabList: _vocabList,
                           ),
                         ),
                       );
@@ -154,7 +246,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                           builder: (context) => PronunciationScreen(
                             bookId: widget.bookId,
                             lessonId: widget.lessonId,
-                            vocabList: vocabList,
+                            vocabList: _vocabList,
                           ),
                         ),
                       );
@@ -166,7 +258,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                           builder: (context) => QuizScreen(
                             bookId: widget.bookId,
                             lessonId: widget.lessonId,
-                            vocabList: vocabList,
+                            vocabList: _vocabList,
                           ),
                         ),
                       );
@@ -178,7 +270,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                           builder: (context) => ListenWriteScreen(
                             bookId: widget.bookId,
                             lessonId: widget.lessonId,
-                            vocabList: vocabList,
+                            vocabList: _vocabList,
                           ),
                         ),
                       );
@@ -190,7 +282,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                           builder: (context) => VocabTestScreen(
                             bookId: widget.bookId,
                             lessonId: widget.lessonId,
-                            vocabList: vocabList,
+                            vocabList: _vocabList,
                           ),
                         ),
                       );

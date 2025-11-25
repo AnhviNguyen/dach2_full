@@ -11,7 +11,9 @@ import java.util.List;
 @Repository
 public interface GrammarRepository extends JpaRepository<Grammar, Long> {
     Page<Grammar> findAll(Pageable pageable);
-    List<Grammar> findByLessonId(Long lessonId);
-    Page<Grammar> findByLessonId(Long lessonId, Pageable pageable);
+    List<Grammar> findByCurriculumLessonId(Long curriculumLessonId);
+    List<Grammar> findByCourseLessonId(Long courseLessonId);
+    Page<Grammar> findByCurriculumLessonId(Long curriculumLessonId, Pageable pageable);
+    Page<Grammar> findByCourseLessonId(Long courseLessonId, Pageable pageable);
 }
 
