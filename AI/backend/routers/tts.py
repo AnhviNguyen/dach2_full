@@ -4,7 +4,8 @@ TTS Router - Text-to-Speech endpoints using OpenAI TTS
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from models.schemas import TTSRequest, TTSResponse
-from services import openai_service
+from services.tts_service import generate_speech
+from services.error_handlers import handle_openai_error
 import logging
 from pathlib import Path
 
@@ -19,20 +20,23 @@ router = APIRouter(
 @router.post("/tts", response_model=TTSResponse)
 async def text_to_speech(request: TTSRequest):
     """
-    Generate speech from text using OpenAI TTS
+    Generate speech from text using Google TTS (FREE)
 
     This endpoint converts text to speech and returns the audio file path.
-    Results are cached - same text with same voice will return cached audio.
-
-    Available voices: alloy, echo, fable, onyx, nova, shimmer
+    Results are cached - same text with same language will return cached audio.
+    
+    Language is auto-detected if not provided:
+    - Korean (한국어): 'ko'
+    - Vietnamese (Tiếng Việt): 'vi'
+    - English: 'en'
     """
     try:
-        logger.info(f"TTS request - text: {request.text[:50]}..., voice: {request.voice}")
+        logger.info(f"TTS request - text: {request.text[:50]}..., lang: {request.lang or 'auto'}")
 
-        # Generate speech
-        audio_path = await openai_service.generate_speech(
+        # Generate speech using Google TTS (free, no quota)
+        audio_path = await generate_speech(
             text=request.text,
-            voice=request.voice
+            lang=request.lang
         )
 
         # Convert absolute path to URL-friendly path
@@ -45,11 +49,7 @@ async def text_to_speech(request: TTSRequest):
         )
 
     except Exception as e:
-        logger.error(f"Error in text_to_speech: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to generate speech"
-        )
+        raise handle_openai_error(e, service_name="TTS")
 
 
 # Media serving moved to routers/media.py

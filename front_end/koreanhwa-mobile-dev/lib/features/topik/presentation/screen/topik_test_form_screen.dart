@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/topik/presentation/screen/exam_result_screen.dart';
+import 'package:koreanhwa_flutter/features/topik/data/services/topik_api_service.dart';
 import 'dart:async';
 
 class TopikTestFormScreen extends StatefulWidget {
@@ -31,8 +32,14 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
   bool _showQuestionList = false;
   final ScrollController _scrollController = ScrollController();
   final Map<int, GlobalKey> _questionKeys = {};
+  final TopikApiService _apiService = TopikApiService();
 
-  final List<Map<String, dynamic>> _questions = [
+  List<Map<String, dynamic>> _questions = [];
+  bool _isLoadingQuestions = true;
+  String? _errorMessage;
+
+  // Mock questions fallback - sẽ được thay thế bằng API
+  final List<Map<String, dynamic>> _mockQuestions = [
     {
       'id': 101,
       'question':
@@ -77,9 +84,88 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
       _timeLeft = int.parse(widget.timeLimit) * 60;
     }
     _startTimer();
-    // Create keys for each question
-    for (var question in _questions) {
-      _questionKeys[question['id'] as int] = GlobalKey();
+    _loadQuestions();
+  }
+
+  Future<void> _loadQuestions() async {
+    setState(() {
+      _isLoadingQuestions = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Lấy exam number từ examId (ví dụ: "35", "36")
+      final examNumber = widget.examId.replaceAll('TK', '').replaceAll('TK', '');
+      
+      // Xác định question type từ selected sections
+      String questionType = 'reading'; // default
+      if (widget.selectedSections['listening'] == true && 
+          widget.selectedSections['reading'] != true) {
+        questionType = 'listening';
+      } else if (widget.selectedSections['reading'] == true && 
+                 widget.selectedSections['listening'] != true) {
+        questionType = 'reading';
+      }
+
+      // Load questions từ API
+      final response = await _apiService.getTopikQuestions(
+        examNumber: examNumber,
+        questionType: questionType,
+        limit: 30, // Load 30 câu hỏi
+      );
+
+      final questionsData = response['questions'] as List<dynamic>? ?? [];
+      
+      // Convert API response to question format
+      final questions = questionsData.asMap().entries.map((entry) {
+        final index = entry.key;
+        final q = entry.value as Map<String, dynamic>;
+        
+        // Parse question data từ API format
+        final questionId = 101 + index; // Start from 101
+        final prompt = q['prompt'] as String? ?? '';
+        final introText = q['intro_text'] as String? ?? '';
+        final questionText = prompt.isNotEmpty ? prompt : introText;
+        
+        // Parse answers
+        final answers = q['answers'] as List<dynamic>? ?? [];
+        final options = answers.asMap().entries.map((ansEntry) {
+          final optionIndex = ansEntry.key;
+          final ans = ansEntry.value as Map<String, dynamic>;
+          final optionValue = String.fromCharCode(65 + optionIndex); // A, B, C, D
+          return {
+            'value': optionValue,
+            'text': ans['text'] as String? ?? '',
+          };
+        }).toList();
+
+        return {
+          'id': questionId,
+          'question': questionText,
+          'options': options,
+        };
+      }).toList();
+
+      setState(() {
+        _questions = questions.isNotEmpty ? questions : _mockQuestions;
+        _isLoadingQuestions = false;
+        
+        // Create keys for each question
+        for (var question in _questions) {
+          _questionKeys[question['id'] as int] = GlobalKey();
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi tải câu hỏi: ${e.toString()}';
+        _questions = _mockQuestions; // Fallback to mock data
+        _isLoadingQuestions = false;
+        
+        // Create keys for mock questions
+        for (var question in _questions) {
+          _questionKeys[question['id'] as int] = GlobalKey();
+        }
+      });
     }
   }
 
@@ -280,20 +366,66 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
                 const SizedBox(height: 16),
 
                 // Questions
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryWhite,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.primaryYellow.withOpacity(0.5),
-                      width: 1,
+                if (_isLoadingQuestions)
+                  Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryWhite,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.primaryYellow.withOpacity(0.5),
+                        width: 1,
+                      ),
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ..._questions.map((question) {
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (_errorMessage != null)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryWhite,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.red.withOpacity(0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          _errorMessage!,
+                          style: const TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadQuestions,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryYellow,
+                            foregroundColor: AppColors.primaryBlack,
+                          ),
+                          child: const Text('Thử lại'),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryWhite,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.primaryYellow.withOpacity(0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ..._questions.map((question) {
                         final questionId = question['id'] as int;
                         final selectedAnswer = _selectedAnswers[questionId];
                         return Container(

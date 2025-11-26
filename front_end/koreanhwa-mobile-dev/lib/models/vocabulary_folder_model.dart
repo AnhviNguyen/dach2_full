@@ -47,14 +47,16 @@ class VocabularyWord {
   final String korean;
   final String vietnamese;
   final String pronunciation;
-  final String example;
+  final String? example;
+  final bool isLearned;
 
   VocabularyWord({
     required this.id,
     required this.korean,
     required this.vietnamese,
     required this.pronunciation,
-    required this.example,
+    this.example,
+    this.isLearned = false,
   });
 
   VocabularyWord copyWith({
@@ -63,6 +65,7 @@ class VocabularyWord {
     String? vietnamese,
     String? pronunciation,
     String? example,
+    bool? isLearned,
   }) {
     return VocabularyWord(
       id: id ?? this.id,
@@ -70,6 +73,7 @@ class VocabularyWord {
       vietnamese: vietnamese ?? this.vietnamese,
       pronunciation: pronunciation ?? this.pronunciation,
       example: example ?? this.example,
+      isLearned: isLearned ?? this.isLearned,
     );
   }
 
@@ -79,7 +83,8 @@ class VocabularyWord {
       korean: json['korean'] as String? ?? '',
       vietnamese: json['vietnamese'] as String? ?? '',
       pronunciation: json['pronunciation'] as String? ?? '',
-      example: json['example'] as String? ?? '',
+      example: json['example'] as String?,
+      isLearned: json['isLearned'] as bool? ?? false,
     );
   }
 }

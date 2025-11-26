@@ -14,5 +14,16 @@ class VocabularyWord {
     this.example,
     this.isLearned = false,
   });
+
+  factory VocabularyWord.fromJson(Map<String, dynamic> json) {
+    return VocabularyWord(
+      id: json['id'] as int,
+      korean: json['korean'] as String? ?? '',
+      vietnamese: json['vietnamese'] as String? ?? '',
+      pronunciation: json['pronunciation'] as String? ?? '',
+      example: json['example'] as String?,
+      isLearned: json['isLearned'] as bool? ?? false,
+    );
+  }
 }
 

@@ -34,6 +34,18 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
     super.initState();
     if (widget.competition != null) {
       _competition = widget.competition;
+      // Check if competition is active
+      if (_competition!.status != 'active') {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = _competition!.status == 'upcoming'
+              ? 'Cuộc thi chưa bắt đầu'
+              : _competition!.status == 'completed'
+                  ? 'Cuộc thi đã kết thúc'
+                  : 'Không thể tham gia cuộc thi này';
+        });
+        return;
+      }
       _loadQuestions();
     } else if (widget.competitionId != null) {
       _loadCompetitionAndQuestions();
@@ -54,6 +66,21 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
     try {
       final userId = ref.read(authProvider).user?.id;
       final competition = await _apiService.getCompetitionById(widget.competitionId!, currentUserId: userId);
+      
+      // Check if competition is active
+      if (competition.status != 'active') {
+        setState(() {
+          _competition = competition;
+          _isLoading = false;
+          _errorMessage = competition.status == 'upcoming'
+              ? 'Cuộc thi chưa bắt đầu'
+              : competition.status == 'completed'
+                  ? 'Cuộc thi đã kết thúc'
+                  : 'Không thể tham gia cuộc thi này';
+        });
+        return;
+      }
+      
       setState(() {
         _competition = competition;
       });

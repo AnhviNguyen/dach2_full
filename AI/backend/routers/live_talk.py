@@ -11,6 +11,7 @@ from models.schemas import (
     SessionSummary
 )
 from services import openai_service
+from services.tts_service import generate_speech
 from pathlib import Path
 import logging
 import json
@@ -55,8 +56,7 @@ Bạn: "Tốt lắm! Thường thì chúng ta nói '저는 커피를 정말 좋�
 - Kỷ niệm nỗ lực và tiến bộ
 - Giữ nhẹ nhàng và khuyến khích
 - Luôn bao gồm Hangul (한글) cho văn bản tiếng Hàn
-- Trả lời bằng tiếng Việt""",
-        "voice": "nova"  # Warm female voice for TTS
+- Trả lời bằng tiếng Việt"""
     },
 
     "leo": {
@@ -88,8 +88,7 @@ Bạn: "Tốt lắm! Nhân tiện, chúng ta nói '어제 저는 시장에 갔�
 - Làm cho học viên cảm thấy thoải mái
 - Giữ cuộc trò chuyện tự nhiên và hấp dẫn
 - Luôn bao gồm Hangul (한글) cho văn bản tiếng Hàn
-- Trả lời bằng tiếng Việt""",
-        "voice": "echo"  # Casual male voice for TTS
+- Trả lời bằng tiếng Việt"""
     }
 }
 
@@ -227,12 +226,20 @@ async def live_talk_turn(
         logger.info(f"Coach {coach_id} replied: '{assistant_text[:100]}...'")
 
         # Step 5: Generate TTS for coach's response
-        tts_voice = coach["voice"]
-        tts_path = await openai_service.generate_speech(
+        # Note: TTS is important here, but we'll handle gracefully if it fails
+        # Auto-detect language (Korean for coach responses)
+        tts_path = await generate_speech(
             text=assistant_text,
-            voice=tts_voice
+            lang="ko",  # Coach responses are in Korean
+            allow_failure=True  # Don't fail the whole request if TTS fails
         )
-        audio_url = f"/media/{Path(tts_path).name}"
+        if not tts_path:
+            # If TTS fails, we still return the response but without audio
+            # Frontend should handle this gracefully
+            logger.warning("TTS generation failed, returning response without audio")
+            audio_url = ""  # Empty string indicates no audio available
+        else:
+            audio_url = f"/media/{Path(tts_path).name}"
 
         # Step 6: Calculate session statistics
         turn_count = len([m for m in messages if m["role"] == "user"]) + 1

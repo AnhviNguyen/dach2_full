@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/models/exam_model.dart';
-import 'package:koreanhwa_flutter/services/exam_service.dart';
+import 'package:koreanhwa_flutter/features/topik/data/services/topik_api_service.dart';
+import 'package:koreanhwa_flutter/features/topik/data/models/topik_exam.dart';
 import 'package:koreanhwa_flutter/features/topik/presentation/screen/topik_detail_screen.dart';
 import 'package:koreanhwa_flutter/shared/widgets/exam_card.dart';
 import 'package:koreanhwa_flutter/features/topik/presentation/widgets/topik_category_chip.dart';
@@ -19,6 +20,17 @@ class _TopikLibraryScreenState extends State<TopikLibraryScreen> {
   String _activeTab = 'all';
   String _activeCategory = 'Tất cả';
   final TextEditingController _searchController = TextEditingController();
+  final TopikApiService _apiService = TopikApiService();
+  
+  List<TopikExam> _exams = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExams();
+  }
 
   @override
   void dispose() {
@@ -26,11 +38,54 @@ class _TopikLibraryScreenState extends State<TopikLibraryScreen> {
     super.dispose();
   }
 
+  Future<void> _loadExams() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await _apiService.getExams();
+      final examsList = (response['exams'] as List<dynamic>?)
+          ?.map((e) => TopikExam.fromJson({'examNumber': e.toString()}))
+          .toList() ?? [];
+      
+      setState(() {
+        _exams = examsList;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi tải danh sách đề thi: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+
   List<ExamModel> get _filteredExams {
-    return ExamService.filterExams(
-      category: _activeCategory == 'Tất cả' ? null : _activeCategory,
-      searchQuery: _searchController.text,
-    );
+    var filtered = _exams.map((exam) => ExamModel(
+      id: exam.id,
+      title: exam.displayTitle,
+      duration: exam.duration,
+      participants: exam.participants,
+      questions: exam.questions,
+      tags: exam.tags,
+    )).toList();
+
+    if (_activeCategory != 'Tất cả') {
+      filtered = filtered
+          .where((exam) => exam.tags.any((tag) => tag.contains(_activeCategory)))
+          .toList();
+    }
+
+    if (_searchController.text.isNotEmpty) {
+      filtered = filtered
+          .where((exam) =>
+              exam.title.toLowerCase().contains(_searchController.text.toLowerCase()))
+          .toList();
+    }
+
+    return filtered;
   }
 
   @override
@@ -80,10 +135,10 @@ class _TopikLibraryScreenState extends State<TopikLibraryScreen> {
               height: 50,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: ExamService.examCategories.length,
+                itemCount: _categories.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
-                  final category = ExamService.examCategories[index];
+                  final category = _categories[index];
                   return TopikCategoryChip(
                     category: category,
                     isSelected: _activeCategory == category,
@@ -150,7 +205,47 @@ class _TopikLibraryScreenState extends State<TopikLibraryScreen> {
             const SizedBox(height: 24),
             const TopikUserProfileCard(),
             const SizedBox(height: 24),
-            if (_filteredExams.isEmpty)
+            if (_isLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_errorMessage != null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: AppColors.primaryBlack.withOpacity(0.3),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _errorMessage!,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.primaryBlack.withOpacity(0.6),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadExams,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryYellow,
+                          foregroundColor: AppColors.primaryBlack,
+                        ),
+                        child: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else if (_filteredExams.isEmpty)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32.0),
@@ -216,5 +311,11 @@ class _TopikLibraryScreenState extends State<TopikLibraryScreen> {
       ),
     );
   }
+
+  static const List<String> _categories = [
+    'Tất cả',
+    'TOPIK I',
+    'TOPIK II',
+  ];
 }
 

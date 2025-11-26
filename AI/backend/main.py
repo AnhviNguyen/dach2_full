@@ -1,12 +1,17 @@
 """
 FastAPI backend for Korean Learning App
 Main application entry point
+
+This module sets up the FastAPI application, configures CORS,
+registers routers, and handles startup/shutdown events.
 """
+import logging
+from typing import Dict, Any
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+
 from config import settings
-import logging
 
 # Configure logging
 logging.basicConfig(
@@ -37,8 +42,13 @@ app.add_middleware(
 # ===== HEALTH CHECK =====
 
 @app.get("/")
-async def root():
-    """Root endpoint - API info"""
+async def root() -> Dict[str, Any]:
+    """
+    Root endpoint - API information
+    
+    Returns:
+        Basic API information and status
+    """
     return {
         "message": "Korean Studio API",
         "version": "1.0.0",
@@ -48,8 +58,13 @@ async def root():
 
 
 @app.get("/ping")
-async def ping():
-    """Health check endpoint"""
+async def ping() -> Dict[str, str]:
+    """
+    Health check endpoint
+    
+    Returns:
+        Simple ping response
+    """
     return {
         "status": "ok",
         "message": "pong"
@@ -57,17 +72,79 @@ async def ping():
 
 
 @app.get("/health")
-async def health_check():
-    """Detailed health check"""
+async def health_check() -> Dict[str, Any]:
+    """
+    Detailed health check endpoint
+    
+    Returns:
+        Health status including environment and OpenAI configuration status
+    """
     return {
         "status": "healthy",
         "environment": settings.env,
-        "openai_configured": bool(settings.openai_api_key and settings.openai_api_key != "your_openai_api_key_here")
+        "openai_configured": bool(
+            settings.openai_api_key 
+            and settings.openai_api_key != "your_openai_api_key_here"
+        )
+    }
+
+
+@app.get("/debug/openai-key")
+async def debug_openai_key() -> Dict[str, Any]:
+    """
+    Debug endpoint to check OpenAI API key status (masked)
+    
+    This endpoint helps diagnose OpenAI API configuration issues.
+    It tests the API key and returns masked information.
+    
+    Returns:
+        Dictionary with API key status, masked preview, and test result
+    """
+    api_key = settings.openai_api_key
+    if not api_key or api_key == "your_openai_api_key_here":
+        return {
+            "configured": False,
+            "key_preview": None,
+            "message": "API key not configured"
+        }
+    
+    # Mask API key for security
+    masked_key = f"{api_key[:10]}...{api_key[-4:]}" if len(api_key) > 14 else "***"
+    
+    # Test the key
+    from openai import OpenAI
+    test_result = None
+    error_message = None
+    
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": "test"}],
+            max_tokens=5
+        )
+        test_result = "success"
+    except Exception as e:
+        error_str = str(e)
+        test_result = "failed"
+        if "insufficient_quota" in error_str or "429" in error_str or "quota" in error_str.lower():
+            error_message = "quota_exceeded"
+        elif "invalid_api_key" in error_str or "401" in error_str:
+            error_message = "invalid_key"
+        else:
+            error_message = str(e)[:100]
+    
+    return {
+        "configured": True,
+        "key_preview": masked_key,
+        "test_result": test_result,
+        "error": error_message,
+        "model": settings.openai_model_name
     }
 
 
 # ===== IMPORT ROUTERS =====
-from routers import chat, lesson, tts, media, speaking, live_talk, user_progress
+from routers import chat, lesson, tts, media, speaking, live_talk, user_progress, dictionary, topik
 from services.pronunciation_model_service import load_pronunciation_model, is_model_loaded
 
 # Include routers
@@ -78,13 +155,23 @@ app.include_router(speaking.router)
 app.include_router(live_talk.router)
 app.include_router(user_progress.router)
 app.include_router(media.router)  # Media router without /api prefix
+app.include_router(dictionary.router)  # Dictionary router
+app.include_router(topik.router)  # TOPIK router
 
 @app.on_event("startup")
 async def startup_event():
     logger.info("🚀 Korean Studio API starting up...")
     logger.info(f"Environment: {settings.env}")
     logger.info(f"Frontend URL: {settings.frontend_url}")
-    logger.info(f"OpenAI configured: {bool(settings.openai_api_key and settings.openai_api_key != 'your_openai_api_key_here')}")
+    
+    # Log OpenAI API key status (masked)
+    api_key = settings.openai_api_key
+    if api_key and api_key != "your_openai_api_key_here":
+        masked_key = f"{api_key[:10]}...{api_key[-4:]}" if len(api_key) > 14 else "***"
+        logger.info(f"OpenAI API key: {masked_key}")
+        logger.info(f"OpenAI model: {settings.openai_model_name}")
+    else:
+        logger.warning("⚠️ OpenAI API key not configured!")
     
     # Load pronunciation model
     logger.info("Loading pronunciation model...")

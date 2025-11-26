@@ -1,48 +1,75 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koreanhwa_flutter/features/courses/presentation/screen/payment_screen.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/courses/presentation/screen/course_classroom_screen.dart';
+import 'package:koreanhwa_flutter/features/courses/data/services/course_api_service.dart';
+import 'package:koreanhwa_flutter/features/courses/data/models/course_info.dart';
+import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
-class CourseDetailScreen extends StatefulWidget {
-  final String courseTitle;
-  final String instructorName;
-  final double price;
-  final double originalPrice;
-  final int discount;
-  final double rating;
-  final int reviewCount;
-  final int lessonCount;
-  final int studentCount;
-  final int daysAccess;
+class CourseDetailScreen extends ConsumerStatefulWidget {
+  final int? courseId;
+  final String? courseTitle;
+  final String? instructorName;
+  final double? price;
+  final double? originalPrice;
+  final int? discount;
+  final double? rating;
+  final int? reviewCount;
+  final int? lessonCount;
+  final int? studentCount;
+  final int? daysAccess;
 
   const CourseDetailScreen({
     super.key,
-    this.courseTitle = 'COMBO Khóa Luyện Thi TOPIK II + IBT MockTest',
-    this.instructorName = 'Ninh Thị Thủy',
-    this.price = 1430000,
-    this.originalPrice = 1881579,
-    this.discount = 24,
-    this.rating = 5.0,
-    this.reviewCount = 2,
-    this.lessonCount = 45,
-    this.studentCount = 3963,
-    this.daysAccess = 90,
+    this.courseId,
+    this.courseTitle,
+    this.instructorName,
+    this.price,
+    this.originalPrice,
+    this.discount,
+    this.rating,
+    this.reviewCount,
+    this.lessonCount,
+    this.studentCount,
+    this.daysAccess,
   });
 
   @override
-  State<CourseDetailScreen> createState() => _CourseDetailScreenState();
+  ConsumerState<CourseDetailScreen> createState() => _CourseDetailScreenState();
 }
 
-class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTickerProviderStateMixin {
+class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isFavorite = false;
   bool _isRegistered = false;
   bool _isProcessingPayment = false;
+  CourseInfo? _courseInfo;
+  bool _isLoading = true;
+  final CourseApiService _courseApiService = CourseApiService();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    if (widget.courseId != null) {
+      _loadCourseInfo();
+    } else {
+      setState(() => _isLoading = false);
+    }
+  }
+  
+  Future<void> _loadCourseInfo() async {
+    try {
+      final course = await _courseApiService.getCourseById(widget.courseId!);
+      setState(() {
+        _courseInfo = course;
+        _isRegistered = course.isEnrolled;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -60,13 +87,19 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
       context,
       MaterialPageRoute(
         builder: (_) => PaymentScreen(
-          courseTitle: widget.courseTitle,
-          amount: widget.price,
+          courseTitle: _courseInfo?.title ?? widget.courseTitle ?? 'Khóa học',
+          amount: _courseInfo != null 
+              ? _parsePrice(_courseInfo!.price)
+              : (widget.price ?? 0.0),
           onPaymentResult: (success) {
             if (success && mounted) {
               setState(() {
                 _isRegistered = true;
               });
+              // Reload course info to get updated enrollment status
+              if (widget.courseId != null) {
+                _loadCourseInfo();
+              }
             }
           },
         ),
@@ -194,12 +227,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
                 height: 1.3,
               ),
               children: [
-                const TextSpan(text: 'COMBO '),
                 TextSpan(
-                  text: 'Khóa Luyện Thi TOPIK II',
-                  style: TextStyle(color: AppColors.primaryYellow),
+                  text: _courseInfo?.title ?? widget.courseTitle ?? 'Khóa học',
+                  style: const TextStyle(color: AppColors.primaryYellow),
                 ),
-                const TextSpan(text: ' + IBT MockTest'),
               ],
             ),
           ),
@@ -216,10 +247,15 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
               elevation: 0,
             ),
             child: Text(
-              'Giảng viên: ${widget.instructorName}',
+              'Giảng viên: ${_courseInfo?.instructor ?? widget.instructorName ?? 'N/A'}',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.only(top: 16),
+              child: CircularProgressIndicator(),
+            ),
         ],
       ),
     );
@@ -420,7 +456,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  widget.instructorName,
+                  _courseInfo?.instructor ?? widget.instructorName ?? 'N/A',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -439,9 +475,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildInstructorStat('Khóa học', '${widget.lessonCount}'),
-                    _buildInstructorStat('Học viên', '${widget.studentCount}'),
-                    _buildInstructorStat('Đánh giá', '${widget.rating}'),
+                    _buildInstructorStat('Khóa học', '${_courseInfo?.lessons ?? widget.lessonCount ?? 0}'),
+                    _buildInstructorStat('Học viên', '${_courseInfo?.students ?? widget.studentCount ?? 0}'),
+                    _buildInstructorStat('Đánh giá', '${_courseInfo?.rating ?? widget.rating ?? 0.0}'),
                   ],
                 ),
               ],
@@ -653,7 +689,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${widget.rating}',
+                      '${_courseInfo?.rating ?? widget.rating ?? 0.0}',
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -661,7 +697,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
                       ),
                     ),
                     Text(
-                      '${widget.reviewCount} đánh giá',
+                      '${widget.reviewCount ?? 0} đánh giá',
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.primaryBlack.withOpacity(0.6),
@@ -802,7 +838,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  widget.courseTitle,
+                  _courseInfo?.title ?? widget.courseTitle ?? 'Khóa học',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -825,7 +861,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
               ),
               const SizedBox(width: 8),
               Text(
-                '${widget.rating}',
+                '${_courseInfo?.rating ?? widget.rating ?? 0.0}',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -833,7 +869,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
               ),
               const SizedBox(width: 4),
               Text(
-                '${widget.reviewCount} đánh giá',
+                '${widget.reviewCount ?? 0} đánh giá',
                 style: TextStyle(
                   fontSize: 14,
                   color: AppColors.primaryBlack.withOpacity(0.6),
@@ -842,13 +878,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
             ],
           ),
           const SizedBox(height: 16),
-          _buildInfoRow(Icons.person, widget.instructorName),
+          _buildInfoRow(Icons.person, _courseInfo?.instructor ?? widget.instructorName ?? 'N/A'),
           const SizedBox(height: 8),
-          _buildInfoRow(Icons.menu_book, '${widget.lessonCount} Bài giảng'),
+          _buildInfoRow(Icons.menu_book, '${_courseInfo?.lessons ?? widget.lessonCount ?? 0} Bài giảng'),
           const SizedBox(height: 8),
-          _buildInfoRow(Icons.calendar_today, '${widget.daysAccess} ngày'),
+          _buildInfoRow(Icons.calendar_today, '${widget.daysAccess ?? 90} ngày'),
           const SizedBox(height: 8),
-          _buildInfoRow(Icons.people, '${widget.studentCount} học viên đã đăng ký'),
+          _buildInfoRow(Icons.people, '${_courseInfo?.students ?? widget.studentCount ?? 0} học viên đã đăng ký'),
         ],
       ),
     );
@@ -871,8 +907,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
   }
 
   Widget _buildPricingSection() {
-    final formattedPrice = _formatPrice(widget.price);
-    final formattedOriginalPrice = _formatPrice(widget.originalPrice);
+    final price = _courseInfo != null 
+        ? _parsePrice(_courseInfo!.price)
+        : (widget.price ?? 0.0);
+    final formattedPrice = _formatPrice(price);
+    final formattedOriginalPrice = widget.originalPrice != null 
+        ? _formatPrice(widget.originalPrice!)
+        : '';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -901,31 +942,33 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
                   color: AppColors.primaryBlack,
                 ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                '$formattedOriginalPrice đ',
-                style: TextStyle(
-                  fontSize: 18,
-                  decoration: TextDecoration.lineThrough,
-                  color: AppColors.primaryBlack.withOpacity(0.5),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '-${widget.discount}%',
-                  style: const TextStyle(
-                    color: AppColors.primaryWhite,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+              if (widget.originalPrice != null && widget.discount != null) ...[
+                const SizedBox(width: 12),
+                Text(
+                  '$formattedOriginalPrice đ',
+                  style: TextStyle(
+                    fontSize: 18,
+                    decoration: TextDecoration.lineThrough,
+                    color: AppColors.primaryBlack.withOpacity(0.5),
                   ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '-${widget.discount}%',
+                    style: const TextStyle(
+                      color: AppColors.primaryWhite,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ],
@@ -1036,7 +1079,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => CourseClassroomScreen(courseTitle: widget.courseTitle),
+                          builder: (_) => CourseClassroomScreen(
+                            courseTitle: _courseInfo?.title ?? widget.courseTitle ?? 'Khóa học',
+                          ),
                         ),
                       );
                     }
@@ -1117,6 +1162,16 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> with SingleTick
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]},',
         );
+  }
+  
+  double _parsePrice(String priceString) {
+    try {
+      String cleanedPrice = priceString.replaceAll(RegExp(r'[^\d,.]'), '');
+      cleanedPrice = cleanedPrice.replaceAll(',', '.');
+      return double.parse(cleanedPrice);
+    } catch (e) {
+      return 0.0;
+    }
   }
 }
 

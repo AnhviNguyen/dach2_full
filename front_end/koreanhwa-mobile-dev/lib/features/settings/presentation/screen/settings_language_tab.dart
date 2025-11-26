@@ -3,12 +3,37 @@ import 'package:koreanhwa_flutter/models/settings_model.dart';
 import 'package:koreanhwa_flutter/services/settings_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 
-class SettingsLanguageTab extends StatelessWidget {
+class SettingsLanguageTab extends StatefulWidget {
   const SettingsLanguageTab({super.key});
 
   @override
+  State<SettingsLanguageTab> createState() => _SettingsLanguageTabState();
+}
+
+class _SettingsLanguageTabState extends State<SettingsLanguageTab> {
+  LanguageSettings? _language;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await SettingsService.getSettings();
+    setState(() {
+      _language = settings.language;
+      _isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final language = SettingsService.getSettings().language;
+    if (_isLoading || _language == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final language = _language!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(

@@ -28,10 +28,6 @@ public class Competition {
     @Column(name = "category_id", length = 50)
     private String categoryId;
 
-    @ManyToOne
-    @JoinColumn(name = "category_id", insertable = false, updatable = false)
-    private CompetitionCategory category;
-
     @Column(name = "start_date")
     private LocalDateTime startDate;
 

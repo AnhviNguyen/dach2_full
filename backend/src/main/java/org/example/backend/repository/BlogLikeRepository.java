@@ -8,8 +8,8 @@ import java.util.Optional;
 
 @Repository
 public interface BlogLikeRepository extends JpaRepository<BlogLike, Long> {
-    Optional<BlogLike> findByPostIdAndUserId(Long postId, Long userId);
-    boolean existsByPostIdAndUserId(Long postId, Long userId);
-    long countByPostId(Long postId);
+    Optional<BlogLike> findByPost_IdAndUser_Id(Long postId, Long userId);
+    boolean existsByPost_IdAndUser_Id(Long postId, Long userId);
+    long countByPost_Id(Long postId);
 }
 

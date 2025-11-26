@@ -3,12 +3,37 @@ import 'package:koreanhwa_flutter/models/settings_model.dart';
 import 'package:koreanhwa_flutter/services/settings_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 
-class SettingsPrivacyTab extends StatelessWidget {
+class SettingsPrivacyTab extends StatefulWidget {
   const SettingsPrivacyTab({super.key});
 
   @override
+  State<SettingsPrivacyTab> createState() => _SettingsPrivacyTabState();
+}
+
+class _SettingsPrivacyTabState extends State<SettingsPrivacyTab> {
+  PrivacySettings? _privacy;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await SettingsService.getSettings();
+    setState(() {
+      _privacy = settings.privacy;
+      _isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final privacy = SettingsService.getSettings().privacy;
+    if (_isLoading || _privacy == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final privacy = _privacy!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(

@@ -1,16 +1,26 @@
 """
 OpenAI Service - ChatGPT & TTS Integration
-Coach Ivy: Your personal Korean companion
+Coach Ivy: Your personal Korean learning companion
+
+This module provides services for:
+- Chat with Coach Ivy (GPT-based Korean teacher)
+- Text-to-Speech (TTS) generation
+- Speech-to-Text (STT) transcription using Whisper
+- Exercise feedback generation
+- Bilingual feedback for pronunciation exercises
 """
 import logging
-from openai import OpenAI
-from config import settings
-from pathlib import Path
 import hashlib
-import tempfile
+import json
 import os
-from typing import Literal, Optional
+import tempfile
+from pathlib import Path
+from typing import Literal, Optional, Tuple, List, Dict, Any
+
 from fastapi import UploadFile
+from openai import OpenAI
+
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +77,16 @@ MODE_PROMPTS = {
 }
 
 
-def get_system_prompt(mode: str = "free_chat") -> str:
-    """Get complete system prompt for Coach Ivy"""
+def get_system_prompt(mode: Literal["free_chat", "explain", "speaking_feedback"] = "free_chat") -> str:
+    """
+    Get complete system prompt for Coach Ivy
+    
+    Args:
+        mode: Conversation mode
+        
+    Returns:
+        Complete system prompt string
+    """
     mode_specific = MODE_PROMPTS.get(mode, MODE_PROMPTS["free_chat"])
     return f"{COACH_IVY_BASE_PROMPT}\n\n{mode_specific}"
 
@@ -77,9 +95,9 @@ def get_system_prompt(mode: str = "free_chat") -> str:
 
 async def chat_with_coach(
     message: str,
-    mode: str = "free_chat",
-    context: Optional[dict] = None
-) -> tuple[str, str]:
+    mode: Literal["free_chat", "explain", "speaking_feedback"] = "free_chat",
+    context: Optional[Dict[str, Any]] = None
+) -> Tuple[str, Literal["neutral", "praise", "corrective", "encouraging"]]:
     """
     Chat with Coach Ivy
 
@@ -153,10 +171,10 @@ def _analyze_emotion(text: str) -> str:
 
 async def check_exercise_with_feedback(
     question: str,
-    user_answers: list[str],
-    correct_answers: list[str],
+    user_answers: List[str],
+    correct_answers: List[str],
     exercise_type: str = "multiple_choice"
-) -> tuple[bool, float, str, str]:
+) -> Tuple[bool, float, str, Literal["neutral", "praise", "corrective", "encouraging"]]:
     """
     Check exercise and generate AI feedback
 
@@ -201,63 +219,10 @@ Cung cấp phản hồi ngắn gọn bằng tiếng Việt (2-3 câu):
 
 
 # ===== TTS FUNCTIONS =====
+# TTS functionality has been moved to services/tts_service.py
+# Import here for backward compatibility
 
-# Directory for storing TTS audio files
-MEDIA_DIR = Path("media/tts")
-MEDIA_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def _get_audio_hash(text: str, voice: str) -> str:
-    """Generate unique hash for text + voice combination"""
-    content = f"{text}_{voice}"
-    return hashlib.md5(content.encode()).hexdigest()
-
-
-async def generate_speech(
-    text: str,
-    voice: Optional[str] = None
-) -> str:
-    """
-    Generate speech from text using OpenAI TTS
-
-    Args:
-        text: Text to convert to speech
-        voice: Voice to use (default from settings)
-
-    Returns:
-        str: Path to audio file
-    """
-    try:
-        if not voice:
-            voice = settings.openai_tts_voice
-
-        # Check cache
-        audio_hash = _get_audio_hash(text, voice)
-        audio_path = MEDIA_DIR / f"{audio_hash}.mp3"
-
-        # Return cached file if exists
-        if audio_path.exists():
-            logger.info(f"TTS cache hit for: {text[:50]}...")
-            return str(audio_path)
-
-        # Generate new audio
-        logger.info(f"Generating TTS for: {text[:50]}...")
-        response = client.audio.speech.create(
-            model=settings.openai_tts_model,
-            voice=voice,
-            input=text,
-            response_format="mp3"
-        )
-
-        # Save to file
-        response.stream_to_file(audio_path)
-        logger.info(f"TTS saved to: {audio_path}")
-
-        return str(audio_path)
-
-    except Exception as e:
-        logger.error(f"Error in generate_speech: {e}")
-        raise
+from services.tts_service import generate_speech
 
 
 # ===== WHISPER (SPEECH-TO-TEXT) FUNCTIONS =====
@@ -324,9 +289,9 @@ async def generate_bilingual_feedback(
     expected_text: str,
     spoken_text: str,
     word_accuracy: float,
-    accuracy_details: dict,
-    model_result: Optional[dict] = None
-) -> tuple[str, list[str]]:
+    accuracy_details: Dict[str, Any],
+    model_result: Optional[Dict[str, Any]] = None
+) -> Tuple[str, List[str]]:
     """
     Tạo phản hồi bằng tiếng Việt cho bài luyện phát âm
     Kết hợp kết quả từ model pronunciation check (nếu có) với GPT
@@ -421,7 +386,6 @@ Output ONLY valid JSON in this exact format:
         response_text = response.choices[0].message.content.strip()
 
         # Parse JSON response
-        import json
         try:
             # Try to extract JSON from response (handle cases where GPT adds markdown)
             if "```json" in response_text:

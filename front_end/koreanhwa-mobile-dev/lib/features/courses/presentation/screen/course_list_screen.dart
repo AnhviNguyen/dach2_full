@@ -284,8 +284,8 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
           value: '${_stats!.totalCourses}',
           progressLabel: '${_stats!.completedCourses}/${_stats!.totalCourses}',
           progress: _stats!.totalCourses == 0
-              ? 0
-              : _stats!.completedCourses / _stats!.totalCourses,
+              ? 0.0
+              : (_stats!.completedCourses / _stats!.totalCourses).clamp(0.0, 1.0),
         ),
         const SizedBox(height: 10),
         _StatTile(
@@ -294,8 +294,8 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
           value: '${_stats!.totalVideos}',
           progressLabel: '${_stats!.watchedVideos}/${_stats!.totalVideos}',
           progress: _stats!.totalVideos == 0
-              ? 0
-              : _stats!.watchedVideos / _stats!.totalVideos,
+              ? 0.0
+              : (_stats!.watchedVideos / _stats!.totalVideos).clamp(0.0, 1.0),
         ),
         const SizedBox(height: 10),
         _StatTile(
@@ -304,8 +304,8 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
           value: '${_stats!.totalExams}',
           progressLabel: '${_stats!.completedExams}/${_stats!.totalExams}',
           progress: _stats!.totalExams == 0
-              ? 0
-              : _stats!.completedExams / _stats!.totalExams,
+              ? 0.0
+              : (_stats!.completedExams / _stats!.totalExams).clamp(0.0, 1.0),
         ),
       ],
     );
@@ -314,11 +314,13 @@ class _CourseListScreenState extends ConsumerState<CourseListScreen> {
   Widget _buildProgressRing() {
     if (_stats == null) return const SizedBox.shrink();
     
+    final progress = _stats!.totalCourses == 0
+        ? 0.0
+        : _stats!.completedCourses / _stats!.totalCourses;
+    
     return _StatDonut(
       label: 'Tiến độ',
-      percent: _stats!.completedCourses == 0
-          ? 0.032
-          : _stats!.completedCourses / (_stats!.totalCourses == 0 ? 1 : _stats!.totalCourses),
+      percent: progress.clamp(0.0, 1.0),
     );
   }
 

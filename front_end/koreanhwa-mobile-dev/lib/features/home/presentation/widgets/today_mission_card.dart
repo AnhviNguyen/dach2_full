@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 
 class TodayMissionCard extends StatelessWidget {
-  const TodayMissionCard({super.key});
+  final double progress;
+  final VoidCallback? onViewTasks;
+  
+  const TodayMissionCard({
+    super.key,
+    this.progress = 0.0,
+    this.onViewTasks,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +60,7 @@ class TodayMissionCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: onViewTasks,
                   icon: const Icon(Icons.play_arrow, size: 20),
                   label: const Text(
                     'Xem tasks',
@@ -87,15 +94,15 @@ class TodayMissionCard extends StatelessWidget {
                     height: 90,
                     width: 90,
                     child: CircularProgressIndicator(
-                      value: 0.85,
+                      value: progress.clamp(0.0, 1.0),
                       strokeWidth: 8,
                       backgroundColor: AppColors.primaryBlack.withOpacity(0.1),
                       valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryBlack),
                     ),
                   ),
-                  const Text(
-                    '85%',
-                    style: TextStyle(
+                  Text(
+                    '${(progress.clamp(0.0, 1.0) * 100).round()}%',
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primaryBlack,

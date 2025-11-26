@@ -17,7 +17,14 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
   @override
   void initState() {
     super.initState();
-    _profile = SettingsService.getSettings().profile;
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final settings = await SettingsService.getSettings();
+    setState(() {
+      _profile = settings.profile;
+    });
   }
 
   void _saveProfile() {
@@ -67,16 +74,33 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                               width: 2,
                             ),
                           ),
-                          child: Center(
-                            child: Text(
-                              _profile.avatar,
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primaryBlack,
-                              ),
-                            ),
-                          ),
+                          child: _profile.avatar.startsWith('http://') || _profile.avatar.startsWith('https://')
+                              ? ClipOval(
+                                  child: Image.network(
+                                    _profile.avatar,
+                                    width: 96,
+                                    height: 96,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Text(
+                                      _profile.firstName.isNotEmpty ? _profile.firstName[0].toUpperCase() : 'U',
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primaryBlack,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Center(
+                                  child: Text(
+                                    _profile.avatar.isNotEmpty ? _profile.avatar : (_profile.firstName.isNotEmpty ? _profile.firstName[0].toUpperCase() : 'U'),
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primaryBlack,
+                                    ),
+                                  ),
+                                ),
                         ),
 
                         // ICON CAMERA

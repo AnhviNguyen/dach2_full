@@ -54,7 +54,11 @@ class CourseInfo {
       duration: json['duration'] as String? ?? '',
       price: json['price'] as String? ?? '',
       image: json['image'] as String?,
-      progress: (json['progress'] as num?)?.toDouble() ?? 0.0,
+      progress: () {
+        final progressValue = (json['progress'] as num?)?.toDouble() ?? 0.0;
+        // If progress is > 1.0, it's likely in percentage form (e.g., 75.0), convert to decimal (0.75)
+        return progressValue > 1.0 ? progressValue / 100.0 : progressValue;
+      }(),
       isEnrolled: json['isEnrolled'] as bool? ?? false,
       accentColor: parseColor(json['accentColor'] as String?),
     );

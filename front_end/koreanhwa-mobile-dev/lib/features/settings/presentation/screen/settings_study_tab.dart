@@ -3,12 +3,37 @@ import 'package:koreanhwa_flutter/models/settings_model.dart';
 import 'package:koreanhwa_flutter/services/settings_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 
-class SettingsStudyTab extends StatelessWidget {
+class SettingsStudyTab extends StatefulWidget {
   const SettingsStudyTab({super.key});
 
   @override
+  State<SettingsStudyTab> createState() => _SettingsStudyTabState();
+}
+
+class _SettingsStudyTabState extends State<SettingsStudyTab> {
+  StudySettings? _study;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await SettingsService.getSettings();
+    setState(() {
+      _study = settings.study;
+      _isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final study = SettingsService.getSettings().study;
+    if (_isLoading || _study == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final study = _study!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(

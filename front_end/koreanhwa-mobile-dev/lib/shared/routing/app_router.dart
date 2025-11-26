@@ -268,11 +268,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const BlogManageScreen(),
       ),
       GoRoute(
-        path: '/blog/detail',
+        path: '/blog/:id',
         name: 'blog-detail',
         builder: (context, state) {
+          final postId = int.tryParse(state.pathParameters['id'] ?? '');
+          if (postId != null) {
+            return BlogDetailScreen(postId: postId);
+          }
+          // Fallback: try to get from extra or query parameter
           final post = state.extra as BlogPost?;
-          return BlogDetailScreen(post: post);
+          final queryPostId = int.tryParse(state.uri.queryParameters['id'] ?? '');
+          return BlogDetailScreen(
+            postId: queryPostId ?? post?.id,
+            post: post,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/blog/detail',
+        name: 'blog-detail-alt',
+        builder: (context, state) {
+          final postId = int.tryParse(state.uri.queryParameters['id'] ?? '');
+          final post = state.extra as BlogPost?;
+          return BlogDetailScreen(
+            postId: postId ?? post?.id,
+            post: post,
+          );
         },
       ),
       GoRoute(
@@ -281,19 +302,44 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const CompetitionScreen(),
       ),
       GoRoute(
+        path: '/competition/:id',
+        name: 'competition-detail',
+        builder: (context, state) {
+          final competitionId = int.tryParse(state.pathParameters['id'] ?? '');
+          if (competitionId != null) {
+            return CompetitionInfoScreen(competitionId: competitionId);
+          }
+          // Fallback: try to get from extra or query parameter
+          final competition = state.extra as Competition?;
+          final queryCompetitionId = int.tryParse(state.uri.queryParameters['id'] ?? '');
+          return CompetitionInfoScreen(
+            competitionId: queryCompetitionId ?? competition?.id,
+            competition: competition,
+          );
+        },
+      ),
+      GoRoute(
         path: '/competition/info',
         name: 'competition-info',
         builder: (context, state) {
+          final competitionId = int.tryParse(state.uri.queryParameters['id'] ?? '');
           final competition = state.extra as Competition?;
-          return CompetitionInfoScreen(competition: competition);
+          return CompetitionInfoScreen(
+            competitionId: competitionId ?? competition?.id,
+            competition: competition,
+          );
         },
       ),
       GoRoute(
         path: '/competition/join',
         name: 'competition-join',
         builder: (context, state) {
+          final competitionId = int.tryParse(state.uri.queryParameters['id'] ?? '');
           final competition = state.extra as Competition?;
-          return CompetitionJoinScreen(competition: competition);
+          return CompetitionJoinScreen(
+            competitionId: competitionId ?? competition?.id,
+            competition: competition,
+          );
         },
       ),
       GoRoute(

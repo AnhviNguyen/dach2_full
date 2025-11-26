@@ -1,8 +1,14 @@
 """
 Pydantic models for request/response validation
+
+This module contains all Pydantic models used for:
+- Request validation
+- Response serialization
+- Data validation and type checking
 """
+from typing import List, Literal, Optional
+
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
 
 
 # ===== CHAT MODELS =====
@@ -38,15 +44,24 @@ class ChatResponse(BaseModel):
 class ExerciseCheckRequest(BaseModel):
     """Request model for checking exercise answers"""
     lesson_id: str = Field(..., description="Lesson identifier")
-    exercise_type: Literal["multiple_choice", "fill_blank", "reorder"] = Field(
+    exercise_type: Literal["multiple_choice", "fill_blank", "reorder", "pronunciation"] = Field(
         default="multiple_choice",
         description="Type of exercise"
     )
-    user_answers: List[str] = Field(..., description="User's submitted answers")
-    correct_answers: List[str] = Field(..., description="Correct answers")
+    user_answers: List[str] = Field(default_factory=list, description="User's submitted answers (for text exercises)")
+    correct_answers: List[str] = Field(default_factory=list, description="Correct answers (for text exercises)")
     question: Optional[str] = Field(
         default=None,
         description="The original question"
+    )
+    # For pronunciation exercises
+    expected_text: Optional[str] = Field(
+        default=None,
+        description="Expected Korean text to read (for pronunciation exercises)"
+    )
+    audio_data: Optional[str] = Field(
+        default=None,
+        description="Base64 encoded audio data (for pronunciation exercises)"
     )
 
 
@@ -63,16 +78,22 @@ class ExerciseCheckResponse(BaseModel):
         default=None,
         description="URL to TTS audio for correct answer"
     )
+    # For pronunciation exercises
+    exercise_type: str = Field(..., description="Type of exercise that was checked")
+    pronunciation_details: Optional[dict] = Field(
+        default=None,
+        description="Detailed pronunciation results (for pronunciation exercises)"
+    )
 
 
 # ===== TTS MODELS =====
 
 class TTSRequest(BaseModel):
-    """Request model for text-to-speech"""
+    """Request model for text-to-speech using Google TTS"""
     text: str = Field(..., description="Text to convert to speech")
-    voice: Optional[str] = Field(
+    lang: Optional[str] = Field(
         default=None,
-        description="Voice to use (alloy, echo, fable, onyx, nova, shimmer)"
+        description="Language code (auto-detected if not provided: 'ko' for Korean, 'vi' for Vietnamese, 'en' for English)"
     )
 
 

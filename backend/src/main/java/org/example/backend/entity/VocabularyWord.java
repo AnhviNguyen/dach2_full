@@ -45,6 +45,9 @@ public class VocabularyWord {
     @Column(columnDefinition = "TEXT")
     private String example;
 
+    @Column(name = "is_learned", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isLearned = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

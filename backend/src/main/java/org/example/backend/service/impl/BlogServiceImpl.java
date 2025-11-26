@@ -1,13 +1,18 @@
 package org.example.backend.service.impl;
 
 import org.example.backend.dto.BlogAuthorResponse;
+import org.example.backend.dto.BlogCommentRequest;
+import org.example.backend.dto.BlogCommentResponse;
 import org.example.backend.dto.BlogPostRequest;
 import org.example.backend.dto.BlogPostResponse;
 import org.example.backend.dto.PageResponse;
+import org.example.backend.entity.BlogComment;
 import org.example.backend.entity.BlogLike;
 import org.example.backend.entity.BlogPost;
 import org.example.backend.entity.BlogTag;
 import org.example.backend.entity.User;
+import org.example.backend.repository.BlogCommentLikeRepository;
+import org.example.backend.repository.BlogCommentRepository;
 import org.example.backend.repository.BlogLikeRepository;
 import org.example.backend.repository.BlogPostRepository;
 import org.example.backend.repository.UserRepository;
@@ -26,13 +31,19 @@ public class BlogServiceImpl implements BlogService {
     private final BlogPostRepository blogPostRepository;
     private final UserRepository userRepository;
     private final BlogLikeRepository blogLikeRepository;
+    private final BlogCommentRepository blogCommentRepository;
+    private final BlogCommentLikeRepository blogCommentLikeRepository;
 
     public BlogServiceImpl(BlogPostRepository blogPostRepository,
                           UserRepository userRepository,
-                          BlogLikeRepository blogLikeRepository) {
+                          BlogLikeRepository blogLikeRepository,
+                          BlogCommentRepository blogCommentRepository,
+                          BlogCommentLikeRepository blogCommentLikeRepository) {
         this.blogPostRepository = blogPostRepository;
         this.userRepository = userRepository;
         this.blogLikeRepository = blogLikeRepository;
+        this.blogCommentRepository = blogCommentRepository;
+        this.blogCommentLikeRepository = blogCommentLikeRepository;
     }
 
     @Override
@@ -143,7 +154,7 @@ public class BlogServiceImpl implements BlogService {
         BlogPost post = blogPostRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Blog post not found"));
         
-        BlogLike existingLike = blogLikeRepository.findByPostIdAndUserId(postId, userId).orElse(null);
+        BlogLike existingLike = blogLikeRepository.findByPost_IdAndUser_Id(postId, userId).orElse(null);
         
         if (existingLike != null) {
             blogLikeRepository.delete(existingLike);
@@ -162,6 +173,64 @@ public class BlogServiceImpl implements BlogService {
         return toBlogPostResponse(updated, userId);
     }
 
+    @Override
+    public void incrementView(Long postId) {
+        BlogPost post = blogPostRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Blog post not found"));
+        post.setViews(post.getViews() + 1);
+        blogPostRepository.save(post);
+    }
+
+    @Override
+    public List<BlogCommentResponse> getComments(Long postId, Long currentUserId) {
+        List<BlogComment> comments = blogCommentRepository.findByPost_IdOrderByCreatedAtDesc(postId);
+        return comments.stream()
+                .map(comment -> toBlogCommentResponse(comment, currentUserId))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public BlogCommentResponse createComment(Long postId, BlogCommentRequest request) {
+        BlogPost post = blogPostRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Blog post not found"));
+        User user = userRepository.findById(request.userId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        BlogComment comment = new BlogComment();
+        comment.setPost(post);
+        comment.setUser(user);
+        comment.setContent(request.content());
+        comment.setLikes(0);
+
+        BlogComment saved = blogCommentRepository.save(comment);
+        
+        // Update comment count in post
+        post.setComments(post.getComments() + 1);
+        blogPostRepository.save(post);
+
+        return toBlogCommentResponse(saved, request.userId());
+    }
+
+    private BlogCommentResponse toBlogCommentResponse(BlogComment comment, Long currentUserId) {
+        BlogAuthorResponse author = new BlogAuthorResponse(
+            comment.getUser().getName(),
+            comment.getUser().getAvatar(),
+            comment.getUser().getLevel()
+        );
+
+        boolean isLiked = currentUserId != null &&
+                blogCommentLikeRepository.existsByComment_IdAndUser_Id(comment.getId(), currentUserId);
+
+        return new BlogCommentResponse(
+            comment.getId(),
+            author,
+            comment.getContent(),
+            comment.getLikes(),
+            comment.getCreatedAt(),
+            isLiked
+        );
+    }
+
     private BlogPostResponse toBlogPostResponse(BlogPost post, Long currentUserId) {
         BlogAuthorResponse author = new BlogAuthorResponse(
             post.getAuthor().getName(),
@@ -174,7 +243,7 @@ public class BlogServiceImpl implements BlogService {
                 .collect(Collectors.toList());
         
         boolean isLiked = currentUserId != null && 
-                blogLikeRepository.existsByPostIdAndUserId(post.getId(), currentUserId);
+                blogLikeRepository.existsByPost_IdAndUser_Id(post.getId(), currentUserId);
         boolean isMyPost = currentUserId != null && 
                 post.getAuthor().getId().equals(currentUserId);
         

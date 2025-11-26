@@ -16,7 +16,14 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
   @override
   void initState() {
     super.initState();
-    _notifications = SettingsService.getSettings().notifications;
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await SettingsService.getSettings();
+    setState(() {
+      _notifications = settings.notifications;
+    });
   }
 
   void _updateNotifications() {

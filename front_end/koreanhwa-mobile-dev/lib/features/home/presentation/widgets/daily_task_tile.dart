@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/home/data/models/task_item.dart';
 
@@ -6,6 +7,23 @@ class DailyTaskTile extends StatelessWidget {
   final TaskItem task;
 
   const DailyTaskTile({super.key, required this.task});
+
+  void _navigateToTask(BuildContext context) {
+    final title = task.title.toLowerCase();
+    if (title.contains('từ vựng') || title.contains('vocabulary')) {
+      context.push('/my-vocabulary');
+    } else if (title.contains('ngữ pháp') || title.contains('grammar')) {
+      context.push('/textbook');
+    } else if (title.contains('luyện đề') || title.contains('exam') || title.contains('test')) {
+      context.push('/topik-library');
+    } else if (title.contains('nói') || title.contains('speaking')) {
+      context.push('/speak-practice');
+    } else if (title.contains('nghe') || title.contains('listening')) {
+      context.push('/textbook');
+    } else {
+      context.push('/textbook');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,68 +44,78 @@ class DailyTaskTile extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: task.progressColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: task.progressColor.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Icon(task.icon, color: task.progressColor, size: 26),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
+      child: InkWell(
+        onTap: () => _navigateToTask(context),
+        borderRadius: BorderRadius.circular(20),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: task.progressColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: task.progressColor.withOpacity(0.3),
+                  width: 1,
                 ),
-                const SizedBox(height: 10),
-                Stack(
-                  children: [
-                    Container(
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: task.progressColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+              ),
+              child: Icon(task.icon, color: task.progressColor, size: 26),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
                     ),
-                    FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: task.progressPercent,
-                      child: Container(
+                  ),
+                  const SizedBox(height: 10),
+                  Stack(
+                    children: [
+                      Container(
                         height: 10,
                         decoration: BoxDecoration(
-                          color: task.progressColor,
+                          color: task.progressColor.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: task.progressPercent.clamp(0.0, 1.0),
+                        child: Container(
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: task.progressColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Text(
-            '${(task.progressPercent * 100).round()}%',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-              color: task.progressColor,
+            const SizedBox(width: 16),
+            Text(
+              '${(task.progressPercent.clamp(0.0, 1.0) * 100).round()}%',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: task.progressColor,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: task.progressColor.withOpacity(0.6),
+            ),
+          ],
+        ),
       ),
     );
   }

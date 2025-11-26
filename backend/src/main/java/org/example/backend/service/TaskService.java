@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface TaskService {
     List<TaskItemResponse> getUserTasks(Long userId);
+    void generateDailyTasks(Long userId);
 }
 

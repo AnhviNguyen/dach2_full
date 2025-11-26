@@ -1,5 +1,7 @@
 package org.example.backend.controller;
 
+import org.example.backend.dto.BlogCommentRequest;
+import org.example.backend.dto.BlogCommentResponse;
 import org.example.backend.dto.BlogPostRequest;
 import org.example.backend.dto.BlogPostResponse;
 import org.example.backend.dto.PageResponse;
@@ -10,6 +12,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/blog")
@@ -77,6 +81,28 @@ public class BlogController {
             @PathVariable(value = "userId") Long userId) {
         BlogPostResponse response = blogService.toggleLike(postId, userId);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/posts/{postId}/view")
+    public ResponseEntity<Void> incrementView(@PathVariable(value = "postId") Long postId) {
+        blogService.incrementView(postId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/posts/{postId}/comments")
+    public ResponseEntity<List<BlogCommentResponse>> getComments(
+            @PathVariable(value = "postId") Long postId,
+            @RequestParam(value = "currentUserId", required = false) Long currentUserId) {
+        List<BlogCommentResponse> comments = blogService.getComments(postId, currentUserId);
+        return ResponseEntity.ok(comments);
+    }
+
+    @PostMapping("/posts/{postId}/comments")
+    public ResponseEntity<BlogCommentResponse> createComment(
+            @PathVariable(value = "postId") Long postId,
+            @RequestBody BlogCommentRequest request) {
+        BlogCommentResponse response = blogService.createComment(postId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
 

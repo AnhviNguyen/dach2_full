@@ -259,6 +259,29 @@ CREATE TABLE IF NOT EXISTS blog_likes (
     UNIQUE KEY unique_blog_like (post_id, user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Blog Comments Table
+CREATE TABLE IF NOT EXISTS blog_comments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    post_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    likes INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Blog Comment Likes Table
+CREATE TABLE IF NOT EXISTS blog_comment_likes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    comment_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    FOREIGN KEY (comment_id) REFERENCES blog_comments(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_comment_like (comment_id, user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Dashboard Stats Table (aggregated data per user)
 CREATE TABLE IF NOT EXISTS dashboard_stats (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -487,6 +510,7 @@ CREATE TABLE IF NOT EXISTS vocabulary_words (
     vietnamese VARCHAR(500) NOT NULL,
     pronunciation VARCHAR(500),
     example TEXT,
+    is_learned BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (folder_id) REFERENCES vocabulary_folders(id) ON DELETE CASCADE

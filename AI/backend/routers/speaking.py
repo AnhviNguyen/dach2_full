@@ -5,6 +5,7 @@ Tích hợp model pronunciation check với GPT để đạt độ chính xác c
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from models.schemas import ReadAloudResponse, AccuracyDetails
 from services import openai_service, accuracy_service
+from services.tts_service import generate_speech
 from services.pronunciation_model_service import (
     check_pronunciation_from_bytes,
     is_model_loaded
@@ -112,18 +113,15 @@ async def check_read_aloud(
         )
         logger.info(f"Feedback tiếng Việt: '{feedback_vi[:50]}...'")
 
-        # Step 5: Generate TTS cho feedback
-        try:
-            # Vietnamese TTS (OpenAI TTS supports Vietnamese with 'alloy' voice)
-            tts_vi_path = await openai_service.generate_speech(
-                text=feedback_vi,
-                voice="alloy"  # Works for Vietnamese
-            )
-            tts_vi_url = f"/media/{Path(tts_vi_path).name}"
+        # Step 5: Generate TTS cho feedback (optional - won't fail if error)
+        tts_vi_path = await generate_speech(
+            text=feedback_vi,
+            lang="vi",  # Vietnamese feedback
+            allow_failure=True  # Don't fail the whole request if TTS fails
+        )
+        tts_vi_url = f"/media/{Path(tts_vi_path).name}" if tts_vi_path else None
+        if tts_vi_url:
             logger.info(f"VI TTS generated: {tts_vi_url}")
-        except Exception as e:
-            logger.error(f"Error generating VI TTS: {e}")
-            tts_vi_url = None
 
         # Step 6: Calculate overall score
         # Ưu tiên model score nếu có, nếu không dùng word accuracy
@@ -194,6 +192,30 @@ async def check_read_aloud(
             status_code=500,
             detail=f"Failed to evaluate pronunciation: {str(e)}"
         )
+
+
+@router.get("/speaking/model-status")
+async def get_model_status_endpoint():
+    """
+    Check if pronunciation model is loaded and ready
+    
+    Returns:
+        Status information about the pronunciation model
+    """
+    try:
+        model_loaded = get_model_status()
+        return {
+            "model_loaded": model_loaded,
+            "status": "ready" if model_loaded else "not_available",
+            "message": "Pronunciation model is loaded and ready" if model_loaded else "Pronunciation model not available. Will use word-level accuracy only."
+        }
+    except Exception as e:
+        logger.error(f"Error checking model status: {e}")
+        return {
+            "model_loaded": False,
+            "status": "error",
+            "message": f"Error checking model status: {str(e)}"
+        }
 
 
 @router.post("/speaking/free-speak")

@@ -1,18 +1,23 @@
 """
 Configuration settings for the Korean Learning App backend
+
+Loads configuration from environment variables and .env file.
 """
+from typing import Literal
+
 from pydantic_settings import BaseSettings
-from typing import Optional
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from environment variables"""
+    """
+    Application settings loaded from environment variables
+    
+    All settings can be overridden via environment variables or .env file.
+    """
 
     # OpenAI Configuration
     openai_api_key: str
     openai_model_name: str = "gpt-4o-mini"
-    openai_tts_model: str = "tts-1"
-    openai_tts_voice: str = "nova"  # Options: alloy, echo, fable, onyx, nova, shimmer
 
     # Server Configuration
     backend_host: str = "0.0.0.0"
@@ -20,12 +25,13 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:5173"
 
     # Environment
-    env: str = "development"
+    env: Literal["development", "production", "testing"] = "development"
 
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra fields in .env that are not in Settings
 
 
-# Global settings instance
+# Global settings instance - initialized on import
 settings = Settings()

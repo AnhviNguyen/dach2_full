@@ -16,7 +16,14 @@ class _SettingsMotivationTabState extends State<SettingsMotivationTab> {
   @override
   void initState() {
     super.initState();
-    _motivation = SettingsService.getSettings().motivation;
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await SettingsService.getSettings();
+    setState(() {
+      _motivation = settings.motivation;
+    });
   }
 
   void _updateMotivation() {

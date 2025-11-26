@@ -22,5 +22,11 @@ public class TaskController {
         List<TaskItemResponse> response = taskService.getUserTasks(userId);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/generate-daily/{userId}")
+    public ResponseEntity<Void> generateDailyTasks(@PathVariable(value = "userId") Long userId) {
+        taskService.generateDailyTasks(userId);
+        return ResponseEntity.ok().build();
+    }
 }
 

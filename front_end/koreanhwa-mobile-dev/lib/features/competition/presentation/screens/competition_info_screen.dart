@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/features/competition/data/models/competition.dart';
 import 'package:koreanhwa_flutter/features/competition/data/services/competition_api_service.dart';
+import 'package:koreanhwa_flutter/features/competition/presentation/screens/competition_join_screen.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 
@@ -234,18 +235,28 @@ class _CompetitionInfoScreenState extends ConsumerState<CompetitionInfoScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          context.push('/competition/join', extra: competition);
-        },
-        backgroundColor: AppColors.primaryYellow,
-        foregroundColor: AppColors.primaryBlack,
-        icon: const Icon(Icons.play_arrow),
-        label: const Text(
-          'Tham gia thi',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
+      floatingActionButton: competition != null && competition.status == 'active'
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CompetitionJoinScreen(
+                      competition: competition,
+                      competitionId: competition.id,
+                    ),
+                  ),
+                );
+              },
+              backgroundColor: AppColors.primaryYellow,
+              foregroundColor: AppColors.primaryBlack,
+              icon: const Icon(Icons.play_arrow),
+              label: const Text(
+                'Tham gia thi',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            )
+          : null,
     );
   }
 
@@ -418,26 +429,56 @@ class _CompetitionInfoScreenState extends ConsumerState<CompetitionInfoScreen> {
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      context.push('/competition/join', extra: competition);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryBlack,
-                      foregroundColor: AppColors.primaryWhite,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Bắt đầu thi',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
+                  child: competition != null && competition.status == 'active'
+                      ? ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CompetitionJoinScreen(
+                                  competition: competition,
+                                  competitionId: competition.id,
+                                ),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryBlack,
+                            foregroundColor: AppColors.primaryWhite,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Tham gia thi',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      : Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryBlack.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Text(
+                              competition?.status == 'upcoming'
+                                  ? 'Cuộc thi chưa bắt đầu'
+                                  : competition?.status == 'completed'
+                                      ? 'Cuộc thi đã kết thúc'
+                                      : 'Không thể tham gia',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ),
                 ),
               ],
             ),

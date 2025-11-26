@@ -8,6 +8,9 @@ pydantic-settings==2.6.1
 # OpenAI
 openai==1.57.2
 
+# Google TTS (free alternative to OpenAI TTS)
+gtts==2.5.1
+
 # CORS
 python-multipart==0.0.19
 

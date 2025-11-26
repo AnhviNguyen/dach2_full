@@ -4,6 +4,7 @@ Chat Router - Endpoints for chatting with Coach Ivy (Korean learning)
 from fastapi import APIRouter, HTTPException
 from models.schemas import ChatRequest, ChatResponse
 from services import openai_service
+from services.error_handlers import handle_openai_error
 import logging
 
 logger = logging.getLogger(__name__)
@@ -48,8 +49,4 @@ async def chat_with_teacher(request: ChatRequest):
         )
 
     except Exception as e:
-        logger.error(f"Error in chat_with_teacher: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to process chat request"
-        )
+        raise handle_openai_error(e, service_name="Chat")

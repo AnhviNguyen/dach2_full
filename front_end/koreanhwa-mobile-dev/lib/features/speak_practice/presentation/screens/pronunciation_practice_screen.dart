@@ -1,5 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/features/speak_practice/data/services/speaking_api_service.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class PronunciationPracticeScreen extends StatefulWidget {
   const PronunciationPracticeScreen({super.key});
@@ -9,6 +14,8 @@ class PronunciationPracticeScreen extends StatefulWidget {
 }
 
 class _PronunciationPracticeScreenState extends State<PronunciationPracticeScreen> {
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  final SpeakingApiService _apiService = SpeakingApiService();
   final List<_SoundCategory> _categories = const [
     _SoundCategory(id: 'vowels', title: 'Nguyên âm', icon: 'ㅏ'),
     _SoundCategory(id: 'consonants', title: 'Phụ âm', icon: 'ㄱ'),
@@ -78,7 +85,157 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
   String _selectedCategory = 'vowels';
   _SoundCard? _currentDrill;
   bool _isRecording = false;
+  bool _isProcessing = false;
   double? _score;
+  String? _feedback;
+  String? _transcript;
+  String? _audioPath;
+
+  @override
+  void dispose() {
+    _audioRecorder.dispose();
+    super.dispose();
+  }
+
+  Future<void> _startRecording() async {
+    // Request microphone permission
+    final status = await Permission.microphone.request();
+    if (!status.isGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cần quyền truy cập microphone để ghi âm'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      // Get temporary directory for audio file
+      final directory = await getTemporaryDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      _audioPath = '${directory.path}/recording_$timestamp.m4a';
+
+      // Start recording
+      await _audioRecorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          sampleRate: 44100,
+        ),
+        path: _audioPath!,
+      );
+
+      setState(() {
+        _isRecording = true;
+        _score = null;
+        _feedback = null;
+        _transcript = null;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi bắt đầu ghi âm: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _stopRecording() async {
+    try {
+      final path = await _audioRecorder.stop();
+      if (path == null || path.isEmpty) {
+        throw Exception('Không thể lưu file ghi âm');
+      }
+
+      setState(() {
+        _isRecording = false;
+        _isProcessing = true;
+        _audioPath = path;
+      });
+
+      // Get expected text from current drill
+      // Use first example, extract Korean text (before parentheses)
+      String expectedText = '';
+      if (_currentDrill != null && _currentDrill!.examples.isNotEmpty) {
+        final firstExample = _currentDrill!.examples.first;
+        // Extract Korean text (before parentheses if exists)
+        expectedText = firstExample.split('(').first.trim();
+        // If no Korean text found, use phoneme
+        if (expectedText.isEmpty) {
+          expectedText = _currentDrill!.phoneme;
+        }
+      } else {
+        expectedText = _currentDrill?.phoneme ?? '안녕하세요';
+      }
+
+      // Call API to check pronunciation
+      await _checkPronunciation(File(path), expectedText);
+    } catch (e) {
+      setState(() {
+        _isRecording = false;
+        _isProcessing = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi dừng ghi âm: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _checkPronunciation(File audioFile, String expectedText) async {
+    try {
+      final response = await _apiService.checkReadAloud(
+        audioFile: audioFile,
+        expectedText: expectedText,
+        language: 'ko',
+      );
+
+      setState(() {
+        _isProcessing = false;
+        _score = response['overall_score'] as double? ?? 
+                 response['word_accuracy'] as double? ?? 0.0;
+        _feedback = response['feedback_vi'] as String? ?? 
+                   response['ai_feedback'] as String? ?? '';
+        _transcript = response['transcript'] as String?;
+      });
+
+      // Show success message
+      if (mounted && _score != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đánh giá hoàn tất! Điểm: ${_score!.toStringAsFixed(0)}%'),
+            backgroundColor: _score! >= 85 ? Colors.green : 
+                           _score! >= 70 ? Colors.orange : Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isProcessing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi đánh giá phát âm: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -372,54 +529,128 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         GestureDetector(
-          onTap: () {
-            setState(() {
-              _isRecording = !_isRecording;
-              if (!_isRecording) {
-                _score = 80 + (20 * (0.4 + (0.2 * (_currentDrill.hashCode % 3))));
-              }
-            });
-          },
+          onTap: _isRecording ? _stopRecording : _startRecording,
           child: Container(
             width: 130,
             height: 130,
             decoration: BoxDecoration(
-              color: _isRecording ? AppColors.error : AppColors.primaryBlack,
+              color: _isRecording 
+                  ? AppColors.error 
+                  : _isProcessing 
+                      ? AppColors.grayLight 
+                      : AppColors.primaryBlack,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: _isRecording ? AppColors.error.withOpacity(0.2) : Colors.black12,
+                  color: _isRecording 
+                      ? AppColors.error.withOpacity(0.2) 
+                      : Colors.black12,
                   blurRadius: 24,
                 ),
               ],
             ),
-            child: Icon(
-              _isRecording ? Icons.stop : Icons.mic,
-              color: _isRecording ? Colors.white : AppColors.primaryYellow,
-              size: 48,
-            ),
+            child: _isProcessing
+                ? const Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 3,
+                    ),
+                  )
+                : Icon(
+                    _isRecording ? Icons.stop : Icons.mic,
+                    color: _isRecording ? Colors.white : AppColors.primaryYellow,
+                    size: 48,
+                  ),
           ),
         ),
         const SizedBox(height: 12),
         Text(
-          _isRecording ? 'Đang ghi âm...' : 'Chạm để bắt đầu luyện',
+          _isProcessing 
+              ? 'Đang xử lý...' 
+              : _isRecording 
+                  ? 'Đang ghi âm...' 
+                  : 'Chạm để bắt đầu luyện',
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
+        if (_transcript != null && _transcript!.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.whiteGray,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                const Text(
+                  'Bạn đã nói:',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.grayLight,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _transcript!,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: AppColors.primaryBlack,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ],
         if (_score != null) ...[
           const SizedBox(height: 16),
           Text(
             'Điểm chính xác: ${_score!.clamp(0, 100).toStringAsFixed(0)}%',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppColors.success,
+              color: _score! >= 85 
+                  ? AppColors.success 
+                  : _score! >= 70 
+                      ? Colors.orange 
+                      : AppColors.error,
             ),
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'Giữ nhịp thở đều, đừng vội vàng nhé!',
-            style: TextStyle(color: AppColors.grayLight),
-          ),
+          if (_feedback != null && _feedback!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primaryYellow.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.primaryYellow.withOpacity(0.3),
+                ),
+              ),
+              child: Text(
+                _feedback!,
+                style: const TextStyle(
+                  color: AppColors.primaryBlack,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 4),
+            Text(
+              _score! >= 85 
+                  ? 'Tuyệt vời! Phát âm rất tốt!' 
+                  : _score! >= 70 
+                      ? 'Tốt lắm! Tiếp tục luyện tập nhé!' 
+                      : 'Cố gắng luyện tập thêm nhé!',
+              style: const TextStyle(color: AppColors.grayLight),
+            ),
+          ],
         ],
       ],
     );

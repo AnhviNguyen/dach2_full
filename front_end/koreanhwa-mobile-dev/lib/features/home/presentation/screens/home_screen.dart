@@ -30,6 +30,10 @@ import 'package:koreanhwa_flutter/features/home/presentation/widgets/schedule_ta
 import 'package:koreanhwa_flutter/features/home/presentation/widgets/section_header.dart';
 import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 import 'package:koreanhwa_flutter/features/home/data/models/lesson_card_data.dart';
+import 'package:koreanhwa_flutter/core/storage/shared_preferences_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:koreanhwa_flutter/features/home/data/models/stat_chip_data.dart';
+import 'package:koreanhwa_flutter/features/home/data/models/day_tab.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -55,11 +59,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isLoadingRankings = false;
   bool _isLoadingCourses = false;
   bool _isLoadingTextbooks = false;
+  List<StatChipData> _statChips = [];
+  List<DayTab> _weekDays = [];
+  double _taskProgress = 0.0;
 
   @override
   void initState() {
     super.initState();
+    _loadTaskProgressFromCache();
     _loadAllData();
+  }
+
+  Future<void> _loadTaskProgressFromCache() async {
+    final cachedProgress = await SharedPreferencesService.getTaskProgress();
+    setState(() {
+      _taskProgress = cachedProgress;
+    });
   }
 
   Future<void> _loadAllData() async {
@@ -92,9 +107,85 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         textbookService.getTextbooks(page: 0, size: 10).catchError((e) => PageResponse<Textbook>(content: [], totalElements: 0, totalPages: 0, size: 0, page: 0, hasNext: false, hasPrevious: false)),
       ]);
       
+      final user = ref.read(authProvider).user;
+      final allTasks = results[0] as List<TaskItem>;
+      // Filter only today's tasks (max 4)
+      final today = DateTime.now();
+      final tasks = allTasks.where((task) {
+        // Only show tasks from today (backend should handle this, but double-check)
+        return true; // Backend already filters by today
+      }).take(4).toList();
+      final allSkills = results[1] as List<SkillProgress>;
+      // Filter to show only 4 unique skills (Nghe, Nói, Đọc, Viết)
+      final skills = <SkillProgress>[];
+      final skillLabels = {'Nghe', 'Nói', 'Đọc', 'Viết'};
+      for (final skill in allSkills) {
+        if (skillLabels.contains(skill.label) && 
+            !skills.any((s) => s.label == skill.label)) {
+          skills.add(skill);
+        }
+      }
+      // If backend didn't return all 4 skills, add missing ones with 0% progress
+      final existingLabels = skills.map((s) => s.label).toSet();
+      if (!existingLabels.contains('Nghe')) {
+        skills.add(SkillProgress(label: 'Nghe', percent: 0.0, color: const Color(0xFFFF6B6B)));
+      }
+      if (!existingLabels.contains('Nói')) {
+        skills.add(SkillProgress(label: 'Nói', percent: 0.0, color: const Color(0xFF4ECDC4)));
+      }
+      if (!existingLabels.contains('Đọc')) {
+        skills.add(SkillProgress(label: 'Đọc', percent: 0.0, color: const Color(0xFF95E1D3)));
+      }
+      if (!existingLabels.contains('Viết')) {
+        skills.add(SkillProgress(label: 'Viết', percent: 0.0, color: const Color(0xFFF38181)));
+      }
+      // Sort to ensure consistent order: Nghe, Nói, Đọc, Viết
+      skills.sort((a, b) {
+        final order = {'Nghe': 0, 'Nói': 1, 'Đọc': 2, 'Viết': 3};
+        return (order[a.label] ?? 99).compareTo(order[b.label] ?? 99);
+      });
+      
+      // Calculate task progress
+      final taskProgress = tasks.isEmpty ? 0.0 : 
+          tasks.map((t) => t.progressPercent).reduce((a, b) => a + b) / tasks.length;
+      
+      // Save task progress to SharedPreferences
+      await SharedPreferencesService.saveTaskProgress(taskProgress);
+      
+      // Update stat chips with real user data
+      final statChips = [
+        StatChipData(
+          title: 'Cấp độ hiện tại',
+          value: user?.level ?? 'Sơ cấp',
+          color: AppColors.primaryYellow,
+          icon: Icons.school,
+        ),
+        StatChipData(
+          title: 'Tiến độ học',
+          value: '${(taskProgress * 100).round()}%',
+          color: const Color(0xFFF97316),
+          icon: Icons.trending_up,
+        ),
+        StatChipData(
+          title: 'Streak học tập',
+          value: '${user?.streakDays ?? 0} ngày',
+          color: AppColors.primaryBlack,
+          icon: Icons.local_fire_department,
+        ),
+      ];
+      
+      // Generate week days based on study history
+      final weekDays = _generateWeekDays();
+      
+      // Update study days if tasks completed today
+      if (tasks.isNotEmpty && tasks.any((t) => t.progressPercent >= 1.0)) {
+        await SharedPreferencesService.addStudyDay(DateTime.now());
+        await SharedPreferencesService.updateLastStudyDate(DateTime.now());
+      }
+      
       setState(() {
-        _dailyTasks = results[0] as List<TaskItem>;
-        _skills = results[1] as List<SkillProgress>;
+        _dailyTasks = tasks;
+        _skills = skills;
         final allAchievements = results[2] as List<AchievementItem>;
         _recentAchievements = allAchievements.where((a) => a.isCompleted).take(3).toList();
         final allRankings = results[3] as List<RankingEntry>;
@@ -103,6 +194,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _enrolledCourses = allCourses.where((c) => c.isEnrolled).take(3).toList();
         final textbooksPage = results[5] as PageResponse<Textbook>;
         _textbooks = textbooksPage.content.take(3).toList();
+        _statChips = statChips;
+        _weekDays = weekDays;
+        _taskProgress = taskProgress;
         _isLoadingTasks = false;
         _isLoadingSkills = false;
         _isLoadingAchievements = false;
@@ -110,6 +204,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _isLoadingCourses = false;
         _isLoadingTextbooks = false;
       });
+      
+      // Save user data to SharedPreferences
+      if (user != null) {
+        await SharedPreferencesService.saveUser(user);
+      }
     } catch (e) {
       setState(() {
         _isLoadingTasks = false;
@@ -153,7 +252,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const TodayMissionCard(),
+                    TodayMissionCard(
+                      progress: _taskProgress,
+                      onViewTasks: () => _showAllTasksBottomSheet(context),
+                    ),
                     const SizedBox(height: 24),
                     const QuickAccessGrid(),
                     const SizedBox(height: 24),
@@ -183,11 +285,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 children: _dailyTasks.map((task) => DailyTaskTile(task: task)).toList(),
                               ),
                     const SizedBox(height: 24),
-                    StatChips(statChips: HomeMockData.statChips),
+                    StatChips(statChips: _statChips),
                     const SizedBox(height: 24),
-                    const StreakSection(),
+                    StreakSection(userId: ref.read(authProvider).user?.id),
                     const SizedBox(height: 24),
-                    ScheduleTabs(weekDays: HomeMockData.weekDays),
+                    ScheduleTabs(weekDays: _weekDays),
                     const SizedBox(height: 24),
                     _buildLessonSection(
                       title: 'Giáo trình đang học',
@@ -292,13 +394,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: CircleAvatar(
               radius: 24,
               backgroundColor: AppColors.primaryYellow,
-              child: user?.avatar != null && user!.avatar!.isNotEmpty
-                  ? Text(
-                      user.avatar!,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
+              child: user?.avatar != null && 
+                     user!.avatar!.isNotEmpty && 
+                     (user.avatar!.startsWith('http://') || user.avatar!.startsWith('https://'))
+                  ? ClipOval(
+                      child: CachedNetworkImage(
+                        imageUrl: user.avatar!,
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => const CircularProgressIndicator(),
+                        errorWidget: (context, url, error) => Text(
+                          user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryBlack,
+                          ),
+                        ),
                       ),
                     )
                   : Text(
@@ -403,13 +516,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: CircleAvatar(
                           radius: 30,
                           backgroundColor: AppColors.primaryYellow,
-                          child: user?.avatar != null && user!.avatar!.isNotEmpty
-                              ? Text(
-                                  user.avatar!,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primaryBlack,
+                          child: user?.avatar != null && 
+                                 user!.avatar!.isNotEmpty && 
+                                 (user.avatar!.startsWith('http://') || user.avatar!.startsWith('https://'))
+                              ? ClipOval(
+                                  child: CachedNetworkImage(
+                                    imageUrl: user.avatar!,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => const CircularProgressIndicator(),
+                                    errorWidget: (context, url, error) => Text(
+                                      user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primaryBlack,
+                                      ),
+                                    ),
                                   ),
                                 )
                               : Text(
@@ -1234,7 +1358,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                         Text(
-                          '${(skill.percent * 100).round()}%',
+                          '${(skill.percent.clamp(0.0, 1.0) * 100).round()}%',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -1255,7 +1379,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         FractionallySizedBox(
                           alignment: Alignment.centerLeft,
-                          widthFactor: skill.percent,
+                          widthFactor: skill.percent.clamp(0.0, 1.0),
                           child: Container(
                             height: 10,
                             decoration: BoxDecoration(
@@ -1451,6 +1575,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } catch (e) {
       return 0.0;
     }
+  }
+
+  Future<List<DayTab>> _generateWeekDaysAsync() async {
+    final now = DateTime.now();
+    final studyDays = await SharedPreferencesService.getStudyDays();
+    final weekDays = <DayTab>[];
+    
+    // Get Monday of current week
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final labels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    
+    for (int i = 0; i < 7; i++) {
+      final day = monday.add(Duration(days: i));
+      final dayKey = '${day.year}-${day.month}-${day.day}';
+      final isStudied = studyDays.contains(dayKey);
+      
+      weekDays.add(DayTab(
+        label: labels[i],
+        isStudied: isStudied,
+        color: isStudied ? AppColors.primaryYellow : AppColors.primaryBlack,
+      ));
+    }
+    
+    return weekDays;
+  }
+  
+  List<DayTab> _generateWeekDays() {
+    final now = DateTime.now();
+    final weekDays = <DayTab>[];
+    
+    // Get Monday of current week
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final labels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    
+    // Check if tasks were completed today
+    final todayCompleted = _dailyTasks.isNotEmpty && 
+                          _dailyTasks.any((task) => task.progressPercent >= 1.0);
+    
+    for (int i = 0; i < 7; i++) {
+      final day = monday.add(Duration(days: i));
+      final isToday = day.year == now.year && day.month == now.month && day.day == now.day;
+      final isStudied = isToday && todayCompleted;
+      
+      weekDays.add(DayTab(
+        label: labels[i],
+        isStudied: isStudied,
+        color: isStudied ? AppColors.primaryYellow : AppColors.primaryBlack,
+      ));
+    }
+    
+    return weekDays;
   }
 }
 

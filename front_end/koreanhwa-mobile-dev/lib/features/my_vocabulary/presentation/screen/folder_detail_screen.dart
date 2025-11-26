@@ -205,8 +205,8 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
   void _showEditWordDialog(VocabularyWord word) {
     final koreanController = TextEditingController(text: word.korean);
     final vietnameseController = TextEditingController(text: word.vietnamese);
-    final pronunciationController = TextEditingController(text: word.pronunciation);
-    final exampleController = TextEditingController(text: word.example);
+    final pronunciationController = TextEditingController(text: word.pronunciation ?? '');
+    final exampleController = TextEditingController(text: word.example ?? '');
 
     showDialog(
       context: context,
@@ -351,8 +351,8 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
     final vocabList = _folder!.words.map((word) => {
       'korean': word.korean,
       'vietnamese': word.vietnamese,
-      'pronunciation': word.pronunciation,
-      'example': word.example,
+      'pronunciation': word.pronunciation ?? '',
+      'example': word.example ?? '',
     }).toList();
 
     Widget? screen;
@@ -649,14 +649,16 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                                   color: AppColors.primaryBlack,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                word.pronunciation,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.primaryBlack.withOpacity(0.6),
+                              if (word.pronunciation != null && word.pronunciation!.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  word.pronunciation!,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.primaryBlack.withOpacity(0.6),
+                                  ),
                                 ),
-                              ),
+                              ],
                               const SizedBox(height: 4),
                               Text(
                                 word.vietnamese,
@@ -666,7 +668,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                                   color: AppColors.primaryBlack,
                                 ),
                               ),
-                              if (word.example.isNotEmpty) ...[
+                              if (word.example != null && word.example!.isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 Container(
                                   padding: const EdgeInsets.all(8),
@@ -675,7 +677,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    word.example,
+                                    word.example!,
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: AppColors.primaryBlack.withOpacity(0.5),

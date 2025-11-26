@@ -1,69 +1,79 @@
 package org.example.backend.service.impl;
 
 import org.example.backend.dto.SkillProgressResponse;
-import org.example.backend.entity.SkillProgress;
-import org.example.backend.entity.User;
-import org.example.backend.repository.SkillProgressRepository;
+import org.example.backend.entity.Curriculum;
+import org.example.backend.repository.CurriculumProgressRepository;
+import org.example.backend.repository.CurriculumRepository;
 import org.example.backend.repository.UserRepository;
 import org.example.backend.service.SkillProgressService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class SkillProgressServiceImpl implements SkillProgressService {
-    private final SkillProgressRepository skillProgressRepository;
+    private final CurriculumProgressRepository curriculumProgressRepository;
+    private final CurriculumRepository curriculumRepository;
     private final UserRepository userRepository;
 
-    public SkillProgressServiceImpl(SkillProgressRepository skillProgressRepository,
-                                   UserRepository userRepository) {
-        this.skillProgressRepository = skillProgressRepository;
+    public SkillProgressServiceImpl(
+            CurriculumProgressRepository curriculumProgressRepository,
+            CurriculumRepository curriculumRepository,
+            UserRepository userRepository) {
+        this.curriculumProgressRepository = curriculumProgressRepository;
+        this.curriculumRepository = curriculumRepository;
         this.userRepository = userRepository;
     }
 
     @Override
     public List<SkillProgressResponse> getUserSkillProgress(Long userId) {
-        List<SkillProgress> skills = skillProgressRepository.findByUserId(userId);
+        // Verify user exists
+        userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        // Calculate progress based on curriculum progress
+        // Formula: total completed lessons / total lessons in all curricula
+        final int[] totalCompletedLessonsArray = {0}; // Use array to work around effectively final requirement
+        int totalLessons = 0;
+
+        // Get all curricula
+        List<Curriculum> allCurricula = curriculumRepository.findAll();
         
-        // Nếu user chưa có skill progress, tạo skill progress mặc định
-        if (skills.isEmpty()) {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        // Calculate total completed and total lessons
+        for (Curriculum curriculum : allCurricula) {
+            totalLessons += curriculum.getTotalLessons() != null ? curriculum.getTotalLessons() : 0;
             
-            // Tạo skill progress mặc định cho user mới
-            skills = createDefaultSkillProgress(user);
+            // Get user's progress for this curriculum
+            curriculumProgressRepository.findByUserIdAndCurriculumId(userId, curriculum.getId())
+                    .ifPresent(progress -> {
+                        int completed = progress.getCompletedLessons() != null ? progress.getCompletedLessons() : 0;
+                        // Use array to work around effectively final requirement
+                        totalCompletedLessonsArray[0] += completed;
+                    });
         }
         
-        return skills.stream()
-                .map(skill -> new SkillProgressResponse(
-                        skill.getLabel(),
-                        skill.getPercent() != null ? skill.getPercent() : 0.0,
-                        skill.getColor() != null ? skill.getColor() : "#000000"
-                ))
-                .collect(Collectors.toList());
-    }
+        // Extract value from array
+        int totalCompletedLessons = totalCompletedLessonsArray[0];
 
-    private List<SkillProgress> createDefaultSkillProgress(User user) {
-        List<SkillProgress> defaultSkills = List.of(
-                createSkillProgress(user, "Nghe", 0.0, "#FFD700"),
-                createSkillProgress(user, "Nói", 0.0, "#FF6B6B"),
-                createSkillProgress(user, "Đọc", 0.0, "#4ECDC4"),
-                createSkillProgress(user, "Viết", 0.0, "#95E1D3")
-        );
+        // Calculate percentage (0.0 to 1.0)
+        double progressPercent = totalLessons > 0 
+                ? (double) totalCompletedLessons / totalLessons 
+                : 0.0;
         
-        return skillProgressRepository.saveAll(defaultSkills);
-    }
+        // Ensure progress is between 0.0 and 1.0
+        progressPercent = Math.max(0.0, Math.min(1.0, progressPercent));
 
-    private SkillProgress createSkillProgress(User user, String label, Double percent, String color) {
-        SkillProgress skill = new SkillProgress();
-        skill.setUser(user);
-        skill.setLabel(label);
-        skill.setPercent(percent);
-        skill.setColor(color);
-        return skill;
+        // Return exactly 4 skills with the same progress
+        List<SkillProgressResponse> skills = new ArrayList<>();
+        skills.add(new SkillProgressResponse("Nghe", progressPercent, "#FF6B6B"));
+        skills.add(new SkillProgressResponse("Nói", progressPercent, "#4ECDC4"));
+        skills.add(new SkillProgressResponse("Đọc", progressPercent, "#95E1D3"));
+        skills.add(new SkillProgressResponse("Viết", progressPercent, "#F38181"));
+
+        return skills;
     }
 }
 

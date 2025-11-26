@@ -48,10 +48,43 @@ class _CompetitionScreenState extends ConsumerState<CompetitionScreen> {
       final upcomingResponse = await _apiService.getCompetitionsByStatus('upcoming', currentUserId: userId, size: 100);
       final completedResponse = await _apiService.getCompetitionsByStatus('completed', currentUserId: userId, size: 100);
 
+      // Remove duplicates by ID within each status list
+      final List<Competition> uniqueActive = [];
+      final List<Competition> uniqueUpcoming = [];
+      final List<Competition> uniqueCompleted = [];
+      
+      final Set<int> activeIds = {};
+      final Set<int> upcomingIds = {};
+      final Set<int> completedIds = {};
+
+      // Remove duplicates in active list
+      for (var comp in activeResponse.content) {
+        if (!activeIds.contains(comp.id)) {
+          activeIds.add(comp.id);
+          uniqueActive.add(comp);
+        }
+      }
+
+      // Remove duplicates in upcoming list
+      for (var comp in upcomingResponse.content) {
+        if (!upcomingIds.contains(comp.id)) {
+          upcomingIds.add(comp.id);
+          uniqueUpcoming.add(comp);
+        }
+      }
+
+      // Remove duplicates in completed list
+      for (var comp in completedResponse.content) {
+        if (!completedIds.contains(comp.id)) {
+          completedIds.add(comp.id);
+          uniqueCompleted.add(comp);
+        }
+      }
+
       setState(() {
-        _activeCompetitions = activeResponse.content;
-        _upcomingCompetitions = upcomingResponse.content;
-        _completedCompetitions = completedResponse.content;
+        _activeCompetitions = uniqueActive;
+        _upcomingCompetitions = uniqueUpcoming;
+        _completedCompetitions = uniqueCompleted;
         _updateFilteredCompetitions();
         _isLoading = false;
       });

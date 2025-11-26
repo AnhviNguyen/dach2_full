@@ -95,6 +95,7 @@ public class VocabularyFolderServiceImpl implements VocabularyFolderService {
         word.setVietnamese(request.vietnamese());
         word.setPronunciation(request.pronunciation());
         word.setExample(request.example());
+        word.setIsLearned(request.isLearned() != null ? request.isLearned() : false);
         word = wordRepository.save(word);
 
         return toWordResponse(word);
@@ -115,6 +116,9 @@ public class VocabularyFolderServiceImpl implements VocabularyFolderService {
         word.setVietnamese(request.vietnamese());
         word.setPronunciation(request.pronunciation());
         word.setExample(request.example());
+        if (request.isLearned() != null) {
+            word.setIsLearned(request.isLearned());
+        }
         word = wordRepository.save(word);
 
         return toWordResponse(word);
@@ -157,6 +161,7 @@ public class VocabularyFolderServiceImpl implements VocabularyFolderService {
                 word.getVietnamese(),
                 word.getPronunciation(),
                 word.getExample(),
+                word.getIsLearned() != null ? word.getIsLearned() : false,
                 word.getCreatedAt(),
                 word.getUpdatedAt()
         );

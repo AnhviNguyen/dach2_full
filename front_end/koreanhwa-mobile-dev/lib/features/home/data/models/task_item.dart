@@ -17,15 +17,29 @@ class TaskItem {
 
   factory TaskItem.fromJson(Map<String, dynamic> json) {
     IconData parseIcon(String? iconName) {
-      switch (iconName) {
+      switch (iconName?.toLowerCase()) {
         case 'book':
         case 'book_outlined':
+        case 'bookopen':
           return Icons.book_outlined;
         case 'translate':
           return Icons.translate;
         case 'menu_book':
         case 'menu_book_outlined':
           return Icons.menu_book_outlined;
+        case 'filetext':
+          return Icons.description;
+        case 'play':
+          return Icons.play_circle_outline;
+        case 'edit':
+          return Icons.edit;
+        case 'hearing':
+          return Icons.hearing;
+        case 'mic':
+          return Icons.mic;
+        case 'checksquare':
+          return Icons.check_box;
+        case 'task':
         default:
           return Icons.task;
       }

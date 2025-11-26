@@ -25,7 +25,7 @@ class ApiConfig {
       return 'http://localhost:8080/api';
     } else if (Platform.isAndroid) {
 
-      return 'http://192.168.1.100:8080/api';
+      return 'http://192.168.1.134:8080/api';
     } else if (Platform.isIOS) {
       // iOS simulator có thể dùng localhost
       // Nếu chạy trên thiết bị thật, set API_BASE_URL với IP máy host
