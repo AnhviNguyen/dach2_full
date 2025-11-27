@@ -21,7 +21,6 @@ import 'package:koreanhwa_flutter/features/auth/presentation/screens/register_sc
 import 'package:koreanhwa_flutter/features/courses/presentation/screen/course_classroom_screen.dart';
 import 'package:koreanhwa_flutter/features/speak_practice/presentation/screens/speak_practice_home_screen.dart';
 import 'package:koreanhwa_flutter/features/speak_practice/presentation/screens/pronunciation_practice_screen.dart';
-import 'package:koreanhwa_flutter/features/speak_practice/presentation/screens/conversation_practice_screen.dart';
 import 'package:koreanhwa_flutter/features/achievements/presentation/screens/achievements_screen.dart';
 import 'package:koreanhwa_flutter/features/ranking/presentation/screens/ranking_screen.dart';
 import 'package:koreanhwa_flutter/features/textbook/presentation/screens/textbook_screen.dart';
@@ -435,11 +434,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/speak-practice/pronunciation',
         name: 'speak-practice-pronunciation',
         builder: (context, state) => const PronunciationPracticeScreen(),
-      ),
-      GoRoute(
-        path: '/speak-practice/conversation',
-        name: 'speak-practice-conversation',
-        builder: (context, state) => const ConversationPracticeScreen(),
       ),
       GoRoute(
         path: '/settings',

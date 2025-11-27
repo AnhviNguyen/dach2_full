@@ -19,6 +19,7 @@ from typing import Literal, Optional, Tuple, List, Dict, Any
 
 from fastapi import UploadFile
 from openai import OpenAI
+from openai import APIError, RateLimitError
 
 from config import settings
 
@@ -54,12 +55,26 @@ COACH_IVY_BASE_PROMPT = """Bạn là "Coach Ivy", một giáo viên tiếng Hàn
 """
 
 MODE_PROMPTS = {
-    "free_chat": """Người dùng đang có cuộc trò chuyện thân mật để luyện tập tiếng Hàn (한국어).
-- Trả lời câu hỏi một cách tự nhiên bằng tiếng Việt
-- Nhẹ nhàng sửa các lỗi lớn
-- Giữ cuộc trò chuyện diễn ra tự nhiên
-- Sử dụng cơ hội này để dạy khi phù hợp
-- Bao gồm Hangul (한글) cho từ/cụm từ tiếng Hàn""",
+    "free_chat": """Bạn là đối tác trò chuyện tiếng Hàn thân thiện. Người dùng đang luyện tập nói tiếng Hàn với bạn.
+
+**QUAN TRỌNG - Phản hồi như một cuộc hội thoại thực sự:**
+- Phản hồi bằng TIẾNG HÀN (한국어) - đây là speaking practice
+- KHÔNG chỉ lặp lại hoặc echo lại câu nói của người dùng
+- Trả lời, đáp lại, hoặc tiếp tục cuộc trò chuyện một cách tự nhiên
+- Sử dụng tiếng Hàn đơn giản, tự nhiên phù hợp với người học
+- Giữ câu trả lời NGẮN GỌN (1-3 câu)
+- Đặt câu hỏi tiếp theo để giữ cuộc trò chuyện diễn ra tự nhiên
+- Nhẹ nhàng sửa lỗi lớn bằng cách diễn đạt lại (nếu cần)
+- Tập trung vào các chủ đề thực tế, hàng ngày
+
+**Ví dụ hội thoại:**
+- User: "안녕하세요" → Bạn: "안녕하세요! 오늘 날씨가 좋네요. 뭐 하고 있어요?"
+- User: "라면 먹고 싶어요" → Bạn: "라면을 좋아하시는군요! 어떤 라면을 좋아하세요?"
+- User: "한국어 배우고 있어요" → Bạn: "정말 좋아요! 얼마나 배웠어요? 어려워요?"
+
+**Lưu ý:**
+- Phản hồi bằng tiếng Hàn, không phải tiếng Việt
+- Giữ cuộc trò chuyện tự nhiên như đang nói chuyện với bạn""",
 
     "explain": """Người dùng cần giúp đỡ để hiểu một khái niệm, từ, hoặc cụm từ tiếng Hàn.
 - Cung cấp giải thích rõ ràng bằng tiếng Việt
@@ -117,6 +132,10 @@ async def chat_with_coach(
             context_str = f"\n\nContext: {context}"
             system_prompt += context_str
 
+        # For free_chat mode, add explicit instruction to respond in Korean conversationally
+        if mode == "free_chat":
+            system_prompt += "\n\nQUAN TRỌNG: Bạn PHẢI phản hồi bằng TIẾNG HÀN (한국어), không phải tiếng Việt. Hãy phản hồi như một cuộc hội thoại thực sự - trả lời, đáp lại, hoặc tiếp tục cuộc trò chuyện một cách tự nhiên bằng tiếng Hàn. Đừng chỉ lặp lại hoặc echo lại câu nói của người dùng."
+
         # Call ChatGPT
         response = client.chat.completions.create(
             model=settings.openai_model_name,
@@ -124,18 +143,41 @@ async def chat_with_coach(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": message}
             ],
-            temperature=0.7,
+            temperature=0.8,  # Tăng temperature để phản hồi tự nhiên hơn
             max_tokens=300
         )
 
-        reply = response.choices[0].message.content.strip()
+        # Extract reply from response
+        raw_reply = response.choices[0].message.content
+        reply = raw_reply.strip()
+        
+        # Log full response for debugging
+        logger.debug(f"Raw GPT response: {raw_reply}")
+        logger.debug(f"Stripped reply: {reply}")
+        logger.debug(f"Reply length: {len(reply)} chars")
 
         # Determine emotion tag based on response content
         emotion_tag = _analyze_emotion(reply)
 
-        logger.info(f"Coach Ivy replied (mode={mode}, emotion={emotion_tag})")
+        logger.info(f"Coach Ivy replied (mode={mode}, emotion={emotion_tag}): '{reply[:150]}...'")
         return reply, emotion_tag
 
+    except (APIError, RateLimitError) as e:
+        # Log the full error details for debugging
+        error_code = getattr(e, 'status_code', None)
+        error_body = {}
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                if hasattr(e.response, 'json'):
+                    error_body = e.response.json()
+                elif hasattr(e.response, 'text'):
+                    import json
+                    error_body = json.loads(e.response.text)
+            except:
+                pass
+        logger.error(f"Error in chat_with_coach: Error code: {error_code} - {error_body}")
+        # Re-raise so router can handle it with error handler
+        raise
     except Exception as e:
         logger.error(f"Error in chat_with_coach: {e}")
         raise
@@ -213,6 +255,22 @@ Cung cấp phản hồi ngắn gọn bằng tiếng Việt (2-3 câu):
         logger.info(f"Exercise checked: correct={is_correct}, score={score}")
         return is_correct, score, feedback, emotion_tag
 
+    except (APIError, RateLimitError) as e:
+        # Log the full error details for debugging
+        error_code = getattr(e, 'status_code', None)
+        error_body = {}
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                if hasattr(e.response, 'json'):
+                    error_body = e.response.json()
+                elif hasattr(e.response, 'text'):
+                    import json
+                    error_body = json.loads(e.response.text)
+            except:
+                pass
+        logger.error(f"Error in check_exercise_with_feedback: Error code: {error_code} - {error_body}")
+        # Re-raise so router can handle it with error handler
+        raise
     except Exception as e:
         logger.error(f"Error in check_exercise_with_feedback: {e}")
         raise
@@ -269,6 +327,22 @@ async def transcribe_audio(
 
         return transcript
 
+    except (APIError, RateLimitError) as e:
+        # Log the full error details for debugging
+        error_code = getattr(e, 'status_code', None)
+        error_body = {}
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                if hasattr(e.response, 'json'):
+                    error_body = e.response.json()
+                elif hasattr(e.response, 'text'):
+                    import json
+                    error_body = json.loads(e.response.text)
+            except:
+                pass
+        logger.error(f"Error in transcribe_audio: Error code: {error_code} - {error_body}")
+        # Re-raise so router can handle it with error handler
+        raise
     except Exception as e:
         logger.error(f"Error in transcribe_audio: {e}")
         raise
@@ -413,6 +487,23 @@ Output ONLY valid JSON in this exact format:
 
             return feedback_vi, []
 
+    except (APIError, RateLimitError) as e:
+        # Log the full error details for debugging
+        error_code = getattr(e, 'status_code', None)
+        error_body = {}
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                if hasattr(e.response, 'json'):
+                    error_body = e.response.json()
+                elif hasattr(e.response, 'text'):
+                    import json
+                    error_body = json.loads(e.response.text)
+            except:
+                pass
+        logger.error(f"Error in generate_bilingual_feedback: Error code: {error_code} - {error_body}")
+        # Return safe defaults instead of raising - this is called from router which should handle errors
+        # But we'll return a safe fallback so the request doesn't completely fail
+        return "Cố gắng tốt! Tiếp tục luyện tập tiếng Hàn nhé.", []
     except Exception as e:
         logger.error(f"Error in generate_bilingual_feedback: {e}")
         # Return safe defaults

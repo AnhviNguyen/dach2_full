@@ -198,6 +198,42 @@ class LiveTalkSessionStats(BaseModel):
     duration_minutes: int = Field(default=0, description="Session duration in minutes")
 
 
+class PhonemeFeedback(BaseModel):
+    """Feedback for individual phoneme"""
+    expected: str = Field(..., description="Expected phoneme (Hangul)")
+    predicted: str = Field(..., description="What user actually pronounced")
+    position: int = Field(..., description="Position in word/phrase")
+    is_correct: bool = Field(..., description="Whether phoneme is correct")
+
+class WordPronunciationFeedback(BaseModel):
+    """Feedback for individual word pronunciation"""
+    word: str = Field(..., description="Word in Hangul")
+    phonemes: List[PhonemeFeedback] = Field(..., description="Phoneme-level feedback")
+    accuracy: float = Field(..., description="Word pronunciation accuracy (0-100)")
+
+class FreeSpeakResponse(BaseModel):
+    """Response model for free-speak endpoint"""
+    transcript: str = Field(..., description="What the user said (transcribed from audio)")
+    reply: str = Field(..., description="Coach Ivy's response in Korean (conversational)")
+    emotion_tag: Literal["neutral", "praise", "corrective", "encouraging"] = Field(
+        default="neutral",
+        description="Emotion tag for avatar"
+    )
+    tts_url: Optional[str] = Field(
+        default=None,
+        description="URL to TTS audio of coach's response"
+    )
+    # Pronunciation feedback (if model is available)
+    pronunciation_feedback: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Detailed pronunciation feedback from model (phoneme-level)"
+    )
+    pronunciation_accuracy: Optional[float] = Field(
+        default=None,
+        description="Overall pronunciation accuracy (0-100) from model"
+    )
+
+
 class LiveTalkResponse(BaseModel):
     """Response model for live talk turn"""
     user_text: str = Field(..., description="Transcribed user speech")

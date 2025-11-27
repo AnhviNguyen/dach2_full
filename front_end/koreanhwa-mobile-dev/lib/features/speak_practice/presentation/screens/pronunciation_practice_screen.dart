@@ -2,9 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/speak_practice/data/services/speaking_api_service.dart';
+import 'package:koreanhwa_flutter/features/speak_practice/data/services/tts_api_service.dart';
+import 'package:koreanhwa_flutter/features/speak_practice/data/services/user_progress_api_service.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PronunciationPracticeScreen extends StatefulWidget {
   const PronunciationPracticeScreen({super.key});
@@ -16,6 +19,8 @@ class PronunciationPracticeScreen extends StatefulWidget {
 class _PronunciationPracticeScreenState extends State<PronunciationPracticeScreen> {
   final AudioRecorder _audioRecorder = AudioRecorder();
   final SpeakingApiService _apiService = SpeakingApiService();
+  final TtsApiService _ttsService = TtsApiService();
+  final UserProgressApiService _progressService = UserProgressApiService();
   final List<_SoundCategory> _categories = const [
     _SoundCategory(id: 'vowels', title: 'Nguyên âm', icon: 'ㅏ'),
     _SoundCategory(id: 'consonants', title: 'Phụ âm', icon: 'ㄱ'),
@@ -90,11 +95,35 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
   String? _feedback;
   String? _transcript;
   String? _audioPath;
+  bool? _modelStatus;
+  bool _isCheckingModel = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkModelStatus();
+  }
 
   @override
   void dispose() {
     _audioRecorder.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkModelStatus() async {
+    setState(() => _isCheckingModel = true);
+    try {
+      final response = await _apiService.getModelStatus();
+      setState(() {
+        _modelStatus = response['loaded'] as bool? ?? false;
+        _isCheckingModel = false;
+      });
+    } catch (e) {
+      setState(() {
+        _modelStatus = false;
+        _isCheckingModel = false;
+      });
+    }
   }
 
   Future<void> _startRecording() async {
@@ -201,14 +230,24 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
         language: 'ko',
       );
 
+      final score = response['overall_score'] as double? ?? 
+                   response['word_accuracy'] as double? ?? 0.0;
+      final feedback = response['feedback_vi'] as String? ?? 
+                      response['ai_feedback'] as String? ?? '';
+      final transcript = response['transcript'] as String?;
+      final wordErrors = response['word_errors'] as List<dynamic>? ?? [];
+
       setState(() {
         _isProcessing = false;
-        _score = response['overall_score'] as double? ?? 
-                 response['word_accuracy'] as double? ?? 0.0;
-        _feedback = response['feedback_vi'] as String? ?? 
-                   response['ai_feedback'] as String? ?? '';
-        _transcript = response['transcript'] as String?;
+        _score = score;
+        _feedback = feedback;
+        _transcript = transcript;
       });
+
+      // Save weak words if score is low
+      if (score < 85 && wordErrors.isNotEmpty) {
+        await _saveWeakWords(expectedText, wordErrors);
+      }
 
       // Show success message
       if (mounted && _score != null) {
@@ -230,6 +269,61 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Lỗi khi đánh giá phát âm: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveWeakWords(String expectedText, List<dynamic> wordErrors) async {
+    try {
+      // Get user ID (you may need to get this from auth provider)
+      const userId = 'user_1'; // TODO: Get from auth provider
+      final now = DateTime.now().toIso8601String();
+
+      for (final error in wordErrors) {
+        final word = error['word'] as String? ?? '';
+        final errorType = error['error_type'] as String? ?? 'mispronunciation';
+        final errorCount = error['error_count'] as int? ?? 1;
+
+        if (word.isNotEmpty) {
+          await _progressService.saveWeakWord(
+            userId: userId,
+            word: word,
+            errorType: errorType,
+            errorCount: errorCount,
+            lastPracticed: now,
+          );
+        }
+      }
+    } catch (e) {
+      // Silently fail - weak words saving is not critical
+      debugPrint('Error saving weak words: $e');
+    }
+  }
+
+  Future<void> _playTTS(String text) async {
+    try {
+      final response = await _ttsService.generateSpeech(
+        text: text,
+        lang: 'ko',
+      );
+
+      final audioUrl = response['audio_url'] as String?;
+      if (audioUrl != null) {
+        final fullUrl = _ttsService.getMediaUrl(audioUrl);
+        final uri = Uri.parse(fullUrl);
+        
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi phát âm: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -260,6 +354,7 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
       body: Column(
         children: [
           _buildHeader(),
+          _buildModelStatus(),
           _buildCategoryChips(),
           Expanded(
             child: ListView(
@@ -276,6 +371,7 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
                       });
                       _showDrillSheet(sound);
                     },
+                    onPlayTTS: _playTTS,
                   ),
                 ),
               ],
@@ -345,6 +441,66 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
     );
   }
 
+  Widget _buildModelStatus() {
+    if (_isCheckingModel) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+            const SizedBox(width: 12),
+            const Text('Đang kiểm tra model...', style: TextStyle(fontSize: 12)),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: (_modelStatus ?? false) ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: (_modelStatus ?? false) ? Colors.green : Colors.orange,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            (_modelStatus ?? false) ? Icons.check_circle : Icons.warning,
+            color: (_modelStatus ?? false) ? Colors.green : Colors.orange,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              (_modelStatus ?? false) 
+                  ? 'Model pronunciation đã sẵn sàng' 
+                  : 'Model pronunciation chưa sẵn sàng',
+              style: TextStyle(
+                fontSize: 12,
+                color: (_modelStatus ?? false) ? Colors.green : Colors.orange,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (!(_modelStatus ?? false))
+            TextButton(
+              onPressed: _checkModelStatus,
+              child: const Text('Thử lại', style: TextStyle(fontSize: 12)),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryChips() {
     return SizedBox(
       height: 120,
@@ -377,15 +533,21 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(category.icon, style: const TextStyle(fontSize: 26)),
-                  const SizedBox(height: 10),
-                  Text(
-                    category.title,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? AppColors.primaryBlack : AppColors.grayLight,
+                  const SizedBox(height: 8),
+                  Flexible(
+                    child: Text(
+                      category.title,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? AppColors.primaryBlack : AppColors.grayLight,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -393,7 +555,7 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
                     isSelected ? 'Đang luyện' : 'Chọn luyện',
                     style: TextStyle(
                       color: isSelected ? AppColors.primaryBlack : AppColors.grayLight,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -488,10 +650,26 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
           runSpacing: 8,
           children: words
               .map(
-                (word) => Chip(
-                  label: Text(word),
-                  backgroundColor: AppColors.primaryYellow.withOpacity(0.18),
-                  side: const BorderSide(color: AppColors.primaryYellow),
+                (word) => GestureDetector(
+                  onTap: () {
+                    // Extract Korean text and play TTS
+                    final koreanText = word.split('(').first.trim();
+                    if (koreanText.isNotEmpty) {
+                      _playTTS(koreanText);
+                    }
+                  },
+                  child: Chip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(word),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.volume_up, size: 16),
+                      ],
+                    ),
+                    backgroundColor: AppColors.primaryYellow.withOpacity(0.18),
+                    side: const BorderSide(color: AppColors.primaryYellow),
+                  ),
                 ),
               )
               .toList(),
@@ -558,10 +736,10 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
                     ),
                   )
                 : Icon(
-                    _isRecording ? Icons.stop : Icons.mic,
-                    color: _isRecording ? Colors.white : AppColors.primaryYellow,
-                    size: 48,
-                  ),
+              _isRecording ? Icons.stop : Icons.mic,
+              color: _isRecording ? Colors.white : AppColors.primaryYellow,
+              size: 48,
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -641,7 +819,7 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
               ),
             ),
           ] else ...[
-            const SizedBox(height: 4),
+          const SizedBox(height: 4),
             Text(
               _score! >= 85 
                   ? 'Tuyệt vời! Phát âm rất tốt!' 
@@ -649,7 +827,7 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
                       ? 'Tốt lắm! Tiếp tục luyện tập nhé!' 
                       : 'Cố gắng luyện tập thêm nhé!',
               style: const TextStyle(color: AppColors.grayLight),
-            ),
+          ),
           ],
         ],
       ],
@@ -660,10 +838,12 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
 class _SoundCardWidget extends StatelessWidget {
   final _SoundCard sound;
   final VoidCallback onPractice;
+  final Future<void> Function(String) onPlayTTS;
 
   const _SoundCardWidget({
     required this.sound,
     required this.onPractice,
+    required this.onPlayTTS,
   });
 
   @override
@@ -697,7 +877,16 @@ class _SoundCardWidget extends StatelessWidget {
               ),
               const Spacer(),
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  // Play TTS for first example
+                  if (sound.examples.isNotEmpty) {
+                    final firstExample = sound.examples.first;
+                    final koreanText = firstExample.split('(').first.trim();
+                    if (koreanText.isNotEmpty) {
+                      onPlayTTS(koreanText);
+                    }
+                  }
+                },
                 icon: const Icon(Icons.volume_up),
                 color: AppColors.primaryBlack,
               ),

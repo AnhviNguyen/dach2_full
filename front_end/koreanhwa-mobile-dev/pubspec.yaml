@@ -73,7 +73,16 @@ dependencies:
   record: ^5.1.2
   path_provider: ^2.1.4
   permission_handler: ^11.3.1
+  
+  # Audio Playback
+  audioplayers: ^6.1.0
+  
+  # HTTP Client
+  http: ^1.2.0
 
+dependency_overrides:
+  # Fix compatibility issue with record_linux
+  record_linux: ^1.2.1
 
 dev_dependencies:
   flutter_test:

@@ -24,7 +24,7 @@ class AiApiConfig {
     if (kIsWeb) {
       return 'http://localhost:8000/api';
     } else if (Platform.isAndroid) {
-      return 'http://192.168.1.134:8000/api';
+      return 'http://172.16.0.37:8000/api';
     } else if (Platform.isIOS) {
       // iOS simulator có thể dùng localhost
       // Nếu chạy trên thiết bị thật, set AI_API_BASE_URL với IP máy host
@@ -34,10 +34,10 @@ class AiApiConfig {
     }
   }
 
-  // Timeout settings - Tăng timeout cho AI processing
-  static const Duration connectTimeout = Duration(seconds: 90);
-  static const Duration receiveTimeout = Duration(seconds: 90);
-  static const Duration sendTimeout = Duration(seconds: 90);
+  // Timeout settings - Tăng timeout cho AI processing (đặc biệt cho pronunciation model)
+  static const Duration connectTimeout = Duration(seconds: 180);
+  static const Duration receiveTimeout = Duration(seconds: 180);
+  static const Duration sendTimeout = Duration(seconds: 180);
 
   // AI API Endpoints
   static const String topikExams = '/topik/exams';
@@ -57,6 +57,13 @@ class AiApiConfig {
   
   static const String chatTeacher = '/chat-teacher';
   static const String tts = '/tts';
+  
+  // User Progress endpoints
+  static const String userSaveWeakWord = '/user/save-weak-word';
+  static const String userWeakWords = '/user/weak-words';
+  static const String userSavePhrase = '/user/save-phrase';
+  static const String userPhrases = '/user/phrases';
+  static const String userProgress = '/user/progress';
 
   // Headers
   static const String headerContentType = 'Content-Type';

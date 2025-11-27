@@ -82,6 +82,7 @@ class SpeakingApiService {
     required File audioFile,
     String? context,
     String language = 'ko',
+    List<Map<String, String>>? history,
   }) async {
     try {
       final formData = FormData.fromMap({
@@ -91,6 +92,8 @@ class SpeakingApiService {
         ),
         'language': language,
         if (context != null) 'context': context,
+        if (history != null && history.isNotEmpty) 
+          'history': jsonEncode(history),
       });
 
       final response = await _dioClient.postFormData(

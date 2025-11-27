@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
-import 'package:koreanhwa_flutter/features/speak_practice/presentation/screens/conversation_practice_screen.dart';
 import 'package:koreanhwa_flutter/features/speak_practice/presentation/screens/pronunciation_practice_screen.dart';
+import 'package:koreanhwa_flutter/features/speak_practice/presentation/screens/free_speak_screen.dart';
+import 'package:koreanhwa_flutter/features/speak_practice/presentation/screens/chat_teacher_screen.dart';
 import 'package:koreanhwa_flutter/features/speak_practice/data/speak_practice_mock_data.dart';
 import 'package:koreanhwa_flutter/features/speak_practice/presentation/widgets/section_title.dart';
 import 'package:koreanhwa_flutter/features/speak_practice/presentation/widgets/speak_hero_card.dart';
@@ -27,26 +28,24 @@ class SpeakPracticeHomeScreen extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const PronunciationPracticeScreen()),
         ),
       ),
+
       QuickActionItem(
-        title: 'Hội thoại tình huống',
-        icon: Icons.forum_outlined,
-        color: AppColors.primaryBlack,
+        title: 'Nói tự do',
+        icon: Icons.mic_none,
+        color: AppColors.warning,
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const ConversationPracticeScreen()),
+          MaterialPageRoute(builder: (_) => const FreeSpeakScreen()),
         ),
       ),
       QuickActionItem(
-        title: 'Thử thách nhanh',
-        icon: Icons.flash_on_outlined,
-        color: AppColors.warning,
-        onTap: () {},
-      ),
-      QuickActionItem(
-        title: 'Xem báo cáo',
-        icon: Icons.insights_outlined,
-        color: AppColors.success,
-        onTap: () {},
+        title: 'Chat với giáo viên',
+        icon: Icons.chat_bubble_outline,
+        color: AppColors.info,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ChatTeacherScreen()),
+        ),
       ),
     ];
 
@@ -83,10 +82,6 @@ class SpeakPracticeHomeScreen extends StatelessWidget {
               onPronunciationTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const PronunciationPracticeScreen()),
-              ),
-              onConversationTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ConversationPracticeScreen()),
               ),
             ),
             const SizedBox(height: 20),

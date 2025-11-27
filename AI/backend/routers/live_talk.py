@@ -270,10 +270,9 @@ async def live_talk_turn(
         raise
     except Exception as e:
         logger.error(f"Error in live_talk_turn: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to process conversation turn: {str(e)}"
-        )
+        # Use error handler for OpenAI errors (429, etc.)
+        from services.error_handlers import handle_openai_error
+        raise handle_openai_error(e, service_name="Live Talk")
 
 
 @router.get("/mission", response_model=LiveTalkMission)
@@ -410,10 +409,9 @@ Hãy rất khuyến khích và hỗ trợ. Tập trung vào tiến bộ, không 
         raise
     except Exception as e:
         logger.error(f"Error generating session summary: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to generate session summary: {str(e)}"
-        )
+        # Use error handler for OpenAI errors (429, etc.)
+        from services.error_handlers import handle_openai_error
+        raise handle_openai_error(e, service_name="Session summary")
 
 
 # Import OpenAI client at module level (after openai_service is imported)
