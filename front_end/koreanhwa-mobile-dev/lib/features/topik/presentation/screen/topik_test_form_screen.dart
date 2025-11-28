@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/topik/presentation/screen/exam_result_screen.dart';
 import 'package:koreanhwa_flutter/features/topik/data/services/topik_api_service.dart';
+import 'package:koreanhwa_flutter/core/config/ai_api_config.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
 
 class TopikTestFormScreen extends StatefulWidget {
@@ -33,10 +35,16 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
   final ScrollController _scrollController = ScrollController();
   final Map<int, GlobalKey> _questionKeys = {};
   final TopikApiService _apiService = TopikApiService();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  DateTime? _startTime; // Thời gian bắt đầu làm bài
 
   List<Map<String, dynamic>> _questions = [];
   bool _isLoadingQuestions = true;
   String? _errorMessage;
+  String? _questionType; // 'listening' or 'reading'
+  int? _currentlyPlayingQuestionId; // ID của câu hỏi đang phát audio
+  PlayerState _audioPlayerState = PlayerState.stopped;
+  bool _isLoadingAudio = false; // Track loading state separately
 
   // Mock questions fallback - sẽ được thay thế bằng API
   final List<Map<String, dynamic>> _mockQuestions = [
@@ -77,16 +85,6 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
 
   final List<int> _questionNumbers = List.generate(30, (index) => index + 101);
 
-  @override
-  void initState() {
-    super.initState();
-    if (widget.timeLimit.isNotEmpty) {
-      _timeLeft = int.parse(widget.timeLimit) * 60;
-    }
-    _startTimer();
-    _loadQuestions();
-  }
-
   Future<void> _loadQuestions() async {
     setState(() {
       _isLoadingQuestions = true;
@@ -107,11 +105,15 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
         questionType = 'reading';
       }
 
+      setState(() {
+        _questionType = questionType;
+      });
+
       // Load questions từ API
       final response = await _apiService.getTopikQuestions(
         examNumber: examNumber,
         questionType: questionType,
-        limit: 30, // Load 30 câu hỏi
+        limit: questionType == 'listening' ? 30 : 40, // 30 cho listening, 40 cho reading
       );
 
       final questionsData = response['questions'] as List<dynamic>? ?? [];
@@ -126,6 +128,28 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
         final prompt = q['prompt'] as String? ?? '';
         final introText = q['intro_text'] as String? ?? '';
         final questionText = prompt.isNotEmpty ? prompt : introText;
+        
+        // Parse audio URL cho listening questions
+        String? audioUrl;
+        if (questionType == 'listening') {
+          // Lấy audio_url từ question hoặc context.audio
+          audioUrl = q['audio_url'] as String?;
+          if (audioUrl == null || audioUrl.isEmpty) {
+            final context = q['context'] as Map<String, dynamic>?;
+            audioUrl = context?['audio'] as String?;
+          }
+          
+          // Nếu audioUrl là relative path, convert thành full URL
+          if (audioUrl != null && audioUrl.isNotEmpty && !audioUrl.startsWith('http')) {
+            // Nếu là relative path từ backend, cần thêm base URL
+            // Backend trả về audio URL có thể là full URL hoặc relative path
+            // Nếu là relative, cần thêm base URL của backend
+            if (!audioUrl.startsWith('/')) {
+              audioUrl = '/$audioUrl';
+            }
+            // Base URL sẽ được thêm khi play audio
+          }
+        }
         
         // Parse answers
         final answers = q['answers'] as List<dynamic>? ?? [];
@@ -143,6 +167,9 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
           'id': questionId,
           'question': questionText,
           'options': options,
+          'audio_url': audioUrl, // Lưu audio URL cho listening questions
+          'question_id': q['question_id'] as String? ?? '', // Lưu question_id từ API
+          'number': q['number'] as int? ?? (index + 1), // Lưu số thứ tự câu hỏi
         };
       }).toList();
 
@@ -170,9 +197,33 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _startTime = DateTime.now(); // Lưu thời gian bắt đầu
+    if (widget.timeLimit.isNotEmpty) {
+      _timeLeft = int.parse(widget.timeLimit) * 60;
+    }
+    _startTimer();
+    _loadQuestions();
+    
+    // Lắng nghe trạng thái audio player
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _audioPlayerState = state;
+          if (state == PlayerState.completed || state == PlayerState.stopped) {
+            _currentlyPlayingQuestionId = null;
+          }
+        });
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
     _scrollController.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -201,6 +252,175 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
     });
   }
 
+  /// Play audio cho listening question
+  Future<void> _playAudio(int questionId, String? audioUrl) async {
+    if (audioUrl == null || audioUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không có file audio cho câu hỏi này'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Nếu đang phát câu hỏi khác, dừng lại
+      if (_currentlyPlayingQuestionId != null && _currentlyPlayingQuestionId != questionId) {
+        await _audioPlayer.stop();
+      }
+
+      // Nếu đang phát cùng câu hỏi, toggle pause/play
+      if (_currentlyPlayingQuestionId == questionId && _audioPlayerState == PlayerState.playing) {
+        await _audioPlayer.pause();
+        return;
+      }
+
+      // Nếu đang pause, resume
+      if (_currentlyPlayingQuestionId == questionId && _audioPlayerState == PlayerState.paused) {
+        await _audioPlayer.resume();
+        return;
+      }
+
+      // Build full URL
+      String fullAudioUrl = audioUrl;
+      if (!audioUrl.startsWith('http')) {
+        // Relative path - thêm base URL
+        final baseUrl = AiApiConfig.baseUrl.replaceAll('/api', '');
+        if (audioUrl.startsWith('/')) {
+          fullAudioUrl = '$baseUrl$audioUrl';
+        } else {
+          fullAudioUrl = '$baseUrl/$audioUrl';
+        }
+      }
+
+      setState(() {
+        _currentlyPlayingQuestionId = questionId;
+        _isLoadingAudio = true;
+        _audioPlayerState = PlayerState.stopped;
+      });
+
+      // Play audio
+      await _audioPlayer.play(UrlSource(fullAudioUrl));
+
+      setState(() {
+        _isLoadingAudio = false;
+        _audioPlayerState = PlayerState.playing;
+      });
+    } catch (e) {
+      setState(() {
+        _currentlyPlayingQuestionId = null;
+        _audioPlayerState = PlayerState.stopped;
+        _isLoadingAudio = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi phát audio: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Stop audio playback
+  Future<void> _stopAudio() async {
+    try {
+      await _audioPlayer.stop();
+      setState(() {
+        _currentlyPlayingQuestionId = null;
+        _audioPlayerState = PlayerState.stopped;
+      });
+    } catch (e) {
+      debugPrint('Error stopping audio: $e');
+    }
+  }
+
+  /// Build audio player widget cho listening questions
+  Widget _buildAudioPlayer(int questionId, String? audioUrl) {
+    if (_questionType != 'listening' || audioUrl == null || audioUrl.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final isPlaying = _currentlyPlayingQuestionId == questionId && 
+                     _audioPlayerState == PlayerState.playing;
+    final isLoading = _currentlyPlayingQuestionId == questionId && _isLoadingAudio;
+    final isPaused = _currentlyPlayingQuestionId == questionId && 
+                    _audioPlayerState == PlayerState.paused;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primaryYellow.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primaryYellow.withOpacity(0.5),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: isLoading 
+                ? null 
+                : () => _playAudio(questionId, audioUrl),
+            icon: isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    isPlaying ? Icons.pause_circle : Icons.play_circle,
+                    size: 40,
+                    color: AppColors.primaryYellow,
+                  ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isPlaying 
+                      ? 'Đang phát audio...' 
+                      : isPaused 
+                          ? 'Đã tạm dừng' 
+                          : 'Nhấn để phát audio',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryBlack,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'File audio cho câu hỏi này',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.primaryBlack.withOpacity(0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isPlaying || isPaused)
+            IconButton(
+              onPressed: _stopAudio,
+              icon: const Icon(
+                Icons.stop_circle,
+                size: 32,
+                color: Colors.red,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   void _scrollToQuestion(int questionId) {
     final key = _questionKeys[questionId];
     if (key != null && key.currentContext != null) {
@@ -218,6 +438,12 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
 
   void _submitTest() {
     _timer?.cancel();
+    // Tính thời gian đã làm bài (tính bằng giây)
+    final endTime = DateTime.now();
+    final timeSpent = _startTime != null 
+        ? endTime.difference(_startTime!).inSeconds 
+        : 0;
+    
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -226,6 +452,7 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
           examTitle: widget.examTitle,
           answers: _selectedAnswers,
           questions: _questions,
+          timeSpent: timeSpent,
         ),
       ),
     );
@@ -453,6 +680,12 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
                                 ),
                               ),
                               const SizedBox(height: 12),
+                              // Audio player cho listening questions
+                              if (_questionType == 'listening')
+                                _buildAudioPlayer(
+                                  questionId,
+                                  question['audio_url'] as String?,
+                                ),
                               SelectableText(
                                 question['question'] as String,
                                 style: const TextStyle(

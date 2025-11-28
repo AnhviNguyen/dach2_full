@@ -7,6 +7,14 @@ import 'package:koreanhwa_flutter/features/textbook/data/models/lesson_progress.
 import 'package:koreanhwa_flutter/features/textbook/data/services/textbook_api_service.dart';
 import 'package:koreanhwa_flutter/features/textbook/presentation/widgets/continue_learning_card.dart';
 import 'package:koreanhwa_flutter/features/textbook/presentation/widgets/lesson_button.dart';
+import 'package:koreanhwa_flutter/features/vocabulary/data/services/progress_api_service.dart';
+import 'package:koreanhwa_flutter/core/utils/user_utils.dart';
+import 'package:koreanhwa_flutter/features/lessons/data/services/lesson_api_service.dart';
+import 'package:koreanhwa_flutter/features/lessons/data/models/lesson_response.dart';
+import 'package:koreanhwa_flutter/features/learning_curriculum/presentation/widgets/grammar_card.dart';
+import 'package:koreanhwa_flutter/features/learning_curriculum/data/models/grammar_item.dart' as local;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class TextbookScreen extends StatefulWidget {
   const TextbookScreen({super.key});
@@ -16,18 +24,81 @@ class TextbookScreen extends StatefulWidget {
 }
 
 class _TextbookScreenState extends State<TextbookScreen> {
-  int currentBook = 2;
-  int currentLesson = 8;
+  int currentBook = 1;
+  int currentLesson = 1;
   int? expandedBookId;
   final Map<String, LessonProgress> lessonProgress = {};
   List<Textbook> textbooks = [];
   bool isLoading = true;
   final TextbookApiService _apiService = TextbookApiService();
+  final ProgressApiService _progressApiService = ProgressApiService();
+  final LessonApiService _lessonApiService = LessonApiService();
+  
+  static const String _keyLessonProgress = 'textbook_lesson_progress';
+  static const String _keyCurrentBook = 'textbook_current_book';
+  static const String _keyCurrentLesson = 'textbook_current_lesson';
 
   @override
   void initState() {
     super.initState();
+    _loadSavedProgress();
     _loadTextbooks();
+  }
+  
+  Future<void> _loadSavedProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Load current book and lesson
+      final savedBook = prefs.getInt(_keyCurrentBook);
+      final savedLesson = prefs.getInt(_keyCurrentLesson);
+      if (savedBook != null) currentBook = savedBook;
+      if (savedLesson != null) currentLesson = savedLesson;
+      
+      // Load lesson progress
+      final progressJson = prefs.getString(_keyLessonProgress);
+      if (progressJson != null) {
+        final Map<String, dynamic> progressMap = jsonDecode(progressJson);
+        progressMap.forEach((key, value) {
+          if (value is Map) {
+            lessonProgress[key] = LessonProgress(
+              unlocked: value['unlocked'] as bool? ?? false,
+              learn: value['learn'] as bool? ?? false,
+              vocab: value['vocab'] as bool? ?? false,
+              grammar: value['grammar'] as bool? ?? false,
+              chat: value['chat'] as bool? ?? false,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading saved progress: $e');
+    }
+  }
+  
+  Future<void> _saveProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Save current book and lesson
+      await prefs.setInt(_keyCurrentBook, currentBook);
+      await prefs.setInt(_keyCurrentLesson, currentLesson);
+      
+      // Save lesson progress
+      final progressMap = <String, Map<String, bool>>{};
+      lessonProgress.forEach((key, progress) {
+        progressMap[key] = {
+          'unlocked': progress.unlocked,
+          'learn': progress.learn,
+          'vocab': progress.vocab,
+          'grammar': progress.grammar,
+          'chat': progress.chat,
+        };
+      });
+      await prefs.setString(_keyLessonProgress, jsonEncode(progressMap));
+    } catch (e) {
+      debugPrint('Error saving progress: $e');
+    }
   }
 
   Future<void> _loadTextbooks() async {
@@ -44,21 +115,62 @@ class _TextbookScreenState extends State<TextbookScreen> {
         }
       });
       
-      // Initialize lesson progress
+      // Initialize lesson progress (merge with saved progress)
       for (final textbook in textbooks) {
         for (int lesson = 1; lesson <= textbook.totalLessons; lesson++) {
           final key = '${textbook.bookNumber}-$lesson';
-          final isUnlocked = !textbook.isLocked && 
-              (lesson <= textbook.completedLessons + 1);
-          lessonProgress[key] = LessonProgress(
-            unlocked: isUnlocked,
-            learn: lesson <= textbook.completedLessons,
-            vocab: lesson <= textbook.completedLessons,
-            grammar: lesson <= textbook.completedLessons,
-            chat: false,
-          );
+          
+          // Use saved progress if exists, otherwise initialize
+          if (!lessonProgress.containsKey(key)) {
+            final isUnlocked = !textbook.isLocked && 
+                (lesson <= textbook.completedLessons + 1);
+            lessonProgress[key] = LessonProgress(
+              unlocked: isUnlocked,
+              learn: lesson <= textbook.completedLessons,
+              vocab: lesson <= textbook.completedLessons,
+              grammar: lesson <= textbook.completedLessons,
+              chat: false,
+            );
+          } else {
+            // Update unlocked status based on previous lesson completion
+            final prevKey = '${textbook.bookNumber}-${lesson - 1}';
+            final prevProgress = lessonProgress[prevKey];
+            final isUnlocked = !textbook.isLocked && 
+                (lesson == 1 || (prevProgress != null && 
+                 prevProgress.learn && prevProgress.vocab && 
+                 prevProgress.grammar && prevProgress.chat));
+            
+            final existing = lessonProgress[key]!;
+            lessonProgress[key] = LessonProgress(
+              unlocked: isUnlocked || existing.unlocked,
+              learn: existing.learn,
+              vocab: existing.vocab,
+              grammar: existing.grammar,
+              chat: existing.chat,
+            );
+          }
         }
       }
+      
+      // Update current book/lesson based on progress (find first incomplete unlocked lesson)
+      bool found = false;
+      for (final textbook in textbooks) {
+        if (found) break;
+        for (int lesson = 1; lesson <= textbook.totalLessons; lesson++) {
+          final key = '${textbook.bookNumber}-$lesson';
+          final progress = lessonProgress[key];
+          if (progress != null && progress.unlocked && 
+              !(progress.learn && progress.vocab && progress.grammar && progress.chat)) {
+            currentBook = textbook.bookNumber;
+            currentLesson = lesson;
+            found = true;
+            break;
+          }
+        }
+      }
+      
+      setState(() {});
+      _saveProgress();
     } catch (e) {
       setState(() {
         isLoading = false;
@@ -102,11 +214,14 @@ class _TextbookScreenState extends State<TextbookScreen> {
             );
             break;
           case 'grammar':
+            // Show grammar bottom sheet
+            _showGrammarBottomSheet(bookId, lessonId);
+            // Mark as completed after showing
             lessonProgress[key] = LessonProgress(
               unlocked: progress.unlocked,
               learn: progress.learn,
               vocab: progress.vocab,
-              grammar: !progress.grammar,
+              grammar: true,
               chat: progress.chat,
             );
             break;
@@ -123,13 +238,40 @@ class _TextbookScreenState extends State<TextbookScreen> {
 
         final newProgress = lessonProgress[key]!;
         if (newProgress.learn && newProgress.vocab && newProgress.grammar && newProgress.chat) {
+          // Lesson is complete - save to database
+          _saveLessonProgress(bookId, lessonId, completed: true);
+          
+          // Unlock next lesson
           int nextLesson = lessonId + 1;
           int nextBook = bookId;
-          if (nextLesson > 15) {
+          final currentTextbook = textbooks.firstWhere(
+            (t) => t.bookNumber == bookId,
+            orElse: () => textbooks.first,
+          );
+          
+          if (nextLesson > currentTextbook.totalLessons) {
+            // Move to next book
             nextLesson = 1;
             nextBook = bookId + 1;
-          }
-          if (nextBook <= 6) {
+            final nextTextbook = textbooks.firstWhere(
+              (t) => t.bookNumber == nextBook,
+              orElse: () => textbooks.last,
+            );
+            if (!nextTextbook.isLocked) {
+              final nextKey = '$nextBook-$nextLesson';
+              lessonProgress[nextKey] = LessonProgress(
+                unlocked: true,
+                learn: false,
+                vocab: false,
+                grammar: false,
+                chat: false,
+              );
+              // Update current book/lesson
+              currentBook = nextBook;
+              currentLesson = nextLesson;
+            }
+          } else {
+            // Unlock next lesson in same book
             final nextKey = '$nextBook-$nextLesson';
             lessonProgress[nextKey] = LessonProgress(
               unlocked: true,
@@ -138,10 +280,100 @@ class _TextbookScreenState extends State<TextbookScreen> {
               grammar: false,
               chat: false,
             );
+            // Update current lesson
+            currentLesson = nextLesson;
           }
+        } else {
+          // Save partial progress
+          _saveLessonProgress(bookId, lessonId, completed: false);
         }
+        
+        // Save progress to SharedPreferences
+        _saveProgress();
       }
     });
+  }
+  
+  Future<void> _showGrammarBottomSheet(int bookId, int lessonId) async {
+    try {
+      // Show loading
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Container(
+          height: MediaQuery.of(context).size.height * 0.9,
+          decoration: const BoxDecoration(
+            color: AppColors.primaryWhite,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: const Center(child: CircularProgressIndicator()),
+        ),
+      );
+      
+      // Load grammar data
+      final textbook = await _apiService.getTextbookByBookNumber(bookId);
+      
+      if (textbook.id == null) {
+        throw Exception('Không tìm thấy ID của giáo trình');
+      }
+      
+      final lessonsResponse = await _lessonApiService.getCurriculumLessonsByCurriculumId(
+        textbook.id!,
+        page: 0,
+        size: 100,
+      );
+      
+      final lesson = lessonsResponse.content.firstWhere(
+        (l) => l.lessonNumber == lessonId,
+        orElse: () => lessonsResponse.content.first,
+      );
+      
+      final lessonDetail = await _lessonApiService.getCurriculumLessonById(lesson.id);
+      
+      // Close loading and show grammar
+      if (mounted) {
+        Navigator.pop(context);
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => _GrammarBottomSheet(
+            bookId: bookId,
+            lessonId: lessonId,
+            grammar: lessonDetail.grammar.map((g) => local.GrammarItem(
+              title: g.title,
+              explanation: g.explanation,
+              examples: g.examples,
+            )).toList(),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải ngữ pháp: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveLessonProgress(int bookId, int lessonId, {required bool completed}) async {
+    try {
+      final userId = await UserUtils.getUserId();
+      if (userId != null) {
+        await _progressApiService.saveProgress(
+          userId: userId,
+          bookId: bookId,
+          lessonId: lessonId,
+          completed: completed,
+        );
+      }
+    } catch (e) {
+      // Silently fail - progress saving is not critical for UI
+      print('Failed to save progress: $e');
+    }
   }
 
   bool isLessonComplete(int bookId, int lessonId) {
@@ -481,6 +713,18 @@ class _TextbookScreenState extends State<TextbookScreen> {
                     final progress = lessonProgress[key];
                     final isUnlocked = progress?.unlocked ?? false;
                     final isComplete = isLessonComplete(textbook.bookNumber, lessonId);
+                    
+                    // Update current book/lesson if this is the first incomplete unlocked lesson
+                    if (isUnlocked && !isComplete && 
+                        currentBook == textbook.bookNumber && currentLesson == lessonId) {
+                      // Keep current
+                    } else if (isUnlocked && !isComplete && 
+                               (currentBook != textbook.bookNumber || 
+                                (currentBook == textbook.bookNumber && currentLesson > lessonId))) {
+                      // Update to earlier incomplete lesson
+                      currentBook = textbook.bookNumber;
+                      currentLesson = lessonId;
+                    }
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -639,6 +883,102 @@ class _TextbookScreenState extends State<TextbookScreen> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// Grammar Bottom Sheet Widget
+class _GrammarBottomSheet extends StatelessWidget {
+  final int bookId;
+  final int lessonId;
+  final List<local.GrammarItem> grammar;
+
+  const _GrammarBottomSheet({
+    required this.bookId,
+    required this.lessonId,
+    required this.grammar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.9,
+      decoration: const BoxDecoration(
+        color: AppColors.primaryWhite,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.primaryYellow,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ngữ pháp - Bài $lessonId',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryBlack,
+                        ),
+                      ),
+                      Text(
+                        'Sách $bookId',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.primaryBlack.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.primaryBlack),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          // Content
+          Expanded(
+            child: grammar.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.menu_book_outlined,
+                          size: 64,
+                          color: AppColors.primaryBlack.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Chưa có ngữ pháp cho bài này',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppColors.primaryBlack.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: grammar.map((item) => GrammarCard(grammar: item)).toList(),
+                    ),
+                  ),
+          ),
         ],
       ),
     );

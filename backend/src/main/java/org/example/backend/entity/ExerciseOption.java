@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "exercise_options")
 @Data
@@ -24,5 +26,18 @@ public class ExerciseOption {
 
     @Column(name = "option_order", nullable = false)
     private Integer optionOrder;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ExerciseOption)) return false;
+        ExerciseOption that = (ExerciseOption) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }
 

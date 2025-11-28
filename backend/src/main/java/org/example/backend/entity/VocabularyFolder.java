@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * VocabularyFolder - Thư mục từ vựng của người dùng
@@ -48,7 +48,8 @@ public class VocabularyFolder {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "folder", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<VocabularyWord> words = new ArrayList<>();
+    @OrderBy("id ASC")
+    private Set<VocabularyWord> words = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {

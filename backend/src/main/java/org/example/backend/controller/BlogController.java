@@ -33,7 +33,7 @@ public class BlogController {
             @RequestParam(value = "direction", defaultValue = "DESC") Sort.Direction direction,
             @RequestParam(value = "currentUserId", required = false) Long currentUserId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-        PageResponse<BlogPostResponse> response = blogService.getAllPosts(pageable);
+        PageResponse<BlogPostResponse> response = blogService.getAllPosts(pageable, currentUserId);
         return ResponseEntity.ok(response);
     }
 

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Table(name = "course_enrollments", uniqueConstraints = {
@@ -45,6 +46,19 @@ public class CourseEnrollment {
     @PrePersist
     protected void onCreate() {
         enrolledAt = LocalDateTime.now();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof CourseEnrollment)) return false;
+        CourseEnrollment that = (CourseEnrollment) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }
 

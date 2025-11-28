@@ -4,6 +4,7 @@ import org.example.backend.dto.*;
 import org.example.backend.entity.*;
 import org.example.backend.repository.*;
 import org.example.backend.service.CompetitionService;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,36 +43,68 @@ public class CompetitionServiceImpl implements CompetitionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<CompetitionResponse> getAllCompetitions(Pageable pageable, Long currentUserId) {
-        Page<Competition> competitions = competitionRepository.findAll(pageable);
-        List<CompetitionResponse> content = competitions.getContent().stream()
+        Page<Competition> competitions = competitionRepository.findAllDistinct(pageable);
+        
+        // Initialize lazy collections and remove duplicates by ID
+        Map<Long, Competition> uniqueCompetitionsMap = new LinkedHashMap<>();
+        for (Competition competition : competitions.getContent()) {
+            // Initialize lazy collections
+            Hibernate.initialize(competition.getCompetitionParticipants());
+            Hibernate.initialize(competition.getQuestions());
+            
+            // Remove duplicates by ID (keep first occurrence)
+            uniqueCompetitionsMap.putIfAbsent(competition.getId(), competition);
+        }
+        
+        List<CompetitionResponse> content = uniqueCompetitionsMap.values().stream()
                 .map(c -> toCompetitionResponse(c, currentUserId))
                 .collect(Collectors.toList());
-
+        
+        // Recalculate total elements based on unique competitions
+        long uniqueTotal = uniqueCompetitionsMap.size();
+        
         return new PageResponse<>(
                 content,
                 competitions.getNumber(),
                 competitions.getSize(),
-                competitions.getTotalElements(),
-                competitions.getTotalPages(),
+                uniqueTotal,
+                (int) Math.ceil((double) uniqueTotal / competitions.getSize()),
                 competitions.hasNext(),
                 competitions.hasPrevious()
         );
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<CompetitionResponse> getCompetitionsByStatus(String status, Pageable pageable, Long currentUserId) {
-        Page<Competition> competitions = competitionRepository.findByStatus(status, pageable);
-        List<CompetitionResponse> content = competitions.getContent().stream()
+        Page<Competition> competitions = competitionRepository.findByStatusDistinct(status, pageable);
+        
+        // Initialize lazy collections and remove duplicates by ID
+        Map<Long, Competition> uniqueCompetitionsMap = new LinkedHashMap<>();
+        for (Competition competition : competitions.getContent()) {
+            // Initialize lazy collections
+            Hibernate.initialize(competition.getCompetitionParticipants());
+            Hibernate.initialize(competition.getQuestions());
+            
+            // Remove duplicates by ID (keep first occurrence)
+            uniqueCompetitionsMap.putIfAbsent(competition.getId(), competition);
+        }
+        
+        List<CompetitionResponse> content = uniqueCompetitionsMap.values().stream()
                 .map(c -> toCompetitionResponse(c, currentUserId))
                 .collect(Collectors.toList());
-
+        
+        // Recalculate total elements based on unique competitions
+        long uniqueTotal = uniqueCompetitionsMap.size();
+        
         return new PageResponse<>(
                 content,
                 competitions.getNumber(),
                 competitions.getSize(),
-                competitions.getTotalElements(),
-                competitions.getTotalPages(),
+                uniqueTotal,
+                (int) Math.ceil((double) uniqueTotal / competitions.getSize()),
                 competitions.hasNext(),
                 competitions.hasPrevious()
         );
@@ -78,7 +112,7 @@ public class CompetitionServiceImpl implements CompetitionService {
 
     @Override
     public CompetitionResponse getCompetitionById(Long id, Long currentUserId) {
-        Competition competition = competitionRepository.findById(id)
+        Competition competition = competitionRepository.findByIdWithCollections(id)
                 .orElseThrow(() -> new RuntimeException("Competition not found"));
         return toCompetitionResponse(competition, currentUserId);
     }
@@ -280,6 +314,8 @@ public class CompetitionServiceImpl implements CompetitionService {
     }
 
     private CompetitionQuestionResponse toQuestionResponse(CompetitionQuestion question) {
+        // Ensure options are loaded
+        Hibernate.initialize(question.getOptions());
         List<CompetitionQuestionOptionResponse> options = question.getOptions().stream()
                 .sorted((a, b) -> Integer.compare(a.getOptionOrder(), b.getOptionOrder()))
                 .map(opt -> new CompetitionQuestionOptionResponse(
@@ -288,6 +324,7 @@ public class CompetitionServiceImpl implements CompetitionService {
                         opt.getOptionOrder(),
                         opt.getIsCorrect()
                 ))
+                .distinct()
                 .collect(Collectors.toList());
 
         return new CompetitionQuestionResponse(

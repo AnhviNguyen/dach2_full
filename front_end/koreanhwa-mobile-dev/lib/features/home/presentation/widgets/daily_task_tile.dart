@@ -33,12 +33,12 @@ class DailyTaskTile extends StatelessWidget {
         color: AppColors.primaryWhite,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: task.progressColor.withOpacity(0.2),
+          color: task.progressColor.withOpacity(0.8),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: task.progressColor.withOpacity(0.1),
+            color: task.progressColor.withOpacity(0.8),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -52,10 +52,10 @@ class DailyTaskTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: task.progressColor.withOpacity(0.2),
+                color: task.progressColor.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: task.progressColor.withOpacity(0.3),
+                  color: task.progressColor.withOpacity(0.5),
                   width: 1,
                 ),
               ),
@@ -79,7 +79,7 @@ class DailyTaskTile extends StatelessWidget {
                       Container(
                         height: 10,
                         decoration: BoxDecoration(
-                          color: task.progressColor.withOpacity(0.15),
+                          color: task.progressColor.withOpacity(0.9),
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
@@ -120,4 +120,3 @@ class DailyTaskTile extends StatelessWidget {
     );
   }
 }
-

@@ -433,14 +433,17 @@ def check_pronunciation(
         features = (features - _model_mean) / (_model_std + 1e-8)
         features_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0).to(_model_device)
         
-        # 4. Predict phonemes
+        # 4. Predict phonemes từ audio
+        #    Audio → Wav2Vec2 features → Conformer model → logits → phoneme IDs → phoneme strings
         with torch.no_grad():
-            logits = _pronunciation_model(features_tensor)
+            logits = _pronunciation_model(features_tensor)  # (batch, time, num_phonemes)
             log_probs = F.log_softmax(logits, dim=-1)
-            pred_ids = ctc_greedy_decode(log_probs.cpu())[0]
-            predicted_phonemes = [_id_to_phoneme.get(pid, '?') for pid in pred_ids]
+            pred_ids = ctc_greedy_decode(log_probs.cpu())[0]  # Decode CTC → phoneme IDs
+            predicted_phonemes = [_id_to_phoneme.get(pid, '?') for pid in pred_ids]  # IDs → phoneme strings (ㄱ, ㅏ, ...)
         
-        # 5. Get expected phonemes from text
+        # 5. Get expected phonemes từ expected_text (Hangul)
+        #    Hangul text → phân tích Unicode → phoneme strings (ㄱ, ㅏ, ...)
+        #    Ví dụ: "안녕하세요" → ["ㅇ", "ㅏ", "ㄴ", "ㄴ", "ㅕ", "ㅇ", "ㅎ", "ㅏ", "ㅅ", "ㅔ", "ㅇ", "ㅛ"]
         expected_phonemes = hangul_g2p(expected_text)
         expected_phonemes = [p for p in expected_phonemes if p != '<sp>']
         predicted_phonemes = [p for p in predicted_phonemes if p != '<sp>' and p != '<blank>']

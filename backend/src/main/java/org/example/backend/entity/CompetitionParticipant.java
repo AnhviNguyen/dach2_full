@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Table(name = "competition_participants")
@@ -36,5 +37,18 @@ public class CompetitionParticipant {
 
     @Column(length = 50)
     private String status = "registered";
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof CompetitionParticipant)) return false;
+        CompetitionParticipant that = (CompetitionParticipant) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }
 

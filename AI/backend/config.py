@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     # Environment
     env: Literal["development", "production", "testing"] = "development"
 
+    # MySQL Configuration
+    mysql_host: str = "localhost"
+    mysql_port: int = 3306
+    mysql_user: str = "root"
+    mysql_password: str = ""
+    mysql_database: str = "koreanhwa"
+
     class Config:
         env_file = ".env"
         case_sensitive = False

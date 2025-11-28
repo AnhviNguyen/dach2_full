@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "course_lessons")
@@ -48,14 +48,17 @@ public class CourseLesson {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "courseLesson", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CourseVocabulary> vocabularies = new ArrayList<>();
+    @OneToMany(mappedBy = "courseLesson", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    private Set<CourseVocabulary> vocabularies = new HashSet<>();
 
-    @OneToMany(mappedBy = "courseLesson", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Grammar> grammars = new ArrayList<>();
+    @OneToMany(mappedBy = "courseLesson", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    private Set<Grammar> grammars = new HashSet<>();
 
-    @OneToMany(mappedBy = "courseLesson", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Exercise> exercises = new ArrayList<>();
+    @OneToMany(mappedBy = "courseLesson", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    private Set<Exercise> exercises = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {

@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "textbook_progress", uniqueConstraints = {
         @UniqueConstraint(columnNames = { "user_id", "textbook_id" })
@@ -34,4 +36,17 @@ public class TextbookProgress {
 
     @Column(name = "is_locked", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean isLocked = false;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof TextbookProgress)) return false;
+        TextbookProgress that = (TextbookProgress) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }

@@ -31,8 +31,29 @@ class CompetitionQuestion {
     List<String> options = [];
     int correctAnswer = 0;
 
-    // Parse options from backend response
-    if (json['options'] != null && json['options'] is List) {
+    // Parse từ TOPIK API format (từ AI backend)
+    if (json['answers'] != null && json['answers'] is List) {
+      final answersList = json['answers'] as List<dynamic>;
+      options = answersList.map((ans) {
+        if (ans is Map<String, dynamic>) {
+          return ans['text'] as String? ?? '';
+        }
+        return ans.toString();
+      }).toList();
+
+      // Tìm đáp án đúng (TOPIK format thường có correct_answer hoặc is_correct)
+      for (int i = 0; i < answersList.length; i++) {
+        if (answersList[i] is Map<String, dynamic>) {
+          final ans = answersList[i] as Map<String, dynamic>;
+          if (ans['is_correct'] == true || ans['isCorrect'] == true) {
+            correctAnswer = i;
+            break;
+          }
+        }
+      }
+    }
+    // Parse từ backend competition format (nếu có)
+    else if (json['options'] != null && json['options'] is List) {
       final optionsList = json['options'] as List<dynamic>;
       options = optionsList.map((opt) {
         if (opt is Map<String, dynamic>) {
@@ -53,10 +74,12 @@ class CompetitionQuestion {
       }
     }
 
-    // If correctAnswer is in the response, use it
+    // Nếu có correctAnswer trong response, dùng nó
     if (json['correctAnswer'] != null) {
-      final correct = json['correctAnswer'] as String?;
-      if (correct != null) {
+      final correct = json['correctAnswer'];
+      if (correct is int) {
+        correctAnswer = correct;
+      } else if (correct is String) {
         // Try to find index of correct answer in options
         for (int i = 0; i < options.length; i++) {
           if (options[i] == correct) {
@@ -67,19 +90,41 @@ class CompetitionQuestion {
       }
     }
 
+    // Parse question text từ TOPIK format
+    final prompt = json['prompt'] as String? ?? '';
+    final introText = json['intro_text'] as String? ?? '';
+    final questionText = prompt.isNotEmpty ? prompt : introText;
+    
+    // Parse audio URL
+    final audioUrl = json['audio_url'] as String? ?? 
+                     json['context']?['audio'] as String? ?? '';
+    
+    // Parse question type
+    final questionType = json['question_type'] as String? ?? 'reading';
+    final category = questionType == 'listening' ? 'Listening' : 'Reading';
+    final categoryKr = questionType == 'listening' ? '듣기' : '읽기';
+    
+    // Generate unique ID từ question_id hoặc number
+    final questionId = json['question_id'] as String? ?? '';
+    final number = json['number'] as int? ?? 0;
+    final examNumber = json['exam_number'] as String? ?? '';
+    final id = questionId.isNotEmpty 
+        ? int.tryParse(questionId.replaceAll(RegExp(r'[^0-9]'), '')) ?? (number + 1000)
+        : (number + 1000);
+
     return CompetitionQuestion(
-      id: json['id'] as int,
-      category: json['questionType'] as String? ?? 'general',
-      categoryKr: json['questionType'] as String? ?? '일반',
-      title: '',
-      titleKr: '',
-      audioUrl: '',
-      duration: '',
-      transcript: '',
-      question: json['questionText'] as String? ?? '',
-      questionKr: json['questionText'] as String? ?? '',
+      id: json['id'] as int? ?? id,
+      category: json['category'] as String? ?? category,
+      categoryKr: json['categoryKr'] as String? ?? categoryKr,
+      title: json['title'] as String? ?? '',
+      titleKr: json['titleKr'] as String? ?? '',
+      audioUrl: audioUrl,
+      duration: json['duration'] as String? ?? '30s',
+      transcript: json['transcript'] as String? ?? introText,
+      question: json['question'] as String? ?? json['questionText'] as String? ?? questionText,
+      questionKr: json['questionKr'] as String? ?? questionText,
       options: options,
-      correctAnswer: correctAnswer,
+      correctAnswer: json['correctAnswer'] as int? ?? correctAnswer,
     );
   }
 }

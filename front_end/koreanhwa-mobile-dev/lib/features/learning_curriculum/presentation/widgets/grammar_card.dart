@@ -13,6 +13,7 @@ class GrammarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -81,4 +82,3 @@ class GrammarCard extends StatelessWidget {
     );
   }
 }
-

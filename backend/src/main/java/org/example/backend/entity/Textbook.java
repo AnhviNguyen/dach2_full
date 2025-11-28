@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "textbooks")
@@ -41,11 +41,13 @@ public class Textbook {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "textbook", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TextbookProgress> progresses = new ArrayList<>();
+    @OneToMany(mappedBy = "textbook", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    private Set<TextbookProgress> progresses = new HashSet<>();
 
-    @OneToMany(mappedBy = "textbook", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Lesson> lessons = new ArrayList<>();
+    @OneToMany(mappedBy = "textbook", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    private Set<Lesson> lessons = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {

@@ -24,7 +24,7 @@ class AiApiConfig {
     if (kIsWeb) {
       return 'http://localhost:8000/api';
     } else if (Platform.isAndroid) {
-      return 'http://172.16.0.37:8000/api';
+      return 'http://192.168.1.8:8000/api';
     } else if (Platform.isIOS) {
       // iOS simulator có thể dùng localhost
       // Nếu chạy trên thiết bị thật, set AI_API_BASE_URL với IP máy host
@@ -46,10 +46,12 @@ class AiApiConfig {
   static const String topikQuestionByNumber = '/topik/exams/{examNumber}/questions/number/{number}';
   static const String topikQuestionVocabulary = '/topik/exams/{examNumber}/questions/{questionId}/vocabulary';
   static const String topikStats = '/topik/stats';
+  static const String topikCompetitionQuestions = '/topik/competition/questions';
   
   static const String speakingReadAloud = '/speaking/read-aloud';
   static const String speakingFreeSpeak = '/speaking/free-speak';
   static const String speakingModelStatus = '/speaking/model-status';
+  static const String speakingPhrases = '/speaking/phrases';
   
   static const String liveTalkTurn = '/live-talk/turn';
   static const String liveTalkMission = '/live-talk/mission';

@@ -5,8 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "competition_questions")
@@ -38,6 +39,20 @@ public class CompetitionQuestion {
     private Integer questionOrder;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CompetitionQuestionOption> options = new ArrayList<>();
+    @OrderBy("id ASC")
+    private Set<CompetitionQuestionOption> options = new HashSet<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof CompetitionQuestion)) return false;
+        CompetitionQuestion that = (CompetitionQuestion) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }
 

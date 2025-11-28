@@ -10,12 +10,15 @@ import org.example.backend.repository.TextbookProgressRepository;
 import org.example.backend.repository.TextbookRepository;
 import org.example.backend.repository.UserRepository;
 import org.example.backend.service.TextbookService;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -35,18 +38,34 @@ public class TextbookServiceImpl implements TextbookService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<TextbookResponse> getAllTextbooks(Pageable pageable) {
-        Page<Textbook> textbooks = textbookRepository.findAll(pageable);
-        List<TextbookResponse> content = textbooks.getContent().stream()
+        Page<Textbook> textbooks = textbookRepository.findAllDistinct(pageable);
+        
+        // Initialize lazy collections and remove duplicates by ID
+        Map<Long, Textbook> uniqueTextbooksMap = new LinkedHashMap<>();
+        for (Textbook textbook : textbooks.getContent()) {
+            // Initialize lazy collections
+            Hibernate.initialize(textbook.getProgresses());
+            Hibernate.initialize(textbook.getLessons());
+            
+            // Remove duplicates by ID (keep first occurrence)
+            uniqueTextbooksMap.putIfAbsent(textbook.getId(), textbook);
+        }
+        
+        List<TextbookResponse> content = uniqueTextbooksMap.values().stream()
                 .map(this::toTextbookResponse)
                 .collect(Collectors.toList());
+        
+        // Recalculate total elements based on unique textbooks
+        long uniqueTotal = uniqueTextbooksMap.size();
         
         return new PageResponse<>(
             content,
             textbooks.getNumber(),
             textbooks.getSize(),
-            textbooks.getTotalElements(),
-            textbooks.getTotalPages(),
+            uniqueTotal,
+            (int) Math.ceil((double) uniqueTotal / textbooks.getSize()),
             textbooks.hasNext(),
             textbooks.hasPrevious()
         );
@@ -58,7 +77,7 @@ public class TextbookServiceImpl implements TextbookService {
         System.out.println("DEBUG: Searching for textbook with id: " + id);
         System.out.println("DEBUG: Total textbooks in DB: " + textbookRepository.count());
         
-        Optional<Textbook> optionalTextbook = textbookRepository.findById(id);
+        Optional<Textbook> optionalTextbook = textbookRepository.findByIdWithCollections(id);
         if (optionalTextbook.isEmpty()) {
             // Debug: List all IDs để xem có gì trong database
             System.out.println("DEBUG: Textbook not found. Available IDs:");

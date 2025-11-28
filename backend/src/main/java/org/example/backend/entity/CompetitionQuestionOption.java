@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "competition_question_options")
 @Data
@@ -27,5 +29,18 @@ public class CompetitionQuestionOption {
 
     @Column(name = "is_correct", nullable = false)
     private Boolean isCorrect = false;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof CompetitionQuestionOption)) return false;
+        CompetitionQuestionOption that = (CompetitionQuestionOption) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }
 

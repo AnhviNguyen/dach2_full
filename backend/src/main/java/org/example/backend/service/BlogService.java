@@ -10,7 +10,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface BlogService {
-    PageResponse<BlogPostResponse> getAllPosts(Pageable pageable);
+    PageResponse<BlogPostResponse> getAllPosts(Pageable pageable, Long currentUserId);
     BlogPostResponse getPostById(Long id, Long currentUserId);
     BlogPostResponse createPost(BlogPostRequest request);
     BlogPostResponse updatePost(Long id, BlogPostRequest request);

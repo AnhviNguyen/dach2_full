@@ -17,12 +17,15 @@ import org.example.backend.repository.BlogLikeRepository;
 import org.example.backend.repository.BlogPostRepository;
 import org.example.backend.repository.UserRepository;
 import org.example.backend.service.BlogService;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,18 +50,34 @@ public class BlogServiceImpl implements BlogService {
     }
 
     @Override
-    public PageResponse<BlogPostResponse> getAllPosts(Pageable pageable) {
-        Page<BlogPost> posts = blogPostRepository.findAll(pageable);
-        List<BlogPostResponse> content = posts.getContent().stream()
-                .map(post -> toBlogPostResponse(post, null))
+    @Transactional(readOnly = true)
+    public PageResponse<BlogPostResponse> getAllPosts(Pageable pageable, Long currentUserId) {
+        Page<BlogPost> posts = blogPostRepository.findAllDistinct(pageable);
+        
+        // Initialize lazy collections and remove duplicates by ID
+        Map<Long, BlogPost> uniquePostsMap = new LinkedHashMap<>();
+        for (BlogPost post : posts.getContent()) {
+            // Initialize lazy collections
+            Hibernate.initialize(post.getTags());
+            Hibernate.initialize(post.getAuthor());
+            
+            // Remove duplicates by ID (keep first occurrence)
+            uniquePostsMap.putIfAbsent(post.getId(), post);
+        }
+        
+        List<BlogPostResponse> content = uniquePostsMap.values().stream()
+                .map(post -> toBlogPostResponse(post, currentUserId))
                 .collect(Collectors.toList());
+        
+        // Recalculate total elements based on unique posts
+        long uniqueTotal = uniquePostsMap.size();
         
         return new PageResponse<>(
             content,
             posts.getNumber(),
             posts.getSize(),
-            posts.getTotalElements(),
-            posts.getTotalPages(),
+            uniqueTotal,
+            (int) Math.ceil((double) uniqueTotal / posts.getSize()),
             posts.hasNext(),
             posts.hasPrevious()
         );
@@ -66,7 +85,7 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     public BlogPostResponse getPostById(Long id, Long currentUserId) {
-        BlogPost post = blogPostRepository.findById(id)
+        BlogPost post = blogPostRepository.findByIdWithAuthor(id)
                 .orElseThrow(() -> new RuntimeException("Blog post not found with id: " + id));
         return toBlogPostResponse(post, currentUserId);
     }
@@ -132,18 +151,34 @@ public class BlogServiceImpl implements BlogService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<BlogPostResponse> getPostsByAuthor(Long authorId, Pageable pageable) {
-        Page<BlogPost> posts = blogPostRepository.findByAuthorId(authorId, pageable);
-        List<BlogPostResponse> content = posts.getContent().stream()
+        Page<BlogPost> posts = blogPostRepository.findByAuthorIdDistinct(authorId, pageable);
+        
+        // Initialize lazy collections and remove duplicates by ID
+        Map<Long, BlogPost> uniquePostsMap = new LinkedHashMap<>();
+        for (BlogPost post : posts.getContent()) {
+            // Initialize lazy collections
+            Hibernate.initialize(post.getTags());
+            Hibernate.initialize(post.getAuthor());
+            
+            // Remove duplicates by ID (keep first occurrence)
+            uniquePostsMap.putIfAbsent(post.getId(), post);
+        }
+        
+        List<BlogPostResponse> content = uniquePostsMap.values().stream()
                 .map(post -> toBlogPostResponse(post, authorId))
                 .collect(Collectors.toList());
+        
+        // Recalculate total elements based on unique posts
+        long uniqueTotal = uniquePostsMap.size();
         
         return new PageResponse<>(
             content,
             posts.getNumber(),
             posts.getSize(),
-            posts.getTotalElements(),
-            posts.getTotalPages(),
+            uniqueTotal,
+            (int) Math.ceil((double) uniqueTotal / posts.getSize()),
             posts.hasNext(),
             posts.hasPrevious()
         );
@@ -232,14 +267,22 @@ public class BlogServiceImpl implements BlogService {
     }
 
     private BlogPostResponse toBlogPostResponse(BlogPost post, Long currentUserId) {
+        // Ensure author is loaded
+        if (post.getAuthor() == null) {
+            throw new RuntimeException("Author is null for post: " + post.getId());
+        }
+        
         BlogAuthorResponse author = new BlogAuthorResponse(
             post.getAuthor().getName(),
             post.getAuthor().getAvatar(),
             post.getAuthor().getLevel()
         );
         
+        // Ensure tags are loaded and convert to list
+        Hibernate.initialize(post.getTags());
         List<String> tags = post.getTags().stream()
                 .map(BlogTag::getTag)
+                .distinct()
                 .collect(Collectors.toList());
         
         boolean isLiked = currentUserId != null && 

@@ -16,5 +16,5 @@ spring:
 
   sql:
     init:
-      mode: always        # bắt buộc để chạy data.sql
+      mode: never        # tắt auto-run data.sql để tránh duplicate data
       platform: mysql

@@ -5,9 +5,11 @@ import 'package:koreanhwa_flutter/core/network/dio_client.dart';
 import 'package:koreanhwa_flutter/features/competition/data/models/competition.dart';
 import 'package:koreanhwa_flutter/features/competition/data/models/competition_question.dart';
 import 'package:koreanhwa_flutter/features/competition/data/models/competition_result.dart';
+import 'package:koreanhwa_flutter/features/topik/data/services/topik_api_service.dart';
 
 class CompetitionApiService {
   final DioClient _dioClient = DioClient();
+  final TopikApiService _topikApiService = TopikApiService();
 
   Future<PageResponse<Competition>> getCompetitions({
     int page = 0,
@@ -78,11 +80,86 @@ class CompetitionApiService {
 
   Future<List<CompetitionQuestion>> getCompetitionQuestions(int competitionId) async {
     try {
-      final response = await _dioClient.get('/competitions/$competitionId/questions');
-      final List<dynamic> data = response.data as List<dynamic>;
-      return data.map((json) => CompetitionQuestion.fromJson(json as Map<String, dynamic>)).toList();
+      // Lấy câu hỏi từ AI backend (TOPIK questions - listening + reading lẫn lộn)
+      final response = await _topikApiService.getCompetitionQuestions(
+        count: 20, // Số lượng câu hỏi mặc định
+        mixTypes: true, // Mix listening và reading
+      );
+      
+      final questionsData = response['questions'] as List<dynamic>? ?? [];
+      
+      // Convert TOPIK format sang CompetitionQuestion format
+      return questionsData.asMap().entries.map((entry) {
+        final index = entry.key;
+        final q = entry.value as Map<String, dynamic>;
+        
+        // Tạo unique ID cho competition question
+        final questionId = q['question_id'] as String? ?? '';
+        final number = q['number'] as int? ?? (index + 1);
+        final examNumber = q['exam_number'] as String? ?? '';
+        
+        // Parse answers
+        final answers = q['answers'] as List<dynamic>? ?? [];
+        final options = answers.map((ans) {
+          if (ans is Map<String, dynamic>) {
+            return ans['text'] as String? ?? '';
+          }
+          return ans.toString();
+        }).toList();
+        
+        // Tìm đáp án đúng
+        int correctAnswer = 0;
+        for (int i = 0; i < answers.length; i++) {
+          if (answers[i] is Map<String, dynamic>) {
+            final ans = answers[i] as Map<String, dynamic>;
+            if (ans['is_correct'] == true || ans['isCorrect'] == true) {
+              correctAnswer = i;
+              break;
+            }
+          }
+        }
+        
+        // Parse question text
+        final prompt = q['prompt'] as String? ?? '';
+        final introText = q['intro_text'] as String? ?? '';
+        final questionText = prompt.isNotEmpty ? prompt : introText;
+        
+        // Parse audio URL
+        final audioUrl = q['audio_url'] as String? ?? 
+                         q['context']?['audio'] as String? ?? '';
+        
+        // Parse question type
+        final questionType = q['question_type'] as String? ?? 'reading';
+        final category = questionType == 'listening' ? 'Listening' : 'Reading';
+        final categoryKr = questionType == 'listening' ? '듣기' : '읽기';
+        
+        // Generate ID
+        final id = questionId.isNotEmpty 
+            ? int.tryParse(questionId.replaceAll(RegExp(r'[^0-9]'), '')) ?? (index + 1000)
+            : (index + 1000);
+        
+        return CompetitionQuestion(
+          id: id,
+          category: category,
+          categoryKr: categoryKr,
+          title: '',
+          titleKr: '',
+          audioUrl: audioUrl,
+          duration: '30s',
+          transcript: introText,
+          question: questionText,
+          questionKr: questionText,
+          options: options,
+          correctAnswer: correctAnswer,
+        );
+      }).toList();
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
+    } catch (e) {
+      throw ApiException(
+        message: 'Lỗi tải câu hỏi: ${e.toString()}',
+        originalError: e,
+      );
     }
   }
 

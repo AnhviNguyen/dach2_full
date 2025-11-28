@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Table(name = "user_achievements", uniqueConstraints = {
@@ -39,5 +40,18 @@ public class UserAchievement {
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof UserAchievement)) return false;
+        UserAchievement that = (UserAchievement) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }
 

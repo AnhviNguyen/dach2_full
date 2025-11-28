@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "grammar_examples")
 @Data
@@ -21,5 +23,18 @@ public class GrammarExample {
 
     @Column(name = "example_text", nullable = false, columnDefinition = "TEXT")
     private String exampleText;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof GrammarExample)) return false;
+        GrammarExample that = (GrammarExample) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }
 

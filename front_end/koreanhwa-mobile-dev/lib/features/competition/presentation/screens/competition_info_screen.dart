@@ -6,6 +6,7 @@ import 'package:koreanhwa_flutter/features/competition/data/services/competition
 import 'package:koreanhwa_flutter/features/competition/presentation/screens/competition_join_screen.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CompetitionInfoScreen extends ConsumerStatefulWidget {
   final int? competitionId;
@@ -151,7 +152,7 @@ class _CompetitionInfoScreenState extends ConsumerState<CompetitionInfoScreen> {
       ),
       body: Column(
         children: [
-          // Hero Section
+          // Hero Section với hình ảnh
           Container(
             width: double.infinity,
             height: 200,
@@ -167,11 +168,45 @@ class _CompetitionInfoScreenState extends ConsumerState<CompetitionInfoScreen> {
             ),
             child: Stack(
               children: [
-                Center(
-                  child: Icon(
-                    Icons.emoji_events,
-                    size: 100,
-                    color: AppColors.primaryBlack.withOpacity(0.3),
+                // Hiển thị hình ảnh nếu có
+                if (competition.image != null && competition.image!.isNotEmpty)
+                  Positioned.fill(
+                    child: CachedNetworkImage(
+                      imageUrl: competition.image!,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryYellow,
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Center(
+                        child: Icon(
+                          Icons.emoji_events,
+                          size: 100,
+                          color: AppColors.primaryBlack.withOpacity(0.3),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Center(
+                    child: Icon(
+                      Icons.emoji_events,
+                      size: 100,
+                      color: AppColors.primaryBlack.withOpacity(0.3),
+                    ),
+                  ),
+                // Overlay để text dễ đọc
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.6),
+                      ],
+                    ),
                   ),
                 ),
                 Positioned(

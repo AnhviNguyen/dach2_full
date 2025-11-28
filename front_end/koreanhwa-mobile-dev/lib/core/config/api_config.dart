@@ -5,10 +5,10 @@ class ApiConfig {
   // Base URL có thể config
   // 
   // CÁCH SỬ DỤNG:
-  // 1. Thiết bị thật (mặc định): http://192.168.1.8:8080/api
-  // 2. Android Emulator: Set API_BASE_URL=http://10.0.2.2:8080/api khi chạy
-  // 3. iOS Simulator: http://localhost:8080/api (tự động)
-  // 4. Web: http://localhost:8080/api (tự động)
+  // 1. Thiết bị thật (mặc định): http://192.168.1.8:8000/api
+  // 2. Android Emulator: Set API_BASE_URL=http://10.0.2.2:8000/api khi chạy
+  // 3. iOS Simulator: http://localhost:8000/api (tự động)
+  // 4. Web: http://localhost:8000/api (tự động)
   //
   // LƯU Ý: Sau khi sửa IP, cần REBUILD app (không phải hot reload):
   //   flutter clean
@@ -24,8 +24,7 @@ class ApiConfig {
     if (kIsWeb) {
       return 'http://localhost:8080/api';
     } else if (Platform.isAndroid) {
-
-      return 'http://172.16.0.37:8080/api';
+      return 'http://192.168.1.8:8080/api';
     } else if (Platform.isIOS) {
       // iOS simulator có thể dùng localhost
       // Nếu chạy trên thiết bị thật, set API_BASE_URL với IP máy host
@@ -47,6 +46,8 @@ class ApiConfig {
   static const String authRefresh = '/auth/refresh';
   static const String authGoogle = '/auth/google';
   static const String authMe = '/auth/me';
+
+
 
   // Headers
   static const String headerAuthorization = 'Authorization';

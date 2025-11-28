@@ -10,12 +10,15 @@ import org.example.backend.repository.CurriculumProgressRepository;
 import org.example.backend.repository.CurriculumRepository;
 import org.example.backend.repository.UserRepository;
 import org.example.backend.service.CurriculumService;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,8 +37,20 @@ public class CurriculumServiceImpl implements CurriculumService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<CurriculumResponse> getAllCurriculum(Pageable pageable, Long userId) {
-        Page<Curriculum> curriculum = curriculumRepository.findAll(pageable);
+        Page<Curriculum> curriculum = curriculumRepository.findAllDistinct(pageable);
+        
+        // Initialize lazy collections and remove duplicates by ID
+        Map<Long, Curriculum> uniqueCurriculumMap = new LinkedHashMap<>();
+        for (Curriculum c : curriculum.getContent()) {
+            // Initialize lazy collections
+            Hibernate.initialize(c.getProgresses());
+            Hibernate.initialize(c.getLessons());
+            
+            // Remove duplicates by ID (keep first occurrence)
+            uniqueCurriculumMap.putIfAbsent(c.getId(), c);
+        }
         
         // Nếu có userId, xử lý progress cho user
         if (userId != null) {
@@ -43,11 +58,11 @@ public class CurriculumServiceImpl implements CurriculumService {
                     .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
             
             // Nếu user mới (chưa có progress), auto tạo progress cho curriculum đầu tiên (bookNumber = 1)
-            if (!curriculum.getContent().isEmpty()) {
-                Curriculum firstCurriculum = curriculum.getContent().stream()
+            if (!uniqueCurriculumMap.isEmpty()) {
+                Curriculum firstCurriculum = uniqueCurriculumMap.values().stream()
                         .filter(c -> c.getBookNumber() == 1)
                         .findFirst()
-                        .orElse(curriculum.getContent().get(0));
+                        .orElse(uniqueCurriculumMap.values().iterator().next());
                 
                 // Kiểm tra xem đã có progress cho curriculum đầu tiên chưa
                 boolean hasProgress = progressRepository.findByUserIdAndCurriculumId(userId, firstCurriculum.getId())
@@ -66,7 +81,7 @@ public class CurriculumServiceImpl implements CurriculumService {
             }
         }
         
-        List<CurriculumResponse> content = curriculum.getContent().stream()
+        List<CurriculumResponse> content = uniqueCurriculumMap.values().stream()
                 .map(c -> {
                     // Nếu có userId, lấy progress của user cho curriculum này
                     if (userId != null) {
@@ -88,12 +103,15 @@ public class CurriculumServiceImpl implements CurriculumService {
                 })
                 .collect(Collectors.toList());
         
+        // Recalculate total elements based on unique curriculum
+        long uniqueTotal = uniqueCurriculumMap.size();
+        
         return new PageResponse<>(
             content,
             curriculum.getNumber(),
             curriculum.getSize(),
-            curriculum.getTotalElements(),
-            curriculum.getTotalPages(),
+            uniqueTotal,
+            (int) Math.ceil((double) uniqueTotal / curriculum.getSize()),
             curriculum.hasNext(),
             curriculum.hasPrevious()
         );
@@ -101,7 +119,7 @@ public class CurriculumServiceImpl implements CurriculumService {
 
     @Override
     public CurriculumResponse getCurriculumById(Long id) {
-        Curriculum curriculum = curriculumRepository.findById(id)
+        Curriculum curriculum = curriculumRepository.findByIdWithCollections(id)
                 .orElseThrow(() -> new RuntimeException("Curriculum not found with id: " + id));
         return toCurriculumResponse(curriculum);
     }

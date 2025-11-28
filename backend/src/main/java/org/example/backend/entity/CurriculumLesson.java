@@ -6,8 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "curriculum_lessons")
@@ -48,14 +49,17 @@ public class CurriculumLesson {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "curriculumLesson", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CurriculumVocabulary> vocabularies = new ArrayList<>();
+    @OneToMany(mappedBy = "curriculumLesson", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    private Set<CurriculumVocabulary> vocabularies = new HashSet<>();
 
-    @OneToMany(mappedBy = "curriculumLesson", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Grammar> grammars = new ArrayList<>();
+    @OneToMany(mappedBy = "curriculumLesson", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    private Set<Grammar> grammars = new HashSet<>();
 
-    @OneToMany(mappedBy = "curriculumLesson", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Exercise> exercises = new ArrayList<>();
+    @OneToMany(mappedBy = "curriculumLesson", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    private Set<Exercise> exercises = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {
@@ -66,6 +70,19 @@ public class CurriculumLesson {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof CurriculumLesson)) return false;
+        CurriculumLesson that = (CurriculumLesson) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }
 

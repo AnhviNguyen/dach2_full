@@ -6,7 +6,7 @@ This module contains all Pydantic models used for:
 - Response serialization
 - Data validation and type checking
 """
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Dict, Any
 
 from pydantic import BaseModel, Field
 
@@ -146,6 +146,55 @@ class AccuracyDetails(BaseModel):
     spoken_words: List[str] = Field(..., description="Spoken word list")
 
 
+class PhonemeDetail(BaseModel):
+    """Chi tiết từng phoneme"""
+    position: int = Field(..., description="Vị trí của phoneme")
+    expected: str = Field(..., description="Phoneme mong đợi")
+    predicted: str = Field(..., description="Phoneme người dùng phát âm")
+    type: Literal["initial", "vowel", "final", "other"] = Field(..., description="Loại phoneme: phụ âm đầu, nguyên âm, phụ âm cuối")
+    is_correct: bool = Field(..., description="Phoneme có đúng không")
+    is_extra: Optional[bool] = Field(default=None, description="Phoneme thừa (insertion)")
+    is_missing: Optional[bool] = Field(default=None, description="Phoneme thiếu (deletion)")
+
+
+class WordFeedback(BaseModel):
+    """Phản hồi cho từng từ"""
+    word: str = Field(..., description="Từ trong Hangul")
+    position: int = Field(..., description="Vị trí của từ")
+    phonemes: List[PhonemeDetail] = Field(..., description="Chi tiết phoneme của từ")
+    accuracy: float = Field(..., description="Độ chính xác của từ (0-100)")
+    is_correct: bool = Field(..., description="Từ có đúng không")
+
+
+class PronunciationFeedbackSummary(BaseModel):
+    """Tóm tắt pronunciation feedback"""
+    total_phonemes: int = Field(..., description="Tổng số phoneme")
+    correct_phonemes: int = Field(..., description="Số phoneme đúng")
+    wrong_phonemes: int = Field(..., description="Số phoneme sai")
+    missing_phonemes: int = Field(..., description="Số phoneme thiếu")
+    extra_phonemes: int = Field(..., description="Số phoneme thừa")
+    initial_errors: int = Field(..., description="Số lỗi phụ âm đầu")
+    vowel_errors: int = Field(..., description="Số lỗi nguyên âm")
+    final_errors: int = Field(..., description="Số lỗi phụ âm cuối")
+
+
+class PronunciationFeedback(BaseModel):
+    """Chi tiết pronunciation feedback từ model"""
+    phoneme_accuracy: float = Field(..., description="Độ chính xác phoneme (0-100)")
+    per: float = Field(..., description="Phoneme Error Rate (0-1)")
+    phoneme_details: List[PhonemeDetail] = Field(..., description="Chi tiết từng phoneme")
+    word_feedback: List[WordFeedback] = Field(..., description="Phản hồi từng từ")
+    wrong_phonemes: List[Dict[str, Any]] = Field(..., description="Danh sách phoneme sai với feedback")
+    expected_phonemes: List[str] = Field(..., description="Danh sách phoneme mong đợi")
+    predicted_phonemes: List[str] = Field(..., description="Danh sách phoneme dự đoán")
+    wrong_words: List[str] = Field(..., description="Danh sách từ sai")
+    matches: int = Field(..., description="Số phoneme đúng")
+    substitutions: int = Field(..., description="Số phoneme thay thế")
+    insertions: int = Field(..., description="Số phoneme thêm vào")
+    deletions: int = Field(..., description="Số phoneme bị xóa")
+    summary: PronunciationFeedbackSummary = Field(..., description="Tóm tắt lỗi")
+
+
 class ReadAloudResponse(BaseModel):
     """Response model for read-aloud check"""
     transcript: str = Field(..., description="What the user said (transcribed)")
@@ -180,6 +229,11 @@ class ReadAloudResponse(BaseModel):
     tts_url: Optional[str] = Field(
         default=None,
         description="URL to TTS of correct pronunciation (legacy)"
+    )
+    # Pronunciation feedback from model
+    pronunciation_feedback: Optional[PronunciationFeedback] = Field(
+        default=None,
+        description="Chi tiết pronunciation feedback từ model (phoneme-level)"
     )
 
 

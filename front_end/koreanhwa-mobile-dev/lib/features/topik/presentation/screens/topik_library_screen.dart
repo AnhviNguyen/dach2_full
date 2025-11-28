@@ -8,6 +8,7 @@ import 'package:koreanhwa_flutter/shared/widgets/exam_card.dart';
 import 'package:koreanhwa_flutter/features/topik/presentation/widgets/topik_category_chip.dart';
 import 'package:koreanhwa_flutter/features/topik/presentation/widgets/topik_tab_button.dart';
 import 'package:koreanhwa_flutter/features/topik/presentation/widgets/topik_user_profile_card.dart';
+import 'package:koreanhwa_flutter/features/topik/data/services/exam_result_service.dart';
 
 class TopikLibraryScreen extends StatefulWidget {
   const TopikLibraryScreen({super.key});
@@ -25,11 +26,20 @@ class _TopikLibraryScreenState extends State<TopikLibraryScreen> {
   List<TopikExam> _exams = [];
   bool _isLoading = true;
   String? _errorMessage;
+  Set<String> _completedExamIds = {};
 
   @override
   void initState() {
     super.initState();
     _loadExams();
+    _loadCompletedExams();
+  }
+
+  Future<void> _loadCompletedExams() async {
+    final completedIds = await ExamResultService.getCompletedExamIds();
+    setState(() {
+      _completedExamIds = completedIds;
+    });
   }
 
   @override
@@ -290,8 +300,10 @@ class _TopikLibraryScreenState extends State<TopikLibraryScreen> {
                 itemCount: _filteredExams.length,
                 itemBuilder: (context, index) {
                   final exam = _filteredExams[index];
+                  final isCompleted = _completedExamIds.contains(exam.id);
                   return ExamCard(
                     exam: exam,
+                    isCompleted: isCompleted,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -301,7 +313,10 @@ class _TopikLibraryScreenState extends State<TopikLibraryScreen> {
                             examTitle: exam.title,
                           ),
                         ),
-                      );
+                      ).then((_) {
+                        // Reload completed exams khi quay lại
+                        _loadCompletedExams();
+                      });
                     },
                   );
                 },

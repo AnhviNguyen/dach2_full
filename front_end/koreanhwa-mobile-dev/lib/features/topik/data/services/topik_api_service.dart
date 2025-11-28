@@ -130,5 +130,25 @@ class TopikApiService {
       throw ApiException.fromDioException(e);
     }
   }
+
+  /// Lấy câu hỏi TOPIK ngẫu nhiên cho competition
+  /// Trả về mix của listening và reading questions từ nhiều đề thi khác nhau
+  Future<Map<String, dynamic>> getCompetitionQuestions({
+    int count = 20,
+    bool mixTypes = true,
+  }) async {
+    try {
+      final response = await _dioClient.get(
+        AiApiConfig.topikCompetitionQuestions,
+        queryParameters: {
+          'count': count,
+          'mix_types': mixTypes,
+        },
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
 }
 

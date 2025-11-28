@@ -13,13 +13,16 @@ import org.example.backend.repository.CourseRepository;
 import org.example.backend.repository.DashboardStatsRepository;
 import org.example.backend.repository.UserRepository;
 import org.example.backend.service.CourseService;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,18 +45,34 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<CourseInfoResponse> getAllCourses(Pageable pageable) {
-        Page<Course> courses = courseRepository.findAll(pageable);
-        List<CourseInfoResponse> content = courses.getContent().stream()
+        Page<Course> courses = courseRepository.findAllDistinct(pageable);
+        
+        // Initialize lazy collections and remove duplicates by ID
+        Map<Long, Course> uniqueCoursesMap = new LinkedHashMap<>();
+        for (Course course : courses.getContent()) {
+            // Initialize lazy collections
+            Hibernate.initialize(course.getEnrollments());
+            Hibernate.initialize(course.getCourseLessons());
+            
+            // Remove duplicates by ID (keep first occurrence)
+            uniqueCoursesMap.putIfAbsent(course.getId(), course);
+        }
+        
+        List<CourseInfoResponse> content = uniqueCoursesMap.values().stream()
                 .map(this::toCourseInfoResponse)
                 .collect(Collectors.toList());
+        
+        // Recalculate total elements based on unique courses
+        long uniqueTotal = uniqueCoursesMap.size();
         
         return new PageResponse<>(
             content,
             courses.getNumber(),
             courses.getSize(),
-            courses.getTotalElements(),
-            courses.getTotalPages(),
+            uniqueTotal,
+            (int) Math.ceil((double) uniqueTotal / courses.getSize()),
             courses.hasNext(),
             courses.hasPrevious()
         );
@@ -61,7 +80,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public CourseInfoResponse getCourseById(Long id) {
-        Course course = courseRepository.findById(id)
+        Course course = courseRepository.findByIdWithCollections(id)
                 .orElseThrow(() -> new RuntimeException("Course not found with id: " + id));
         return toCourseInfoResponse(course);
     }
@@ -92,18 +111,34 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<CourseInfoResponse> getCoursesByLevel(String level, Pageable pageable) {
-        Page<Course> courses = courseRepository.findByLevel(level, pageable);
-        List<CourseInfoResponse> content = courses.getContent().stream()
+        Page<Course> courses = courseRepository.findByLevelDistinct(level, pageable);
+        
+        // Initialize lazy collections and remove duplicates by ID
+        Map<Long, Course> uniqueCoursesMap = new LinkedHashMap<>();
+        for (Course course : courses.getContent()) {
+            // Initialize lazy collections
+            Hibernate.initialize(course.getEnrollments());
+            Hibernate.initialize(course.getCourseLessons());
+            
+            // Remove duplicates by ID (keep first occurrence)
+            uniqueCoursesMap.putIfAbsent(course.getId(), course);
+        }
+        
+        List<CourseInfoResponse> content = uniqueCoursesMap.values().stream()
                 .map(this::toCourseInfoResponse)
                 .collect(Collectors.toList());
+        
+        // Recalculate total elements based on unique courses
+        long uniqueTotal = uniqueCoursesMap.size();
         
         return new PageResponse<>(
             content,
             courses.getNumber(),
             courses.getSize(),
-            courses.getTotalElements(),
-            courses.getTotalPages(),
+            uniqueTotal,
+            (int) Math.ceil((double) uniqueTotal / courses.getSize()),
             courses.hasNext(),
             courses.hasPrevious()
         );

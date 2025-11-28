@@ -6,6 +6,8 @@ import 'package:koreanhwa_flutter/features/competition/data/models/competition_q
 import 'package:koreanhwa_flutter/features/competition/data/services/competition_api_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:koreanhwa_flutter/core/config/ai_api_config.dart';
 
 class CompetitionJoinScreen extends ConsumerStatefulWidget {
   final Competition? competition;
@@ -21,13 +23,17 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
   int _currentQuestion = 0;
   Map<int, String> _answers = {}; // Changed to Map<int, String> to match API
   int _timeLeft = 300; // 5 minutes per question
-  bool _isPlaying = false;
-  double _audioProgress = 0;
   final CompetitionApiService _apiService = CompetitionApiService();
   Competition? _competition;
   List<CompetitionQuestion> _questions = [];
   bool _isLoading = true;
   String? _errorMessage;
+  
+  // Audio player
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  int? _currentlyPlayingQuestionId;
+  PlayerState _audioPlayerState = PlayerState.stopped;
+  bool _isLoadingAudio = false;
 
   @override
   void initState() {
@@ -55,6 +61,24 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
         _errorMessage = 'Không tìm thấy cuộc thi';
       });
     }
+    
+    // Lắng nghe trạng thái audio player
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _audioPlayerState = state;
+          if (state == PlayerState.completed || state == PlayerState.stopped) {
+            _currentlyPlayingQuestionId = null;
+          }
+        });
+      }
+    });
+  }
+  
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCompetitionAndQuestions() async {
@@ -118,6 +142,86 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
         _startTimer();
       }
     });
+  }
+
+  /// Play audio cho listening question
+  Future<void> _playAudio(int questionId, String? audioUrl) async {
+    if (audioUrl == null || audioUrl.isEmpty) {
+      return;
+    }
+
+    try {
+      // Nếu đang phát câu hỏi khác, dừng lại
+      if (_currentlyPlayingQuestionId != null && _currentlyPlayingQuestionId != questionId) {
+        await _audioPlayer.stop();
+      }
+
+      // Nếu đang phát cùng câu hỏi, toggle pause/play
+      if (_currentlyPlayingQuestionId == questionId && _audioPlayerState == PlayerState.playing) {
+        await _audioPlayer.pause();
+        return;
+      }
+
+      // Nếu đang pause, resume
+      if (_currentlyPlayingQuestionId == questionId && _audioPlayerState == PlayerState.paused) {
+        await _audioPlayer.resume();
+        return;
+      }
+
+      // Build full URL
+      String fullAudioUrl = audioUrl;
+      if (!audioUrl.startsWith('http')) {
+        // Relative path - thêm base URL
+        final baseUrl = AiApiConfig.baseUrl.replaceAll('/api', '');
+        if (audioUrl.startsWith('/')) {
+          fullAudioUrl = '$baseUrl$audioUrl';
+        } else {
+          fullAudioUrl = '$baseUrl/$audioUrl';
+        }
+      }
+
+      setState(() {
+        _currentlyPlayingQuestionId = questionId;
+        _isLoadingAudio = true;
+        _audioPlayerState = PlayerState.stopped;
+      });
+
+      // Play audio
+      await _audioPlayer.play(UrlSource(fullAudioUrl));
+
+      setState(() {
+        _isLoadingAudio = false;
+        _audioPlayerState = PlayerState.playing;
+      });
+    } catch (e) {
+      setState(() {
+        _currentlyPlayingQuestionId = null;
+        _audioPlayerState = PlayerState.stopped;
+        _isLoadingAudio = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi phát audio: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Stop audio playback
+  Future<void> _stopAudio() async {
+    try {
+      await _audioPlayer.stop();
+      setState(() {
+        _currentlyPlayingQuestionId = null;
+        _audioPlayerState = PlayerState.stopped;
+      });
+    } catch (e) {
+      debugPrint('Error stopping audio: $e');
+    }
   }
 
   @override
@@ -279,25 +383,26 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    // Audio Player Section
-                    Container(
-                      margin: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF141414),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppColors.primaryYellow.withOpacity(0.2),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 4),
+                    // Audio Player Section (chỉ hiển thị nếu có audio)
+                    if (question.audioUrl.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF141414),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.primaryYellow.withOpacity(0.2),
+                            width: 1.5,
                           ),
-                        ],
-                      ),
-                      child: Column(
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
                         children: [
                           // Audio Header
                           Container(
@@ -408,7 +513,7 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
 
                                 const SizedBox(height: 16),
 
-                                // Audio Waveform Visualization
+                                // Audio Waveform Visualization (simplified)
                                 Container(
                                   height: 120,
                                   padding: const EdgeInsets.all(16),
@@ -424,7 +529,7 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: List.generate(30, (index) {
                                       final height = (index % 5 + 1) * 15.0;
-                                      final isActive = (_audioProgress / 100 * 30) > index;
+                                      final isActive = _audioPlayerState == PlayerState.playing;
                                       return Container(
                                         width: 4,
                                         height: height,
@@ -447,14 +552,18 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      '${(_audioProgress * 0.3).toInt()}s',
+                                      _audioPlayerState == PlayerState.playing
+                                          ? 'Đang phát...'
+                                          : _audioPlayerState == PlayerState.paused
+                                              ? 'Đã tạm dừng'
+                                              : 'Nhấn để phát',
                                       style: const TextStyle(
                                         color: Color(0xFF888888),
                                         fontSize: 12,
                                       ),
                                     ),
                                     Text(
-                                      '30s',
+                                      question.duration,
                                       style: const TextStyle(
                                         color: Color(0xFF888888),
                                         fontSize: 12,
@@ -482,10 +591,7 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                                         icon: Icons.refresh,
                                         color: Colors.white70,
                                         onPressed: () {
-                                          setState(() {
-                                            _audioProgress = 0;
-                                            _isPlaying = false;
-                                          });
+                                          _stopAudio();
                                         },
                                       ),
                                       Container(
@@ -500,79 +606,88 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                                           ],
                                         ),
                                         child: _buildAudioButton(
-                                          icon: _isPlaying ? Icons.pause : Icons.play_arrow,
+                                          icon: _isLoadingAudio
+                                              ? Icons.hourglass_empty
+                                              : (_audioPlayerState == PlayerState.playing
+                                                  ? Icons.pause
+                                                  : Icons.play_arrow),
                                           color: AppColors.primaryYellow,
                                           isMain: true,
-                                          onPressed: () {
-                                            setState(() => _isPlaying = !_isPlaying);
-                                            if (_isPlaying) {
-                                              _simulateAudio();
-                                            }
-                                          },
+                                          onPressed: _isLoadingAudio
+                                              ? null
+                                              : () => _playAudio(question.id, question.audioUrl),
                                         ),
                                       ),
-                                      _buildAudioButton(
-                                        icon: Icons.volume_up,
-                                        color: Colors.white70,
-                                        onPressed: () {},
-                                      ),
+                                      if (_audioPlayerState == PlayerState.playing || _audioPlayerState == PlayerState.paused)
+                                        _buildAudioButton(
+                                          icon: Icons.stop,
+                                          color: Colors.white70,
+                                          onPressed: _stopAudio,
+                                        )
+                                      else
+                                        _buildAudioButton(
+                                          icon: Icons.volume_up,
+                                          color: Colors.white70,
+                                          onPressed: () {},
+                                        ),
                                     ],
                                   ),
                                 ),
 
                                 const SizedBox(height: 16),
 
-                                // Transcript
-                                Container(
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: const Color(0xFF2A2A2A),
+                                // Transcript (chỉ hiển thị nếu có)
+                                if (question.transcript.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFF2A2A2A),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.description,
+                                              color: AppColors.primaryYellow.withOpacity(0.8),
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            const Text(
+                                              'Transcript Preview',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          question.transcript,
+                                          style: const TextStyle(
+                                            color: Color(0xFF999999),
+                                            fontSize: 11,
+                                            height: 1.5,
+                                          ),
+                                          maxLines: 3,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.description,
-                                            color: AppColors.primaryYellow.withOpacity(0.8),
-                                            size: 16,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          const Text(
-                                            'Transcript Preview',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Text(
-                                        question.transcript,
-                                        style: const TextStyle(
-                                          color: Color(0xFF999999),
-                                          fontSize: 11,
-                                          height: 1.5,
-                                        ),
-                                        maxLines: 3,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                    ),
+                      ),
 
                     // Question Section
                     Container(
@@ -885,29 +1000,22 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
     required IconData icon,
     required Color color,
     bool isMain = false,
-    required VoidCallback onPressed,
+    VoidCallback? onPressed,
   }) {
     return IconButton(
-      icon: Icon(icon, color: color),
+      icon: _isLoadingAudio && isMain
+          ? SizedBox(
+              width: isMain ? 40 : 24,
+              height: isMain ? 40 : 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+              ),
+            )
+          : Icon(icon, color: color),
       iconSize: isMain ? 40 : 24,
       onPressed: onPressed,
     );
-  }
-
-  void _simulateAudio() {
-    if (_isPlaying && _audioProgress < 100) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) {
-          setState(() {
-            _audioProgress += 1;
-            if (_audioProgress >= 100) {
-              _isPlaying = false;
-            }
-          });
-          if (_isPlaying) _simulateAudio();
-        }
-      });
-    }
   }
 
   Future<void> _submitCompetition() async {

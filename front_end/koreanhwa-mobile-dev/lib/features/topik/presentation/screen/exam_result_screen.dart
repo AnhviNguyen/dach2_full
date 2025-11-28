@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/features/topik/presentation/screen/topik_test_form_screen.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:koreanhwa_flutter/features/topik/data/services/exam_result_service.dart';
 
 class ExamResultScreen extends StatefulWidget {
   final String examId;
   final String examTitle;
   final Map<int, String> answers;
   final List<Map<String, dynamic>> questions;
+  final int timeSpent; // Thời gian đã làm bài (tính bằng giây)
 
   const ExamResultScreen({
     super.key,
@@ -15,6 +17,7 @@ class ExamResultScreen extends StatefulWidget {
     required this.examTitle,
     required this.answers,
     required this.questions,
+    this.timeSpent = 0,
   });
 
   @override
@@ -40,32 +43,14 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
     },
   ];
 
-  final List<Map<String, dynamic>> _testData = [
-    {
-      'category': '[문법] Giới từ',
-      'correct': 0,
-      'wrong': 1,
-      'skipped': 0,
-      'accuracy': '0.00%',
-      'questions': [105]
-    },
-    {
-      'category': '[문법] Thì',
-      'correct': 2,
-      'wrong': 0,
-      'skipped': 0,
-      'accuracy': '100.00%',
-      'questions': [101, 102]
-    },
-    {
-      'category': '[문법] Danh từ',
-      'correct': 4,
-      'wrong': 2,
-      'skipped': 0,
-      'accuracy': '66.67%',
-      'questions': [103, 104, 125, 126, 127, 129]
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Lưu kết quả sau khi widget đã được khởi tạo
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _saveExamResult();
+    });
+  }
 
   @override
   void dispose() {
@@ -73,12 +58,149 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
     super.dispose();
   }
 
-  int get _correctCount => 22;
-  int get _wrongCount => 8;
-  int get _skippedCount => 0;
+  // Lưu kết quả bài thi
+  Future<void> _saveExamResult() async {
+    try {
+      // Tính toán kết quả
+      final correctCount = _correctCount;
+      final wrongCount = _wrongCount;
+      final skippedCount = _skippedCount;
+      final accuracy = _accuracy;
+      
+      final result = ExamResult(
+        examId: widget.examId,
+        examTitle: widget.examTitle,
+        answers: widget.answers,
+        questions: widget.questions,
+        timeSpent: widget.timeSpent,
+        correctCount: correctCount,
+        wrongCount: wrongCount,
+        skippedCount: skippedCount,
+        accuracy: accuracy,
+        completedAt: DateTime.now(),
+      );
+      await ExamResultService.saveExamResult(result);
+    } catch (e) {
+      debugPrint('Error saving exam result: $e');
+    }
+  }
+
+  // Tính toán kết quả thực tế dựa trên answers và questions
+  // Tạm thời đáp án đúng là "B" cho tất cả câu hỏi
+  String _getCorrectAnswer(int questionId) {
+    // Tạm thời trả về "B" cho tất cả câu hỏi
+    return 'B';
+  }
+
+  bool _isCorrect(int questionId, String? userAnswer) {
+    if (userAnswer == null) return false;
+    return userAnswer == _getCorrectAnswer(questionId);
+  }
+
+  int get _correctCount {
+    int count = 0;
+    for (var question in widget.questions) {
+      final questionId = question['id'] as int;
+      final userAnswer = widget.answers[questionId];
+      if (userAnswer != null && _isCorrect(questionId, userAnswer)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  int get _wrongCount {
+    int count = 0;
+    for (var question in widget.questions) {
+      final questionId = question['id'] as int;
+      final userAnswer = widget.answers[questionId];
+      if (userAnswer != null && !_isCorrect(questionId, userAnswer)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  int get _skippedCount {
+    int count = 0;
+    for (var question in widget.questions) {
+      final questionId = question['id'] as int;
+      if (widget.answers[questionId] == null) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  int get _totalQuestions => widget.questions.length;
+
   double get _accuracy {
-    final total = _correctCount + _wrongCount + _skippedCount;
+    final total = _totalQuestions;
     return total > 0 ? _correctCount / total : 0.0;
+  }
+
+  // Tính toán phân tích chi tiết theo category (mock data tạm thời)
+  // Vì chưa có thông tin category từ API, chia questions thành các nhóm
+  List<Map<String, dynamic>> get _testData {
+    if (widget.questions.isEmpty) return [];
+    
+    // Chia questions thành 3 nhóm để hiển thị phân tích
+    final total = widget.questions.length;
+    final groupSize = (total / 3).ceil();
+    
+    List<Map<String, dynamic>> result = [];
+    
+    for (int i = 0; i < 3 && i * groupSize < total; i++) {
+      final start = i * groupSize;
+      final end = (start + groupSize < total) ? start + groupSize : total;
+      final groupQuestions = widget.questions.sublist(start, end);
+      
+      int correct = 0;
+      int wrong = 0;
+      int skipped = 0;
+      List<int> questionIds = [];
+      
+      for (var question in groupQuestions) {
+        final questionId = question['id'] as int;
+        questionIds.add(questionId);
+        final userAnswer = widget.answers[questionId];
+        
+        if (userAnswer == null) {
+          skipped++;
+        } else if (_isCorrect(questionId, userAnswer)) {
+          correct++;
+        } else {
+          wrong++;
+        }
+      }
+      
+      final totalInGroup = correct + wrong + skipped;
+      final accuracy = totalInGroup > 0 
+          ? ((correct / totalInGroup) * 100).toStringAsFixed(2)
+          : '0.00';
+      
+      result.add({
+        'category': i == 0 ? '[문법] Giới từ' : (i == 1 ? '[문법] Thì' : '[문법] Danh từ'),
+        'correct': correct,
+        'wrong': wrong,
+        'skipped': skipped,
+        'accuracy': '$accuracy%',
+        'questions': questionIds,
+      });
+    }
+    
+    return result;
+  }
+
+  // Format thời gian đã làm bài
+  String _formatTimeSpent(int seconds) {
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+    final secs = seconds % 60;
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
   void _handleAddComment() {
@@ -249,7 +371,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '$_correctCount/30',
+                        '$_correctCount/$_totalQuestions',
                         style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -315,7 +437,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Thời gian: 0:11:14',
+                          'Thời gian: ${_formatTimeSpent(widget.timeSpent)}',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
@@ -641,24 +763,18 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: [
-                      _buildQuestionItem(101, 'B', 'B', true),
-                      _buildQuestionItem(102, 'A', 'A', true),
-                      _buildQuestionItem(103, 'B', 'B', true),
-                      _buildQuestionItem(104, 'A', 'A', true),
-                      _buildQuestionItem(105, 'B', 'D', false),
-                      _buildQuestionItem(106, 'C', 'C', true),
-                      _buildQuestionItem(107, 'D', 'D', true),
-                      _buildQuestionItem(108, 'B', 'B', true),
-                      _buildQuestionItem(116, 'D', 'D', true),
-                      _buildQuestionItem(117, 'C', 'A', false),
-                      _buildQuestionItem(118, 'B', 'B', true),
-                      _buildQuestionItem(119, 'A', 'A', true),
-                      _buildQuestionItem(120, 'A', 'A', true),
-                      _buildQuestionItem(121, 'C', 'C', true),
-                      _buildQuestionItem(122, 'C', 'C', true),
-                      _buildQuestionItem(123, 'A', 'A', true),
-                    ],
+                    children: widget.questions.map((question) {
+                      final questionId = question['id'] as int;
+                      final userAnswer = widget.answers[questionId];
+                      final correctAnswer = _getCorrectAnswer(questionId);
+                      final isCorrect = userAnswer != null && _isCorrect(questionId, userAnswer);
+                      return _buildQuestionItem(
+                        questionId,
+                        userAnswer ?? '-',
+                        correctAnswer,
+                        isCorrect,
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
@@ -903,15 +1019,19 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
 
   Widget _buildQuestionItem(
       int questionNumber, String userAnswer, String correctAnswer, bool isCorrect) {
+    // Nếu user chưa trả lời (userAnswer == '-'), hiển thị màu xám
+    final isSkipped = userAnswer == '-';
+    final color = isSkipped 
+        ? AppColors.primaryBlack.withOpacity(0.4)
+        : (isCorrect ? AppColors.success : const Color(0xFFF44336));
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: isCorrect
-            ? AppColors.success.withOpacity(0.1)
-            : const Color(0xFFF44336).withOpacity(0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isCorrect ? AppColors.success : const Color(0xFFF44336),
+          color: color,
           width: 1.5,
         ),
       ),
@@ -923,31 +1043,55 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: isCorrect ? AppColors.success : const Color(0xFFF44336),
+              color: color,
             ),
           ),
           const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlack,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              userAnswer,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryWhite,
+          if (!isSkipped)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlack,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                userAnswer,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryWhite,
+                ),
               ),
             ),
-          ),
+          if (isSkipped)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlack.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '-',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryBlack.withOpacity(0.6),
+                ),
+              ),
+            ),
           const SizedBox(width: 4),
-          Icon(
-            isCorrect ? Icons.check : Icons.close,
-            size: 14,
-            color: isCorrect ? AppColors.success : const Color(0xFFF44336),
-          ),
+          if (!isSkipped)
+            Icon(
+              isCorrect ? Icons.check : Icons.close,
+              size: 14,
+              color: color,
+            ),
+          if (isSkipped)
+            Icon(
+              Icons.remove_circle_outline,
+              size: 14,
+              color: color,
+            ),
           const SizedBox(width: 4),
           Text(
             correctAnswer,

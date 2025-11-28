@@ -62,4 +62,3 @@ class LessonTabButton extends StatelessWidget {
     );
   }
 }
-

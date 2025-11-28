@@ -144,7 +144,7 @@ async def debug_openai_key() -> Dict[str, Any]:
 
 
 # ===== IMPORT ROUTERS =====
-from routers import chat, lesson, tts, media, speaking, live_talk, user_progress, dictionary, topik
+from routers import chat, lesson, tts, media, speaking, live_talk, user_progress, dictionary, topik, vocabulary, exercise, progress
 from services.pronunciation_model_service import load_pronunciation_model, is_model_loaded
 
 # Include routers
@@ -157,6 +157,9 @@ app.include_router(user_progress.router)
 app.include_router(media.router)  # Media router without /api prefix
 app.include_router(dictionary.router)  # Dictionary router
 app.include_router(topik.router)  # TOPIK router
+app.include_router(vocabulary.router)  # Vocabulary router
+app.include_router(exercise.router)  # Exercise router
+app.include_router(progress.router)  # Progress router
 
 @app.on_event("startup")
 async def startup_event():

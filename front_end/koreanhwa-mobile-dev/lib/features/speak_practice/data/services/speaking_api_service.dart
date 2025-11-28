@@ -77,6 +77,26 @@ class SpeakingApiService {
     }
   }
 
+  /// Lấy danh sách phrases từ korean_phrases.json
+  Future<Map<String, dynamic>> getKoreanPhrases({
+    String? category,
+    String? difficulty,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (category != null) queryParams['category'] = category;
+      if (difficulty != null) queryParams['difficulty'] = difficulty;
+
+      final response = await _dioClient.get(
+        AiApiConfig.speakingPhrases,
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   /// Đánh giá nói tự do (free-form speaking)
   Future<Map<String, dynamic>> checkFreeSpeaking({
     required File audioFile,

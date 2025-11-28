@@ -6,8 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "blog_comments")
@@ -41,7 +42,8 @@ public class BlogComment {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<BlogCommentLike> commentLikes = new ArrayList<>();
+    @OrderBy("id ASC")
+    private Set<BlogCommentLike> commentLikes = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {
@@ -52,6 +54,19 @@ public class BlogComment {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BlogComment)) return false;
+        BlogComment that = (BlogComment) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }
 

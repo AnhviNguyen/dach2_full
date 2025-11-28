@@ -6,8 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "exercises")
@@ -48,7 +49,7 @@ public class Exercise {
 
     @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("optionOrder ASC")
-    private List<ExerciseOption> options = new ArrayList<>();
+    private Set<ExerciseOption> options = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {
@@ -59,6 +60,19 @@ public class Exercise {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Exercise)) return false;
+        Exercise that = (Exercise) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }
 

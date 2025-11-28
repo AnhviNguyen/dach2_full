@@ -3,7 +3,15 @@ Speaking Router - Korean speaking practice and pronunciation evaluation
 Tích hợp model pronunciation check với GPT để đạt độ chính xác cao và trải nghiệm tốt
 """
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
-from models.schemas import ReadAloudResponse, AccuracyDetails, FreeSpeakResponse
+from models.schemas import (
+    ReadAloudResponse, 
+    AccuracyDetails, 
+    FreeSpeakResponse,
+    PronunciationFeedback,
+    PhonemeDetail,
+    WordFeedback,
+    PronunciationFeedbackSummary
+)
 from services import openai_service, accuracy_service
 from services.tts_service import generate_speech
 from services.stt_service import transcribe_audio_cheap  # Use local Whisper (FREE)
@@ -13,7 +21,7 @@ from services.pronunciation_model_service import (
 )
 from services.error_handlers import handle_openai_error
 import logging
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple, List
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -30,6 +38,254 @@ def get_model_status() -> bool:
     return is_model_loaded()
 
 
+def _classify_phoneme(phoneme: str) -> str:
+    """Phân loại phoneme: initial (phụ âm đầu), vowel (nguyên âm), final (phụ âm cuối)"""
+    from services.pronunciation_model_service import LEADS, VOWELS, TAILS
+    
+    if phoneme in LEADS:
+        return "initial"  # Phụ âm đầu
+    elif phoneme in VOWELS:
+        return "vowel"  # Nguyên âm
+    elif phoneme in TAILS:
+        return "final"  # Phụ âm cuối
+    else:
+        return "other"
+
+
+def _generate_local_feedback_vi(
+    expected_text: str,
+    spoken_text: str,
+    phoneme_accuracy: Optional[float] = None,
+    word_accuracy: Optional[float] = None,
+    model_result: Optional[Dict[str, Any]] = None,
+    accuracy_details: Optional[Dict[str, Any]] = None
+) -> Tuple[str, List[str]]:
+    """
+    Tạo feedback bằng tiếng Việt từ pronunciation model results (KHÔNG dùng GPT)
+    
+    Args:
+        expected_text: Văn bản đúng
+        spoken_text: Văn bản người dùng đã nói
+        phoneme_accuracy: Độ chính xác ở mức phoneme (0-100)
+        word_accuracy: Độ chính xác ở mức từ (0-100)
+        model_result: Kết quả từ pronunciation model
+        accuracy_details: Chi tiết từ accuracy service
+    
+    Returns:
+        tuple: (feedback_vi, tricky_words)
+    """
+    feedback_parts = []
+    tricky_words = []
+    
+    # Xác định overall score
+    overall_score = phoneme_accuracy if phoneme_accuracy is not None else word_accuracy
+    
+    if overall_score is None:
+        overall_score = 0.0
+    
+    # Overall assessment bằng tiếng Việt
+    if overall_score >= 95:
+        feedback_parts.append("🎉 Tuyệt vời! Phát âm của bạn gần như hoàn hảo!")
+    elif overall_score >= 85:
+        feedback_parts.append("👍 Làm tốt lắm! Phát âm của bạn rất tốt.")
+    elif overall_score >= 70:
+        feedback_parts.append("✅ Cố gắng tốt! Bạn đang đi đúng hướng.")
+    elif overall_score >= 50:
+        feedback_parts.append("💪 Tiếp tục luyện tập! Bạn đang tiến bộ.")
+    else:
+        feedback_parts.append("🔄 Hãy thử lại. Đừng lo, luyện tập sẽ giúp bạn cải thiện!")
+    
+    # Chi tiết từ pronunciation model (nếu có)
+    if model_result:
+        wrong_phonemes = model_result.get("wrong_phonemes", [])
+        wrong_words = model_result.get("wrong_words", [])
+        substitutions = model_result.get("substitutions", 0)
+        deletions = model_result.get("deletions", 0)
+        insertions = model_result.get("insertions", 0)
+        
+        if phoneme_accuracy is not None:
+            feedback_parts.append(f"Độ chính xác phoneme: {phoneme_accuracy:.1f}%.")
+        
+        if wrong_phonemes:
+            tricky_phonemes = list(set([exp for exp, pred in wrong_phonemes[:5]]))
+            feedback_parts.append(f"Phát âm cần cải thiện: {', '.join(tricky_phonemes[:3])}.")
+        
+        if wrong_words:
+            tricky_words = list(set(wrong_words[:5]))
+            feedback_parts.append(f"Các từ cần luyện tập: {', '.join(tricky_words[:3])}.")
+        
+        if substitutions > 0:
+            feedback_parts.append(f"Có {substitutions} phoneme bị thay thế sai.")
+        if deletions > 0:
+            feedback_parts.append(f"Có {deletions} phoneme bị thiếu.")
+        if insertions > 0:
+            feedback_parts.append(f"Có {insertions} phoneme thừa.")
+    
+    # Chi tiết từ word accuracy (nếu không có model result)
+    elif accuracy_details:
+        matches = accuracy_details.get("matches", 0)
+        substitutions = accuracy_details.get("substitutions", 0)
+        deletions = accuracy_details.get("deletions", 0)
+        insertions = accuracy_details.get("insertions", 0)
+        
+        issues = []
+        if deletions > 0:
+            issues.append(f"{deletions} từ bị thiếu")
+        if substitutions > 0:
+            issues.append(f"{substitutions} từ bị sai")
+        if insertions > 0:
+            issues.append(f"{insertions} từ thừa")
+        
+        if issues:
+            feedback_parts.append(f"Các vấn đề: {', '.join(issues)}.")
+        
+        if matches > 0:
+            feedback_parts.append(f"Bạn đã phát âm đúng {matches} từ!")
+    
+    feedback_text = " ".join(feedback_parts)
+    return feedback_text, tricky_words
+
+
+def _build_pronunciation_feedback(
+    pronunciation_result,
+    expected_text: str
+) -> Optional[PronunciationFeedback]:
+    """Tạo pronunciation_feedback chi tiết từ pronunciation_result"""
+    try:
+        from services.pronunciation_model_service import LEADS, VOWELS, TAILS
+        
+        # Tạo phoneme_details
+        phoneme_details = []
+        expected_phonemes = pronunciation_result.expected_phonemes
+        predicted_phonemes = pronunciation_result.predicted_phonemes
+        
+        # Tạo map của wrong phonemes để dễ tra cứu
+        wrong_phoneme_map = {}
+        for exp, pred in pronunciation_result.wrong_phonemes:
+            # Tìm vị trí của wrong phoneme trong expected_phonemes
+            for idx, exp_phn in enumerate(expected_phonemes):
+                if exp_phn == exp and idx not in wrong_phoneme_map:
+                    wrong_phoneme_map[idx] = pred
+                    break
+        
+        # Xử lý từng phoneme expected
+        max_len = max(len(expected_phonemes), len(predicted_phonemes))
+        for i in range(max_len):
+            exp_phn = expected_phonemes[i] if i < len(expected_phonemes) else None
+            pred_phn = predicted_phonemes[i] if i < len(predicted_phonemes) else None
+            
+            if exp_phn is None:
+                # Insertion - phoneme thừa
+                phoneme_details.append(PhonemeDetail(
+                    position=i,
+                    expected="",
+                    predicted=pred_phn,
+                    type=_classify_phoneme(pred_phn) if pred_phn else "other",
+                    is_correct=False,
+                    is_extra=True
+                ))
+            elif pred_phn is None:
+                # Deletion - phoneme thiếu
+                phoneme_details.append(PhonemeDetail(
+                    position=i,
+                    expected=exp_phn,
+                    predicted="",
+                    type=_classify_phoneme(exp_phn),
+                    is_correct=False,
+                    is_missing=True
+                ))
+            else:
+                # So sánh expected vs predicted
+                is_correct = exp_phn == pred_phn
+                # Nếu không đúng, có thể là substitution
+                if not is_correct and i in wrong_phoneme_map:
+                    pred_phn = wrong_phoneme_map[i]
+                
+                phoneme_details.append(PhonemeDetail(
+                    position=i,
+                    expected=exp_phn,
+                    predicted=pred_phn,
+                    type=_classify_phoneme(exp_phn),
+                    is_correct=is_correct
+                ))
+        
+        # Phân tích từng từ với phoneme details
+        word_feedback_list = []
+        words = expected_text.split()
+        
+        # Map phonemes to words (simplified - mỗi từ có ~3 phonemes: initial, vowel, final)
+        phoneme_idx = 0
+        for word_idx, word in enumerate(words):
+            # Ước tính số phoneme trong từ này (mỗi ký tự Hangul = 2-3 phonemes)
+            word_phoneme_count = len(word) * 2  # Ước tính
+            word_phonemes = []
+            
+            for i in range(min(word_phoneme_count, len(phoneme_details) - phoneme_idx)):
+                if phoneme_idx + i < len(phoneme_details):
+                    phn_detail = phoneme_details[phoneme_idx + i]
+                    word_phonemes.append(phn_detail)
+            
+            # Tính accuracy cho từ này
+            if word_phonemes:
+                correct_count = sum(1 for p in word_phonemes if p.is_correct)
+                word_accuracy = (correct_count / len(word_phonemes)) * 100
+            else:
+                word_accuracy = 0
+            
+            word_feedback_list.append(WordFeedback(
+                word=word,
+                position=word_idx,
+                phonemes=word_phonemes,
+                accuracy=round(word_accuracy, 1),
+                is_correct=word_accuracy >= 80  # Threshold 80%
+            ))
+            
+            phoneme_idx += len(word_phonemes)
+        
+        # Tạo wrong_phonemes với feedback
+        wrong_phonemes_list = []
+        for i, (exp, pred) in enumerate(pronunciation_result.wrong_phonemes):
+            wrong_phonemes_list.append({
+                "expected": exp,
+                "predicted": pred,
+                "position": i,
+                "type": _classify_phoneme(exp),
+                "is_correct": False,
+                "feedback": f"Phát âm '{exp}' thành '{pred}'. Cần luyện tập {'phụ âm đầu' if _classify_phoneme(exp) == 'initial' else 'nguyên âm' if _classify_phoneme(exp) == 'vowel' else 'phụ âm cuối'}."
+            })
+        
+        # Tạo summary
+        summary = PronunciationFeedbackSummary(
+            total_phonemes=len(expected_phonemes),
+            correct_phonemes=pronunciation_result.matches,
+            wrong_phonemes=pronunciation_result.substitutions,
+            missing_phonemes=pronunciation_result.deletions,
+            extra_phonemes=pronunciation_result.insertions,
+            initial_errors=sum(1 for p in phoneme_details if p.type == "initial" and not p.is_correct),
+            vowel_errors=sum(1 for p in phoneme_details if p.type == "vowel" and not p.is_correct),
+            final_errors=sum(1 for p in phoneme_details if p.type == "final" and not p.is_correct)
+        )
+        
+        return PronunciationFeedback(
+            phoneme_accuracy=pronunciation_result.phoneme_accuracy,
+            per=pronunciation_result.per,
+            phoneme_details=phoneme_details,
+            word_feedback=word_feedback_list,
+            wrong_phonemes=wrong_phonemes_list,
+            expected_phonemes=expected_phonemes,
+            predicted_phonemes=predicted_phonemes,
+            wrong_words=pronunciation_result.wrong_words,
+            matches=pronunciation_result.matches,
+            substitutions=pronunciation_result.substitutions,
+            insertions=pronunciation_result.insertions,
+            deletions=pronunciation_result.deletions,
+            summary=summary
+        )
+    except Exception as e:
+        logger.error(f"Error building pronunciation feedback: {e}")
+        return None
+
+
 @router.post("/speaking/read-aloud", response_model=ReadAloudResponse)
 async def check_read_aloud(
     audio: UploadFile = File(..., description="Audio file (webm, mp3, wav)"),
@@ -38,47 +294,97 @@ async def check_read_aloud(
 ):
     """
     Đánh giá phát âm tiếng Hàn khi đọc to
-    Tích hợp model pronunciation check (Wav2Vec2 + Conformer) với GPT
-
-    Quy trình:
-    1. Transcribe audio bằng Whisper
-    2. Check pronunciation bằng model chuyên dụng (nếu có)
-    3. Tính word-level accuracy (fallback nếu model không có)
-    4. Tạo feedback bằng GPT dựa trên kết quả model
-    5. Trả về hybrid score kết hợp cả hai
+    Sử dụng LOCAL models - KHÔNG dùng OpenAI API
+    
+    FLOW:
+    =====
+    1. Người dùng bấm mic → ghi âm (5 giây) → file .m4a
+    2. Flutter gửi file audio lên backend (FastAPI/Python)
+    3. Backend xử lý:
+       a. ⭐ PHẦN CHÍNH - Dùng pronunciation_model.pt để tính điểm:
+          - Audio → Wav2Vec2 features → Conformer model → predicted_phonemes
+          - expected_text → hangul_g2p() → expected_phonemes
+          - So sánh predicted_phonemes vs expected_phonemes → tính điểm + tìm lỗi
+          - ĐÂY LÀ CÁCH TÍNH ĐIỂM PHÁT ÂM - KHÔNG CẦN TRANSCRIPT!
+       
+       b. (OPTIONAL) Dùng LOCAL Whisper → chuyển audio thành text (transcript)
+          - Chỉ để hiển thị cho user biết họ nói gì
+          - Tính word accuracy (bổ sung, KHÔNG phải điểm chính)
+          - Nếu Whisper fail, vẫn tính được điểm từ pronunciation model
+       
+    4. Trả về JSON với:
+       - overall_score: điểm tổng (từ phoneme_accuracy - điểm chính)
+       - phoneme_accuracy: độ chính xác phoneme (từ pronunciation_model.pt)
+       - pronunciation_feedback: chi tiết từng phoneme, từng từ
+       - transcript: text người dùng đã nói (optional, chỉ để hiển thị)
+    5. Flutter nhận JSON → vẽ giao diện đẹp (highlight lỗi, vòng tròn điểm, animation)
 
     Supported audio formats: webm, mp3, wav, m4a
     """
     try:
         logger.info(f"Read-aloud check - Expected: '{expected_text[:50]}...', Audio: {audio.filename}")
 
-        # Step 1: Transcribe audio using Whisper
-        transcript = await openai_service.transcribe_audio(
-            file=audio,
-            language=language
-        )
-        logger.info(f"Transcript: '{transcript}'")
+        # ============================================
+        # STEP 1: Transcribe audio → Text (OPTIONAL - chỉ để hiển thị)
+        # ============================================
+        # ⚠️ QUAN TRỌNG: Transcript KHÔNG được dùng để tính điểm phát âm!
+        # 
+        # Điểm phát âm được tính HOÀN TOÀN từ pronunciation_model.pt:
+        # - Audio → pronunciation_model.pt → predicted phonemes
+        # - expected_text → hangul_g2p() → expected phonemes  
+        # - So sánh predicted vs expected → điểm
+        #
+        # Transcript chỉ để:
+        # - Hiển thị cho user biết họ nói gì (UI feedback)
+        # - Tính word accuracy (bổ sung, KHÔNG phải điểm chính)
+        transcript = ""
+        try:
+            transcript = await transcribe_audio_cheap(
+                file=audio,
+                language=language
+            )
+            logger.info(f"✅ Transcript (người dùng nói): '{transcript}'")
+        except Exception as e:
+            logger.warning(f"⚠️ Transcript failed (KHÔNG ảnh hưởng điểm phát âm): {e}")
+            # Transcript không bắt buộc, tiếp tục với pronunciation model
 
-        # Step 2: Check pronunciation với model (nếu có)
+        # ============================================
+        # STEP 2: Dùng pronunciation_model.pt → Dự đoán phoneme (PHẦN CHÍNH - TÍNH ĐIỂM)
+        # ============================================
+        # ⭐ ĐÂY LÀ PHẦN QUAN TRỌNG NHẤT - Tính điểm phát âm:
+        # 
+        # Flow tính điểm:
+        # 1. Audio → Wav2Vec2 features (extract acoustic features từ audio)
+        # 2. pronunciation_model.pt (Conformer) → dự đoán chuỗi phoneme từ audio
+        #    → predicted_phonemes = ["ㅇ", "ㅏ", "ㄴ", ...] (từ audio trực tiếp)
+        # 3. expected_text → hangul_g2p() → phoneme chuẩn
+        #    → expected_phonemes = ["ㅇ", "ㅏ", "ㄴ", ...] (từ text)
+        # 4. So sánh predicted_phonemes vs expected_phonemes → tính điểm + tìm lỗi
+        # 
+        # ⚠️ KHÔNG CẦN TRANSCRIPT - Model tự dự đoán phonemes từ audio!
+        # Transcript chỉ để hiển thị, không ảnh hưởng điểm phát âm
         model_result = None
         phoneme_accuracy = None
         per = None
+        pronunciation_result = None
+        pronunciation_feedback_obj = None
         
         if get_model_status():
             try:
-                # Đọc audio bytes
+                # Đọc audio bytes từ file đã upload
                 audio_bytes = await audio.read()
-                await audio.seek(0)  # Reset file pointer
+                await audio.seek(0)  # Reset file pointer để có thể dùng lại
                 
-                # Check pronunciation với model
+                # Gọi pronunciation model để dự đoán phoneme và so sánh
                 pronunciation_result = check_pronunciation_from_bytes(
                     audio_bytes=audio_bytes,
-                    expected_text=expected_text,
+                    expected_text=expected_text,  # Text chuẩn để tạo phoneme chuẩn
                     sample_rate=16000,
                     audio_format=Path(audio.filename).suffix[1:] if audio.filename else "wav"
                 )
                 
                 if pronunciation_result:
+                    # Lưu kết quả từ model
                     model_result = {
                         "phoneme_accuracy": pronunciation_result.phoneme_accuracy,
                         "per": pronunciation_result.per,
@@ -91,29 +397,50 @@ async def check_read_aloud(
                     }
                     phoneme_accuracy = pronunciation_result.phoneme_accuracy
                     per = pronunciation_result.per
-                    logger.info(f"✅ Model pronunciation check: {phoneme_accuracy:.1f}% accuracy, PER: {per:.4f}")
+                    logger.info(f"✅ Pronunciation model check: {phoneme_accuracy:.1f}% accuracy, PER: {per:.4f}")
+                    
+                    # Tạo pronunciation_feedback chi tiết (từng phoneme, từng từ)
+                    pronunciation_feedback_obj = _build_pronunciation_feedback(
+                        pronunciation_result=pronunciation_result,
+                        expected_text=expected_text
+                    )
                 else:
-                    logger.warning("Model check returned None, falling back to word accuracy")
+                    logger.warning("⚠️ Model check returned None, falling back to word accuracy")
             except Exception as e:
-                logger.error(f"Error in model pronunciation check: {e}. Falling back to word accuracy.")
+                logger.error(f"❌ Error in pronunciation model check: {e}. Falling back to word accuracy.", exc_info=True)
         
-        # Step 3: Calculate word accuracy (fallback hoặc bổ sung)
-        word_accuracy, details = accuracy_service.calculate_word_accuracy(
-            expected_text=expected_text,
-            spoken_text=transcript,
-            ignore_fillers=True
-        )
-        logger.info(f"Word accuracy: {word_accuracy}%")
+        # ============================================
+        # STEP 3: Tính word-level accuracy (BỔ SUNG - không phải điểm chính)
+        # ============================================
+        # So sánh transcript (người dùng nói) vs expected_text (chuẩn)
+        # ⚠️ LƯU Ý: Điểm chính là phoneme_accuracy từ model, không phải word_accuracy
+        # Word accuracy chỉ để bổ sung thông tin, không ảnh hưởng overall_score
+        word_accuracy = 0.0
+        details = {}
+        if transcript:
+            try:
+                word_accuracy, details = accuracy_service.calculate_word_accuracy(
+                    expected_text=expected_text,
+                    spoken_text=transcript,
+                    ignore_fillers=True
+                )
+                logger.info(f"✅ Word accuracy (bổ sung): {word_accuracy}%")
+            except Exception as e:
+                logger.warning(f"⚠️ Word accuracy calculation failed: {e} (không ảnh hưởng điểm chính)")
+                # Không ảnh hưởng điểm phát âm
 
-        # Step 4: Generate AI feedback bằng tiếng Việt với thông tin từ model
-        feedback_vi, tricky_words = await openai_service.generate_bilingual_feedback(
+        # ============================================
+        # STEP 4: Tạo feedback bằng tiếng Việt (LOCAL, không dùng GPT)
+        # ============================================
+        feedback_vi, tricky_words = _generate_local_feedback_vi(
             expected_text=expected_text,
             spoken_text=transcript,
+            phoneme_accuracy=phoneme_accuracy,
             word_accuracy=word_accuracy,
-            accuracy_details=details,
-            model_result=model_result  # Truyền kết quả từ model
+            model_result=model_result,
+            accuracy_details=details
         )
-        logger.info(f"Feedback tiếng Việt: '{feedback_vi[:50]}...'")
+        logger.info(f"Feedback tiếng Việt (local): '{feedback_vi[:50]}...'")
 
         # Step 5: Generate TTS cho feedback (optional - won't fail if error)
         tts_vi_path = await generate_speech(
@@ -169,9 +496,17 @@ async def check_read_aloud(
                 spoken_words=details.get("spoken_words", [])
             )
 
-        # Legacy combined feedback (giữ để tương thích)
+        # ============================================
+        # STEP 5: Trả về JSON response
+        # ============================================
+        # JSON này sẽ được Flutter nhận để vẽ giao diện:
+        # - overall_score: điểm tổng (vẽ vòng tròn điểm)
+        # - pronunciation_feedback: chi tiết từng phoneme (highlight lỗi)
+        # - transcript: text người dùng đã nói
+        # - feedback_vi: feedback bằng tiếng Việt
         ai_feedback_combined = feedback_vi
 
+        logger.info(f"✅ Returning response - Overall score: {overall_score:.1f}%, Phoneme accuracy: {phoneme_accuracy}%")
         return ReadAloudResponse(
             transcript=transcript,
             expected_text=expected_text,
@@ -185,13 +520,18 @@ async def check_read_aloud(
             tts_en_url=None,  # Không dùng nữa
             tts_vi_url=tts_vi_url,
             tricky_words=tricky_words,
-            tts_url=None
+            tts_url=None,
+            pronunciation_feedback=pronunciation_feedback_obj  # Chi tiết từng phoneme, từng từ
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error in check_read_aloud: {e}")
-        # Use error handler for OpenAI errors (429, etc.)
-        raise handle_openai_error(e, service_name="Speech transcription")
+        logger.error(f"Error in check_read_aloud: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Lỗi khi đánh giá phát âm: {str(e)}"
+        )
 
 
 @router.get("/speaking/phrases")

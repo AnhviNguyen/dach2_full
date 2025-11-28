@@ -9,9 +9,7 @@ import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/vocab
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/widgets/vocabulary_info_card.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/widgets/learning_mode_button.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/data/models/learning_mode.dart';
-import 'package:koreanhwa_flutter/features/lessons/data/services/lesson_api_service.dart';
-import 'package:koreanhwa_flutter/features/lessons/data/models/lesson_response.dart';
-import 'package:koreanhwa_flutter/features/textbook/data/services/textbook_api_service.dart';
+import 'package:koreanhwa_flutter/features/vocabulary/data/services/vocabulary_api_service.dart';
 
 class VocabularyScreen extends StatefulWidget {
   final int bookId;
@@ -28,8 +26,8 @@ class VocabularyScreen extends StatefulWidget {
 }
 
 class _VocabularyScreenState extends State<VocabularyScreen> {
-  final LessonApiService _lessonApiService = LessonApiService();
-  final TextbookApiService _textbookApiService = TextbookApiService();
+  final VocabularyApiService _vocabApiService = VocabularyApiService();
+  Map<String, dynamic>? _learningMethodsData;
   List<Map<String, String>> _vocabList = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -47,47 +45,26 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
     });
 
     try {
-      // Lấy curriculumId từ bookNumber
-      final curriculum = await _textbookApiService.getTextbookByBookNumber(widget.bookId);
-      final curriculumId = curriculum.id;
-      
-      if (curriculumId == null) {
-        throw Exception('Không tìm thấy giáo trình với số sách ${widget.bookId}');
-      }
-
-      // Lấy tất cả lessons của curriculum (với size lớn để lấy hết)
-      final lessonsResponse = await _lessonApiService.getCurriculumLessonsByCurriculumId(
-        curriculumId,
-        page: 0,
-        size: 100,
+      // Lấy vocabulary learning methods từ AI backend
+      final data = await _vocabApiService.getVocabularyLearningMethods(
+        bookId: widget.bookId,
+        lessonId: widget.lessonId,
       );
-      
-      // Tìm lesson có lessonNumber = widget.lessonId
-      // Nếu không tìm thấy, lấy lesson đầu tiên
-      final lesson = lessonsResponse.content.firstWhere(
-        (l) => l.lessonNumber == widget.lessonId,
-        orElse: () {
-          if (lessonsResponse.content.isNotEmpty) {
-            return lessonsResponse.content.first;
-          }
-          throw Exception('Không tìm thấy bài học');
-        },
-      );
-
-      // Lấy chi tiết curriculum lesson để có vocabulary
-      final lessonDetail = await _lessonApiService.getCurriculumLessonById(lesson.id);
 
       // Convert vocabulary từ API format sang format mà các screens khác đang dùng
-      _vocabList = lessonDetail.vocabulary.map((vocab) {
+      final flashcardData = data['flashcard'] as List<dynamic>;
+      _vocabList = flashcardData.map((card) {
+        final back = card['back'] as Map<String, dynamic>;
         return {
-          'korean': vocab.korean,
-          'vietnamese': vocab.vietnamese,
-          'pronunciation': vocab.pronunciation,
-          'example': vocab.example,
+          'korean': card['front'] as String,
+          'vietnamese': back['vietnamese'] as String,
+          'pronunciation': back['pronunciation'] as String? ?? '',
+          'example': back['example'] as String? ?? '',
         };
       }).toList();
 
       setState(() {
+        _learningMethodsData = data;
         _isLoading = false;
       });
     } catch (e) {

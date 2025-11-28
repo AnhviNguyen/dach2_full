@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "competitions")
@@ -52,11 +52,13 @@ public class Competition {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "competition", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CompetitionParticipant> competitionParticipants = new ArrayList<>();
+    @OneToMany(mappedBy = "competition", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    private Set<CompetitionParticipant> competitionParticipants = new HashSet<>();
 
-    @OneToMany(mappedBy = "competition", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CompetitionQuestion> questions = new ArrayList<>();
+    @OneToMany(mappedBy = "competition", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    private Set<CompetitionQuestion> questions = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {
