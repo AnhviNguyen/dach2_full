@@ -161,6 +161,7 @@ class _ChatTeacherScreenState extends State<ChatTeacherScreen> with SingleTicker
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.whiteOff,
+      resizeToAvoidBottomInset: true,
       body: Column(
         children: [
           // Custom App Bar with Tabs
@@ -317,8 +318,11 @@ class _ChatTeacherScreenState extends State<ChatTeacherScreen> with SingleTicker
               padding: const EdgeInsets.all(16),
               itemCount: _messages.length + (_isLoading ? 1 : 0),
               itemBuilder: (context, index) {
-                if (index == _messages.length) {
+                if (index >= _messages.length) {
                   return _buildTypingIndicator(mode);
+                }
+                if (index < 0 || index >= _messages.length) {
+                  return const SizedBox.shrink();
                 }
                 final message = _messages[index];
                 return _buildMessageBubble(message, mode);

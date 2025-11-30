@@ -17,15 +17,14 @@ class MaterialDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
-  bool _sidebarOpen = true;
   int _currentPage = 21;
   final int _totalPages = 384;
-  double _zoomLevel = 100.0;
   bool _bookmarked = false;
   final MaterialApiService _apiService = MaterialApiService();
   LearningMaterial? _material;
   bool _isLoading = true;
   String? _errorMessage;
+  bool _showToc = false;
 
   @override
   void initState() {
@@ -58,29 +57,32 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: AppColors.primaryBlack,
-        appBar: AppBar(
-          backgroundColor: AppColors.primaryBlack,
-          title: const Text('Đang tải...', style: TextStyle(color: AppColors.primaryWhite)),
-        ),
+        backgroundColor: AppColors.primaryWhite,
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_errorMessage != null || _material == null) {
       return Scaffold(
-        backgroundColor: AppColors.primaryBlack,
+        backgroundColor: AppColors.primaryWhite,
         appBar: AppBar(
-          backgroundColor: AppColors.primaryBlack,
-          title: const Text('Lỗi', style: TextStyle(color: AppColors.primaryWhite)),
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            onPressed: () => context.go('/material'),
+          ),
         ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const Icon(Icons.error_outline, size: 64, color: AppColors.grayLight),
+              const SizedBox(height: 16),
               Text(
                 _errorMessage ?? 'Không tìm thấy tài liệu',
-                style: const TextStyle(color: AppColors.primaryWhite),
+                style: const TextStyle(color: AppColors.primaryBlack),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -98,432 +100,475 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
     }
 
     final material = _material!;
-
     final pdfUrl = material.pdfUrl ?? 'https://kanata.edu.vn/wp-content/uploads/2022/10/Giao-trinh-Tieng-Han-Tong-hop-so-cap-1.pdf';
 
     return Scaffold(
-      backgroundColor: AppColors.primaryBlack,
-      body: Row(
-        children: [
-          // Sidebar
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: _sidebarOpen ? 320 : 0,
-            child: _sidebarOpen
-                ? Container(
-              color: AppColors.primaryBlack,
-              child: Column(
-                children: [
-                  // Header
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: AppColors.grayLight.withOpacity(0.3)),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                material.title,
-                                style: const TextStyle(
-                                  color: AppColors.primaryWhite,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.chevron_left, color: AppColors.primaryWhite),
-                              onPressed: () => setState(() => _sidebarOpen = false),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            final uri = Uri.parse(pdfUrl);
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri, mode: LaunchMode.externalApplication);
-                            }
-                          },
-                          icon: const Icon(Icons.volume_up),
-                          label: const Text('Audio'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryYellow,
-                            foregroundColor: AppColors.primaryBlack,
-                            minimumSize: const Size(double.infinity, 40),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            final uri = Uri.parse(pdfUrl);
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri, mode: LaunchMode.externalApplication);
-                            }
-                          },
-                          icon: const Icon(Icons.download),
-                          label: const Text('Tải xuống'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryYellow.withOpacity(0.8),
-                            foregroundColor: AppColors.primaryBlack,
-                            minimumSize: const Size(double.infinity, 40),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Page Navigation
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: AppColors.grayLight.withOpacity(0.3)),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Trang $_currentPage / $_totalPages',
-                                style: const TextStyle(
-                                  color: AppColors.primaryWhite,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryYellow,
-                                foregroundColor: AppColors.primaryBlack,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              ),
-                              child: const Text('Đi'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            ElevatedButton(
-                              onPressed: _currentPage > 1
-                                  ? () => setState(() => _currentPage--)
-                                  : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.grayLight.withOpacity(0.2),
-                                foregroundColor: AppColors.primaryWhite,
-                              ),
-                              child: const Text('Previous'),
-                            ),
-                            ElevatedButton(
-                              onPressed: _currentPage < _totalPages
-                                  ? () => setState(() => _currentPage++)
-                                  : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.grayLight.withOpacity(0.2),
-                                foregroundColor: AppColors.primaryWhite,
-                              ),
-                              child: const Text('Next'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Table of Contents
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        const Text(
-                          'MỤC LỤC',
-                          style: TextStyle(
-                            color: AppColors.grayLight,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildTocItem('Sưu tầm', 1, 0),
-                        _buildTocItem('Bài 1: Chào hỏi cơ bản', 15, 1),
-                        _buildTocItem('Từ vựng', 16, 2),
-                        _buildTocItem('Ngữ pháp', 18, 2),
-                        _buildTocItem('Bài tập', 20, 2),
-                        _buildTocItem('Bài 2: Giới thiệu bản thân', 25, 1),
-                        _buildTocItem('Bài 3: Gia đình', 35, 1),
-                      ],
-                    ),
+      backgroundColor: AppColors.primaryWhite,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Modern AppBar
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primaryWhite,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-            )
-                : null,
-          ),
-          // Main Content
-          Expanded(
-            child: Column(
-              children: [
-                // Toolbar
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  color: AppColors.primaryBlack,
-                  child: Row(
-                    children: [
-                      if (!_sidebarOpen)
-                        IconButton(
-                          icon: const Icon(Icons.menu, color: AppColors.primaryWhite),
-                          onPressed: () => setState(() => _sidebarOpen = true),
-                        ),
-                      const SizedBox(width: 16),
-                      TextButton(
-                        onPressed: () => context.go('/material'),
-                        child: const Text(
-                          'Tài liệu',
-                          style: TextStyle(color: AppColors.grayLight),
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right, color: AppColors.grayLight, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+                    onPressed: () => context.go('/material'),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
                           material.title,
                           style: const TextStyle(
-                            color: AppColors.primaryWhite,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: AppColors.primaryBlack,
                           ),
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      DropdownButton<double>(
-                        value: _zoomLevel,
-                        dropdownColor: AppColors.primaryBlack,
-                        style: const TextStyle(color: AppColors.primaryWhite),
-                        items: [50, 75, 100, 125, 150].map((zoom) {
-                          return DropdownMenuItem<double>(
-                            value: zoom.toDouble(),
-                            child: Text('$zoom%'),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) setState(() => _zoomLevel = value);
+                        Text(
+                          'Trang $_currentPage / $_totalPages',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.grayLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _bookmarked ? Icons.bookmark : Icons.bookmark_border,
+                      color: _bookmarked ? AppColors.primaryYellow : AppColors.grayLight,
+                    ),
+                    onPressed: () => setState(() => _bookmarked = !_bookmarked),
+                  ),
+                  PopupMenuButton(
+                    icon: const Icon(Icons.more_vert, color: AppColors.primaryBlack),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        child: const Row(
+                          children: [
+                            Icon(Icons.download, size: 20),
+                            SizedBox(width: 12),
+                            Text('Tải xuống'),
+                          ],
+                        ),
+                        onTap: () async {
+                          final uri = Uri.parse(pdfUrl);
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          }
                         },
                       ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.search, color: AppColors.primaryWhite),
-                        onPressed: () {},
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.settings, color: AppColors.primaryWhite),
-                        onPressed: () {},
+                      PopupMenuItem(
+                        child: const Row(
+                          children: [
+                            Icon(Icons.volume_up, size: 20),
+                            SizedBox(width: 12),
+                            Text('Audio'),
+                          ],
+                        ),
+                        onTap: () async {
+                          final uri = Uri.parse(pdfUrl);
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          }
+                        },
                       ),
                     ],
                   ),
-                ),
-                // PDF Viewer
-                Expanded(
-                  child: Container(
-                    color: AppColors.grayLight.withOpacity(0.1),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            height: 600,
-                            margin: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryWhite,
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  blurRadius: 20,
-                                  spreadRadius: 5,
-                                ),
-                              ],
+                ],
+              ),
+            ),
+
+            // Content Area
+            Expanded(
+              child: Stack(
+                children: [
+                  // PDF Preview
+                  Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Container(
+                        constraints: const BoxConstraints(maxWidth: 800),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryWhite,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, 4),
                             ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Material(
-                                child: InkWell(
-                                  onTap: () async {
-                                    final uri = Uri.parse(pdfUrl);
-                                    if (await canLaunchUrl(uri)) {
-                                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                    }
-                                  },
-                                  child: Column(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primaryYellow,
-                                          border: Border(
-                                            bottom: BorderSide(color: AppColors.primaryBlack.withOpacity(0.1)),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            const Icon(Icons.picture_as_pdf, color: AppColors.primaryBlack),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                material.title,
-                                                style: const TextStyle(
-                                                  color: AppColors.primaryBlack,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Center(
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.picture_as_pdf,
-                                                size: 80,
-                                                color: AppColors.primaryYellow,
-                                              ),
-                                              const SizedBox(height: 16),
-                                              const Text(
-                                                'Nhấn để mở PDF',
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                'Trang $_currentPage / $_totalPages',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: AppColors.grayLight,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Column(
+                            children: [
+                              // PDF Header
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.primaryYellow,
+                                      AppColors.primaryYellow.withOpacity(0.8),
                                     ],
                                   ),
                                 ),
-                              ),
-                            ),
-                          ),
-                          // Page Controls
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ElevatedButton.icon(
-                                onPressed: _currentPage > 1
-                                    ? () => setState(() => _currentPage--)
-                                    : null,
-                                icon: const Icon(Icons.chevron_left),
-                                label: const Text('Trang trước'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.grayLight.withOpacity(0.2),
-                                  foregroundColor: AppColors.primaryWhite,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              ElevatedButton(
-                                onPressed: () => setState(() => _bookmarked = !_bookmarked),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _bookmarked
-                                      ? AppColors.primaryYellow
-                                      : AppColors.grayLight.withOpacity(0.2),
-                                  foregroundColor: _bookmarked
-                                      ? AppColors.primaryBlack
-                                      : AppColors.primaryWhite,
-                                ),
                                 child: Row(
                                   children: [
-                                    Icon(_bookmarked ? Icons.bookmark : Icons.bookmark_border),
-                                    const SizedBox(width: 8),
-                                    const Text('Bookmark'),
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryWhite.withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.picture_as_pdf,
+                                        color: AppColors.primaryBlack,
+                                        size: 32,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            material.title,
+                                            style: const TextStyle(
+                                              color: AppColors.primaryBlack,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${material.size} • $_totalPages trang',
+                                            style: TextStyle(
+                                              color: AppColors.primaryBlack.withOpacity(0.7),
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 16),
-                              ElevatedButton.icon(
-                                onPressed: _currentPage < _totalPages
-                                    ? () => setState(() => _currentPage++)
-                                    : null,
-                                icon: const Icon(Icons.chevron_right),
-                                label: const Text('Trang sau'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.grayLight.withOpacity(0.2),
-                                  foregroundColor: AppColors.primaryWhite,
+
+                              // PDF Content Area
+                              InkWell(
+                                onTap: () async {
+                                  final uri = Uri.parse(pdfUrl);
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  }
+                                },
+                                child: Container(
+                                  height: 500,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        AppColors.whiteGray,
+                                        AppColors.whiteGray.withOpacity(0.5),
+                                      ],
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(24),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primaryYellow.withOpacity(0.2),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.touch_app,
+                                            size: 64,
+                                            color: AppColors.primaryYellow,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 24),
+                                        const Text(
+                                          'Nhấn để mở PDF',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primaryBlack,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Xem toàn bộ nội dung tài liệu',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.grayLight,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+
+                  // Table of Contents Drawer
+                  if (_showToc)
+                    GestureDetector(
+                      onTap: () => setState(() => _showToc = false),
+                      child: Container(
+                        color: Colors.black.withOpacity(0.5),
+                      ),
+                    ),
+                  if (_showToc)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: () {},
+                        child: Container(
+                          width: 320,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryWhite,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 20,
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryYellow,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.list, color: AppColors.primaryBlack),
+                                    const SizedBox(width: 12),
+                                    const Expanded(
+                                      child: Text(
+                                        'Mục lục',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primaryBlack,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.close, color: AppColors.primaryBlack),
+                                      onPressed: () => setState(() => _showToc = false),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                child: ListView(
+                                  padding: const EdgeInsets.all(16),
+                                  children: [
+                                    _buildTocItem('Sưu tầm', 1, 0),
+                                    _buildTocItem('Bài 1: Chào hỏi cơ bản', 15, 1),
+                                    _buildTocItem('Từ vựng', 16, 2),
+                                    _buildTocItem('Ngữ pháp', 18, 2),
+                                    _buildTocItem('Bài tập', 20, 2),
+                                    _buildTocItem('Bài 2: Giới thiệu bản thân', 25, 1),
+                                    _buildTocItem('Bài 3: Gia đình', 35, 1),
+                                    _buildTocItem('Từ vựng', 36, 2),
+                                    _buildTocItem('Ngữ pháp', 38, 2),
+                                    _buildTocItem('Bài 4: Thời gian', 45, 1),
+                                    _buildTocItem('Bài 5: Hoạt động hàng ngày', 55, 1),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // Bottom Navigation
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primaryWhite,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _currentPage > 1
+                          ? () => setState(() => _currentPage--)
+                          : null,
+                      icon: const Icon(Icons.chevron_left),
+                      label: const Text('Trước'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.whiteGray,
+                        foregroundColor: AppColors.primaryBlack,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () => setState(() => _showToc = !_showToc),
+                    icon: const Icon(Icons.list),
+                    label: const Text('Mục lục'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryYellow,
+                      foregroundColor: AppColors.primaryBlack,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _currentPage < _totalPages
+                          ? () => setState(() => _currentPage++)
+                          : null,
+                      icon: const Icon(Icons.chevron_right),
+                      label: const Text('Sau'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.whiteGray,
+                        foregroundColor: AppColors.primaryBlack,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTocItem(String title, int page, int level) {
+    final isActive = _currentPage == page;
     return InkWell(
-      onTap: () => setState(() => _currentPage = page),
+      onTap: () {
+        setState(() {
+          _currentPage = page;
+          _showToc = false;
+        });
+      },
       child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
         padding: EdgeInsets.only(
           left: level * 16.0 + 12,
-          top: 8,
-          bottom: 8,
+          top: 12,
+          bottom: 12,
           right: 12,
         ),
         decoration: BoxDecoration(
-          color: _currentPage == page
+          color: isActive
               ? AppColors.primaryYellow.withOpacity(0.2)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
+          border: isActive
+              ? Border.all(color: AppColors.primaryYellow, width: 2)
+              : null,
         ),
         child: Row(
           children: [
+            if (level > 0)
+              Container(
+                width: 4,
+                height: 4,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: level == 1 ? AppColors.primaryYellow : AppColors.grayLight,
+                  shape: BoxShape.circle,
+                ),
+              ),
             Expanded(
               child: Text(
                 title,
                 style: TextStyle(
                   color: level == 0
                       ? AppColors.primaryYellow
-                      : level == 1
-                      ? AppColors.primaryWhite
-                      : AppColors.grayLight,
-                  fontSize: level == 0 ? 14 : 12,
-                  fontWeight: level == 0 ? FontWeight.bold : FontWeight.normal,
+                      : AppColors.primaryBlack,
+                  fontSize: level == 0 ? 14 : 13,
+                  fontWeight: isActive || level == 0 ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ),
-            Text(
-              '$page',
-              style: TextStyle(
-                color: AppColors.grayLight,
-                fontSize: 11,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? AppColors.primaryYellow
+                    : AppColors.whiteGray,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$page',
+                style: TextStyle(
+                  color: isActive ? AppColors.primaryBlack : AppColors.grayLight,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],

@@ -5,7 +5,8 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List, Dict, Any, Optional, Literal
 import logging
 
-from services import topik_service, dictionary_service
+from services import topik_service
+from services import vocabulary_lookup_service as dictionary_service
 
 logger = logging.getLogger(__name__)
 

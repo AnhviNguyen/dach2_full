@@ -3,6 +3,8 @@ import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/topik/presentation/screen/exam_result_screen.dart';
 import 'package:koreanhwa_flutter/features/topik/data/services/topik_api_service.dart';
 import 'package:koreanhwa_flutter/core/config/ai_api_config.dart';
+import 'package:koreanhwa_flutter/shared/widgets/selectable_korean_text.dart';
+import 'package:koreanhwa_flutter/shared/widgets/dictionary_input_dialog.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
 
@@ -686,8 +688,8 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
                                   questionId,
                                   question['audio_url'] as String?,
                                 ),
-                              SelectableText(
-                                question['question'] as String,
+                              SelectableKoreanText(
+                                text: question['question'] as String,
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -751,8 +753,8 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
                                           ),
                                           const SizedBox(width: 10),
                                           Expanded(
-                                            child: Text(
-                                              '$value. $text',
+                                            child: SelectableKoreanText(
+                                              text: '$value. $text',
                                               style: TextStyle(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w500,
@@ -937,6 +939,18 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) => const DictionaryInputDialog(),
+          );
+        },
+        backgroundColor: AppColors.primaryYellow,
+        foregroundColor: AppColors.primaryBlack,
+        elevation: 4,
+        child: const Icon(Icons.translate),
       ),
     );
   }

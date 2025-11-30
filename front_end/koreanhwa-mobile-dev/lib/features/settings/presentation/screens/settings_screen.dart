@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/models/settings_model.dart';
 import 'package:koreanhwa_flutter/services/settings_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/shared/widgets/main_bottom_nav.dart';
 import 'package:koreanhwa_flutter/features/settings/data/models/settings_section.dart';
 import 'package:koreanhwa_flutter/features/settings/data/settings_mock_data.dart';
 import 'package:koreanhwa_flutter/features/settings/presentation/widgets/settings_detail_screen.dart';
@@ -15,6 +16,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  MainNavItem _currentNavItem = MainNavItem.settings;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,72 +66,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
               borderRadius: BorderRadius.circular(20),
               side: BorderSide(color: AppColors.primaryBlack.withOpacity(0.08)),
             ),
-            child: section.type == SettingsSectionType.inline
-                ? ExpansionTile(
-                    tilePadding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                    leading: Icon(section.icon, color: AppColors.primaryBlack),
-                    title: Text(
-                      section.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
-                      ),
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryYellow.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(section.icon, color: AppColors.primaryBlack),
+              ),
+              title: Text(
+                section.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryBlack,
+                ),
+              ),
+              subtitle: Text(
+                section.description,
+                style: TextStyle(
+                  color: AppColors.primaryBlack.withOpacity(0.6),
+                ),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SettingsDetailScreen(
+                      title: section.name,
+                      content: section.builder(),
                     ),
-                    subtitle: Text(
-                      section.description,
-                      style: TextStyle(
-                        color: AppColors.primaryBlack.withOpacity(0.6),
-                        fontSize: 13,
-                      ),
-                    ),
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        constraints: const BoxConstraints(maxHeight: 420),
-                        width: double.infinity,
-                        child: section.builder(),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                  )
-                : ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryYellow.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(section.icon, color: AppColors.primaryBlack),
-                    ),
-                    title: Text(
-                      section.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
-                      ),
-                    ),
-                    subtitle: Text(
-                      section.description,
-                      style: TextStyle(
-                        color: AppColors.primaryBlack.withOpacity(0.6),
-                      ),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SettingsDetailScreen(
-                            title: section.name,
-                            content: section.builder(),
-                          ),
-                        ),
-                      );
-                    },
                   ),
+                );
+              },
+            ),
           );
+        },
+      ),
+      bottomNavigationBar: MainBottomNavBar(
+        current: _currentNavItem,
+        onChanged: (item) {
+          setState(() {
+            _currentNavItem = item;
+          });
+          switch (item) {
+            case MainNavItem.home:
+              context.go('/home');
+              break;
+            case MainNavItem.curriculum:
+              context.go('/textbook');
+              break;
+            case MainNavItem.vocabulary:
+              context.go('/my-vocabulary');
+              break;
+            case MainNavItem.settings:
+              // Already on settings screen
+              break;
+          }
         },
       ),
     );

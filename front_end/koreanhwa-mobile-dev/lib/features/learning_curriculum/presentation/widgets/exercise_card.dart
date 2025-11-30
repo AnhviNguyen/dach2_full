@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/learning_curriculum/data/models/exercise_item.dart';
+import 'package:koreanhwa_flutter/shared/widgets/selectable_korean_text.dart';
 
 class ExerciseCard extends StatefulWidget {
   final ExerciseItem exercise;
@@ -86,8 +87,8 @@ class _ExerciseCardState extends State<ExerciseCard> {
                     color: AppColors.primaryYellow.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    'Câu ${widget.index + 1}: ${widget.exercise.question}',
+                  child: SelectableKoreanText(
+                    text: 'Câu ${widget.index + 1}: ${widget.exercise.question}',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -181,8 +182,8 @@ class _ExerciseCardState extends State<ExerciseCard> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                option,
+                              SelectableKoreanText(
+                                text: option,
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: AppColors.primaryBlack,

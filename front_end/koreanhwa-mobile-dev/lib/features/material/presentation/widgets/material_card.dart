@@ -54,6 +54,7 @@ class MaterialCard extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
@@ -91,61 +92,51 @@ class MaterialCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Flexible(
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.download, size: 14, color: AppColors.grayLight),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              '${material.downloads}',
-                              style: TextStyle(fontSize: 12, color: AppColors.grayLight),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.star, size: 14, color: AppColors.primaryYellow),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              '${material.rating}',
-                              style: TextStyle(fontSize: 12, color: AppColors.grayLight),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.access_time, size: 14, color: AppColors.grayLight),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              material.size,
-                              style: TextStyle(fontSize: 12, color: AppColors.grayLight),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.download, size: 14, color: AppColors.grayLight),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${material.downloads}',
+                          style: TextStyle(fontSize: 12, color: AppColors.grayLight),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.star, size: 14, color: AppColors.primaryYellow),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${material.rating}',
+                          style: TextStyle(fontSize: 12, color: AppColors.grayLight),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.access_time, size: 14, color: AppColors.grayLight),
+                        const SizedBox(width: 4),
+                        Text(
+                          material.size,
+                          style: TextStyle(fontSize: 12, color: AppColors.grayLight),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
           Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               if (material.isDownloaded)
                 ElevatedButton(
@@ -196,4 +187,3 @@ class MaterialCard extends StatelessWidget {
     );
   }
 }
-

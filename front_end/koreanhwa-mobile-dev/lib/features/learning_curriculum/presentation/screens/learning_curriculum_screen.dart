@@ -13,6 +13,7 @@ import 'package:koreanhwa_flutter/features/learning_curriculum/data/models/gramm
 import 'package:koreanhwa_flutter/features/learning_curriculum/data/models/exercise_item.dart' as local;
 import 'package:koreanhwa_flutter/features/learning_curriculum/data/services/chat_api_service.dart';
 import 'package:koreanhwa_flutter/features/learning_curriculum/data/services/exercise_api_service.dart';
+import 'package:koreanhwa_flutter/shared/widgets/dictionary_input_dialog.dart';
 
 class LearningCurriculumScreen extends StatefulWidget {
   final int bookId;
@@ -174,6 +175,18 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
             child: _buildTabContent(),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) => const DictionaryInputDialog(),
+          );
+        },
+        backgroundColor: AppColors.primaryYellow,
+        foregroundColor: AppColors.primaryBlack,
+        elevation: 4,
+        child: const Icon(Icons.translate),
       ),
     );
   }

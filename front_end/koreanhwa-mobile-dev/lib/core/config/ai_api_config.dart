@@ -24,7 +24,7 @@ class AiApiConfig {
     if (kIsWeb) {
       return 'http://localhost:8000/api';
     } else if (Platform.isAndroid) {
-      return 'http://192.168.1.101:8000/api';
+      return 'http://192.168.1.8:8000/api';
     } else if (Platform.isIOS) {
       // iOS simulator có thể dùng localhost
       // Nếu chạy trên thiết bị thật, set AI_API_BASE_URL với IP máy host

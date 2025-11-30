@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/shared/widgets/main_bottom_nav.dart';
 import 'package:koreanhwa_flutter/features/learning_curriculum/presentation/screens/learning_curriculum_screen.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/vocabulary_screen.dart';
 import 'package:koreanhwa_flutter/features/textbook/data/models/textbook.dart';
@@ -30,6 +32,7 @@ class _TextbookScreenState extends State<TextbookScreen> {
   final Map<String, LessonProgress> lessonProgress = {};
   List<Textbook> textbooks = [];
   bool isLoading = true;
+  MainNavItem _currentNavItem = MainNavItem.curriculum;
   final TextbookApiService _apiService = TextbookApiService();
   final ProgressApiService _progressApiService = ProgressApiService();
   final LessonApiService _lessonApiService = LessonApiService();
@@ -447,7 +450,7 @@ class _TextbookScreenState extends State<TextbookScreen> {
         backgroundColor: AppColors.primaryWhite,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.go('/home'),
           icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
         ),
         title: const Text(
@@ -498,6 +501,28 @@ class _TextbookScreenState extends State<TextbookScreen> {
                 )),
           ],
         ),
+      ),
+      bottomNavigationBar: MainBottomNavBar(
+        current: _currentNavItem,
+        onChanged: (item) {
+          setState(() {
+            _currentNavItem = item;
+          });
+          switch (item) {
+            case MainNavItem.home:
+              context.go('/home');
+              break;
+            case MainNavItem.curriculum:
+              // Already on curriculum screen
+              break;
+            case MainNavItem.vocabulary:
+              context.go('/my-vocabulary');
+              break;
+            case MainNavItem.settings:
+              context.go('/settings');
+              break;
+          }
+        },
       ),
     );
   }

@@ -294,3 +294,275 @@ def save_lesson_progress(
         logger.error(f"Error saving lesson progress: {e}")
         return False
 
+
+def save_user_vocabulary(
+    user_id: str,
+    word: str,
+    vietnamese: str,
+    vi_word: str = "",
+    vi_def: str = "",
+    source: str = "lookup"
+) -> bool:
+    """
+    Lưu từ vựng vào database cho user
+    
+    Args:
+        user_id: User identifier
+        word: Từ tiếng Hàn
+        vietnamese: Nghĩa tiếng Việt
+        vi_word: Từ tiếng Việt (nếu có)
+        vi_def: Định nghĩa tiếng Việt (nếu có)
+        source: Nguồn (lookup, file, gpt, etc.)
+        
+    Returns:
+        True nếu lưu thành công, False nếu có lỗi
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Kiểm tra xem bảng có tồn tại không, nếu không thì tạo
+            create_table_query = """
+            CREATE TABLE IF NOT EXISTS user_saved_vocabulary (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id VARCHAR(255) NOT NULL,
+                word VARCHAR(255) NOT NULL,
+                vietnamese TEXT,
+                vi_word VARCHAR(255),
+                vi_def TEXT,
+                source VARCHAR(50) DEFAULT 'lookup',
+                saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_user_word (user_id, word),
+                INDEX idx_user_id (user_id),
+                INDEX idx_word (word)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """
+            cursor.execute(create_table_query)
+            
+            # Kiểm tra xem từ đã được lưu chưa
+            check_query = """
+            SELECT id FROM user_saved_vocabulary 
+            WHERE user_id = %s AND word = %s
+            """
+            cursor.execute(check_query, (user_id, word))
+            existing = cursor.fetchone()
+            
+            if existing:
+                # Cập nhật nếu đã tồn tại
+                update_query = """
+                UPDATE user_saved_vocabulary 
+                SET vietnamese = %s, vi_word = %s, vi_def = %s, source = %s, saved_at = CURRENT_TIMESTAMP
+                WHERE user_id = %s AND word = %s
+                """
+                cursor.execute(update_query, (vietnamese, vi_word, vi_def, source, user_id, word))
+            else:
+                # Thêm mới
+                insert_query = """
+                INSERT INTO user_saved_vocabulary (user_id, word, vietnamese, vi_word, vi_def, source)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(insert_query, (user_id, word, vietnamese, vi_word, vi_def, source))
+            
+            conn.commit()
+            logger.info(f"Saved vocabulary for user {user_id}: {word}")
+            return True
+            
+    except Exception as e:
+        logger.error(f"Error saving user vocabulary: {e}")
+        if conn:
+            conn.rollback()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_user_saved_vocabulary(user_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+    """
+    Lấy danh sách từ vựng đã lưu của user
+    
+    Args:
+        user_id: User identifier
+        limit: Số lượng từ tối đa
+        
+    Returns:
+        List of saved vocabulary items
+    """
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            query = """
+            SELECT id, word, vietnamese, vi_word, vi_def, source, saved_at
+            FROM user_saved_vocabulary
+            WHERE user_id = %s
+            ORDER BY saved_at DESC
+            LIMIT %s
+            """
+            cursor.execute(query, (user_id, limit))
+            results = cursor.fetchall()
+            
+            vocab_list = []
+            for row in results:
+                vocab_list.append({
+                    'id': row['id'],
+                    'word': row['word'],
+                    'vietnamese': row['vietnamese'],
+                    'vi_word': row['vi_word'] or '',
+                    'vi_def': row['vi_def'] or '',
+                    'source': row['source'],
+                    'saved_at': row['saved_at'].isoformat() if row['saved_at'] else None
+                })
+            
+            logger.info(f"Fetched {len(vocab_list)} saved vocabulary items for user {user_id}")
+            return vocab_list
+            
+    except Exception as e:
+        logger.error(f"Error fetching user saved vocabulary: {e}")
+        return []
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
+
+
+def get_or_create_daily_folder(user_id: int, date_str: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Lấy hoặc tạo folder theo ngày cho user
+    
+    Args:
+        user_id: User ID (BIGINT)
+        date_str: Ngày dạng YYYY-MM-DD (nếu None thì dùng ngày hôm nay)
+        
+    Returns:
+        Dictionary với thông tin folder: id, name, icon, created_at
+    """
+    from datetime import datetime
+    
+    conn = None
+    try:
+        if date_str is None:
+            date_str = datetime.now().strftime('%Y-%m-%d')
+        
+        folder_name = f"Từ vựng {date_str}"
+        folder_icon = "📅"
+        
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Kiểm tra xem folder đã tồn tại chưa
+            check_query = """
+            SELECT id, name, icon, created_at
+            FROM vocabulary_folders
+            WHERE user_id = %s AND name = %s
+            LIMIT 1
+            """
+            cursor.execute(check_query, (user_id, folder_name))
+            existing = cursor.fetchone()
+            
+            if existing:
+                logger.info(f"Found existing daily folder for user {user_id}: {folder_name}")
+                return {
+                    'id': existing['id'],
+                    'name': existing['name'],
+                    'icon': existing['icon'],
+                    'created_at': existing['created_at'].isoformat() if existing['created_at'] else None
+                }
+            
+            # Tạo folder mới
+            insert_query = """
+            INSERT INTO vocabulary_folders (user_id, name, icon, created_at, updated_at)
+            VALUES (%s, %s, %s, NOW(), NOW())
+            """
+            cursor.execute(insert_query, (user_id, folder_name, folder_icon))
+            folder_id = cursor.lastrowid
+            
+            conn.commit()
+            logger.info(f"Created daily folder for user {user_id}: {folder_name} (id: {folder_id})")
+            
+            return {
+                'id': folder_id,
+                'name': folder_name,
+                'icon': folder_icon,
+                'created_at': datetime.now().isoformat()
+            }
+            
+    except Exception as e:
+        logger.error(f"Error getting/creating daily folder: {e}")
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+
+def add_word_to_folder(
+    folder_id: int,
+    korean: str,
+    vietnamese: str,
+    pronunciation: Optional[str] = None,
+    example: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Thêm từ vựng vào folder
+    
+    Args:
+        folder_id: Folder ID
+        korean: Từ tiếng Hàn
+        vietnamese: Nghĩa tiếng Việt
+        pronunciation: Cách phát âm (optional)
+        example: Ví dụ (optional)
+        
+    Returns:
+        Dictionary với thông tin từ vựng đã thêm: id, korean, vietnamese, etc.
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Kiểm tra xem từ đã tồn tại trong folder chưa
+            check_query = """
+            SELECT id FROM vocabulary_words
+            WHERE folder_id = %s AND korean = %s AND vietnamese = %s
+            LIMIT 1
+            """
+            cursor.execute(check_query, (folder_id, korean, vietnamese))
+            existing = cursor.fetchone()
+            
+            if existing:
+                logger.info(f"Word already exists in folder {folder_id}: {korean}")
+                # Cập nhật thông tin
+                update_query = """
+                UPDATE vocabulary_words
+                SET pronunciation = %s, example = %s, updated_at = NOW()
+                WHERE id = %s
+                """
+                cursor.execute(update_query, (pronunciation, example, existing['id']))
+                word_id = existing['id']
+            else:
+                # Thêm từ mới
+                insert_query = """
+                INSERT INTO vocabulary_words (folder_id, korean, vietnamese, pronunciation, example, is_learned, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, FALSE, NOW(), NOW())
+                """
+                cursor.execute(insert_query, (folder_id, korean, vietnamese, pronunciation, example))
+                word_id = cursor.lastrowid
+            
+            conn.commit()
+            logger.info(f"Added word to folder {folder_id}: {korean}")
+            
+            return {
+                'id': word_id,
+                'korean': korean,
+                'vietnamese': vietnamese,
+                'pronunciation': pronunciation or '',
+                'example': example or '',
+                'is_learned': False
+            }
+            
+    except Exception as e:
+        logger.error(f"Error adding word to folder: {e}")
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if conn:
+            conn.close()

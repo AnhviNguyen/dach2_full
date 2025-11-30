@@ -46,5 +46,49 @@ class VocabularyApiService {
       throw ApiException.fromDioException(e);
     }
   }
+
+  /// Lookup vocabulary word (tra từ điển)
+  Future<Map<String, dynamic>> lookupWord(String word) async {
+    try {
+      final response = await _dioClient.get(
+        '/vocabulary/lookup',
+        queryParameters: {'word': word},
+      );
+
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Add word to daily folder (thêm từ vào folder theo ngày)
+  Future<Map<String, dynamic>> addWordToDailyFolder({
+    required int userId,
+    required String word,
+    required String vietnamese,
+    String? pronunciation,
+    String? example,
+    String? dateStr,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'user_id': userId,
+        'word': word,
+        'vietnamese': vietnamese,
+        if (pronunciation != null && pronunciation.isNotEmpty) 'pronunciation': pronunciation,
+        if (example != null && example.isNotEmpty) 'example': example,
+        if (dateStr != null && dateStr.isNotEmpty) 'date_str': dateStr,
+      });
+
+      final response = await _dioClient.postFormData(
+        '/vocabulary/add-to-daily-folder',
+        formData: formData,
+      );
+
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
 }
 

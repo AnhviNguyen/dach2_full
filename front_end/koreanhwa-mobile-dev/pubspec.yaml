@@ -80,6 +80,15 @@ dependencies:
   # HTTP Client
   http: ^1.2.0
 
+  # Local Notifications
+  flutter_local_notifications: ^17.2.2
+  timezone: ^0.9.2
+
+  # Localization
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+
 dependency_overrides:
   # Fix compatibility issue with record_linux
   record_linux: ^1.2.1

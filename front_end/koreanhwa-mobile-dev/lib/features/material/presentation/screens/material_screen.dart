@@ -46,12 +46,12 @@ class _MaterialScreenState extends ConsumerState<MaterialScreen> {
 
       // Load featured materials
       final featured = await _apiService.getFeaturedMaterials(currentUserId: userId);
-      
+
       // Load downloaded count
       if (userId != null) {
         _downloadedCount = await _apiService.getDownloadedMaterialsCount(userId);
       }
-      
+
       // Load total count
       _totalCount = await _apiService.getTotalMaterialsCount();
 
@@ -165,213 +165,216 @@ class _MaterialScreenState extends ConsumerState<MaterialScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: AppColors.primaryWhite,
-            child: Column(
-              children: [
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Tìm tài liệu...',
-                    prefixIcon: const Icon(Icons.search, color: AppColors.grayLight),
-                    filled: true,
-                    fillColor: AppColors.whiteGray,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Filter section - không scroll
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: AppColors.primaryWhite,
+              child: Column(
+                children: [
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Tìm tài liệu...',
+                      prefixIcon: const Icon(Icons.search, color: AppColors.grayLight),
+                      filled: true,
+                      fillColor: AppColors.whiteGray,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
+                    onChanged: (value) {
+                      setState(() => _searchQuery = value);
+                      _loadFilteredMaterials();
+                    },
                   ),
-                  onChanged: (value) {
-                    setState(() => _searchQuery = value);
-                    _loadFilteredMaterials();
-                  },
-                ),
-                const SizedBox(height: 12),
-                Row(
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButton<String>(
+                          value: _selectedLevel,
+                          isExpanded: true,
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('Tất cả cấp độ')),
+                            DropdownMenuItem(value: 'beginner', child: Text('Sơ cấp')),
+                            DropdownMenuItem(value: 'intermediate', child: Text('Trung cấp')),
+                            DropdownMenuItem(value: 'advanced', child: Text('Cao cấp')),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => _selectedLevel = value);
+                              _loadFilteredMaterials();
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: DropdownButton<String>(
+                          value: _selectedSkill,
+                          isExpanded: true,
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('Tất cả kỹ năng')),
+                            DropdownMenuItem(value: 'listening', child: Text('Nghe')),
+                            DropdownMenuItem(value: 'speaking', child: Text('Nói')),
+                            DropdownMenuItem(value: 'reading', child: Text('Đọc')),
+                            DropdownMenuItem(value: 'writing', child: Text('Viết')),
+                            DropdownMenuItem(value: 'vocabulary', child: Text('Từ vựng')),
+                            DropdownMenuItem(value: 'grammar', child: Text('Ngữ pháp')),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => _selectedSkill = value);
+                              _loadFilteredMaterials();
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: DropdownButton<String>(
+                          value: _selectedType,
+                          isExpanded: true,
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('Tất cả loại')),
+                            DropdownMenuItem(value: 'pdf', child: Text('PDF')),
+                            DropdownMenuItem(value: 'video', child: Text('Video')),
+                            DropdownMenuItem(value: 'audio', child: Text('Audio')),
+                            DropdownMenuItem(value: 'lesson', child: Text('Bài giảng')),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => _selectedType = value);
+                              _loadFilteredMaterials();
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Content section - có scroll
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage != null
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: DropdownButton<String>(
-                        value: _selectedLevel,
-                        isExpanded: true,
-                        items: const [
-                          DropdownMenuItem(value: 'all', child: Text('Tất cả cấp độ')),
-                          DropdownMenuItem(value: 'beginner', child: Text('Sơ cấp')),
-                          DropdownMenuItem(value: 'intermediate', child: Text('Trung cấp')),
-                          DropdownMenuItem(value: 'advanced', child: Text('Cao cấp')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _selectedLevel = value);
-                            _loadFilteredMaterials();
-                          }
-                        },
-                      ),
+                    Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: AppColors.primaryBlack),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: DropdownButton<String>(
-                        value: _selectedSkill,
-                        isExpanded: true,
-                        items: const [
-                          DropdownMenuItem(value: 'all', child: Text('Tất cả kỹ năng')),
-                          DropdownMenuItem(value: 'listening', child: Text('Nghe')),
-                          DropdownMenuItem(value: 'speaking', child: Text('Nói')),
-                          DropdownMenuItem(value: 'reading', child: Text('Đọc')),
-                          DropdownMenuItem(value: 'writing', child: Text('Viết')),
-                          DropdownMenuItem(value: 'vocabulary', child: Text('Từ vựng')),
-                          DropdownMenuItem(value: 'grammar', child: Text('Ngữ pháp')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _selectedSkill = value);
-                            _loadFilteredMaterials();
-                          }
-                        },
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadMaterials,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryYellow,
+                        foregroundColor: AppColors.primaryBlack,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: DropdownButton<String>(
-                        value: _selectedType,
-                        isExpanded: true,
-                        items: const [
-                          DropdownMenuItem(value: 'all', child: Text('Tất cả loại')),
-                          DropdownMenuItem(value: 'pdf', child: Text('PDF')),
-                          DropdownMenuItem(value: 'video', child: Text('Video')),
-                          DropdownMenuItem(value: 'audio', child: Text('Audio')),
-                          DropdownMenuItem(value: 'lesson', child: Text('Bài giảng')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _selectedType = value);
-                            _loadFilteredMaterials();
-                          }
-                        },
-                      ),
+                      child: const Text('Thử lại'),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _errorMessage != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              _errorMessage!,
-                              style: const TextStyle(color: AppColors.primaryBlack),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _loadMaterials,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryYellow,
-                                foregroundColor: AppColors.primaryBlack,
-                              ),
-                              child: const Text('Thử lại'),
-                            ),
-                          ],
+              )
+                  : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: MaterialStatCard(
+                            icon: Icons.folder,
+                            value: '$_totalCount',
+                            label: 'Tổng tài liệu',
+                            color: AppColors.info,
+                          ),
                         ),
-                      )
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: MaterialStatCard(
-                                    icon: Icons.folder,
-                                    value: '$_totalCount',
-                                    label: 'Tổng tài liệu',
-                                    color: AppColors.info,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: MaterialStatCard(
-                                    icon: Icons.download,
-                                    value: '$_downloadedCount',
-                                    label: 'Đã tải',
-                                    color: AppColors.success,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: MaterialStatCard(
-                                    icon: Icons.star,
-                                    value: '${_featured.length}',
-                                    label: 'Nổi bật',
-                                    color: AppColors.primaryYellow,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                            if (_featured.isNotEmpty) ...[
-                              const Text(
-                                'Tài liệu nổi bật',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primaryBlack,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              ..._featured.map((material) => MaterialCard(
-                                    material: material,
-                                    onDownload: () => _handleDownload(material),
-                                    onOpen: () => context.push('/material/detail?id=${material.id}'),
-                                  )),
-                              const SizedBox(height: 24),
-                            ],
-                            const Text(
-                              'Tất cả tài liệu',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primaryBlack,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            if (_materials.isEmpty)
-                              Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(32),
-                                  child: Column(
-                                    children: [
-                                      Icon(Icons.folder_open, size: 64, color: AppColors.grayLight),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'Không tìm thấy tài liệu',
-                                        style: TextStyle(color: AppColors.grayLight),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            else
-                              ..._materials.map((material) => MaterialCard(
-                                    material: material,
-                                    onDownload: () => _handleDownload(material),
-                                    onOpen: () => context.push('/material/detail?id=${material.id}'),
-                                  )),
-                          ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: MaterialStatCard(
+                            icon: Icons.download,
+                            value: '$_downloadedCount',
+                            label: 'Đã tải',
+                            color: AppColors.success,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: MaterialStatCard(
+                            icon: Icons.star,
+                            value: '${_featured.length}',
+                            label: 'Nổi bật',
+                            color: AppColors.primaryYellow,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    if (_featured.isNotEmpty) ...[
+                      const Text(
+                        'Tài liệu nổi bật',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryBlack,
                         ),
                       ),
-          ),
-        ],
+                      const SizedBox(height: 12),
+                      ..._featured.map((material) => MaterialCard(
+                        material: material,
+                        onDownload: () => _handleDownload(material),
+                        onOpen: () => context.push('/material/detail?id=${material.id}'),
+                      )),
+                      const SizedBox(height: 24),
+                    ],
+                    const Text(
+                      'Tất cả tài liệu',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlack,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_materials.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            children: [
+                              Icon(Icons.folder_open, size: 64, color: AppColors.grayLight),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Không tìm thấy tài liệu',
+                                style: TextStyle(color: AppColors.grayLight),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      ..._materials.map((material) => MaterialCard(
+                        material: material,
+                        onDownload: () => _handleDownload(material),
+                        onOpen: () => context.push('/material/detail?id=${material.id}'),
+                      )),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
-

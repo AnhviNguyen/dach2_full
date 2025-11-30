@@ -1,5 +1,11 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/features/speak_practice/data/services/tts_api_service.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
 
 class ListenWriteScreen extends StatefulWidget {
   final int bookId;
@@ -21,15 +27,100 @@ class _ListenWriteScreenState extends State<ListenWriteScreen> {
   int _currentWord = 0;
   final TextEditingController _answerController = TextEditingController();
   bool _showResult = false;
+  final TtsApiService _ttsService = TtsApiService();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlayingAudio = false;
+  StreamSubscription? _playerCompleteSubscription;
+  File? _tempAudioFile;
 
   @override
   void dispose() {
+    _playerCompleteSubscription?.cancel();
     _answerController.dispose();
+    _audioPlayer.dispose();
+    _tempAudioFile?.delete();
     super.dispose();
   }
 
-  void _playAudio() {
-    // TODO: Implement text-to-speech
+  Future<void> _playAudio() async {
+    if (_isPlayingAudio || !mounted) return;
+    
+    final vocab = widget.vocabList[_currentWord];
+    final koreanText = vocab['korean'] ?? '';
+    
+    if (koreanText.isEmpty) return;
+
+    if (!mounted) return;
+    setState(() {
+      _isPlayingAudio = true;
+    });
+
+    try {
+      // Generate TTS
+      final response = await _ttsService.generateSpeech(
+        text: koreanText,
+        lang: 'ko', // Korean
+      );
+
+      if (!mounted) return;
+
+      final audioUrl = response['audio_url'] as String?;
+      if (audioUrl != null) {
+        final fullUrl = _ttsService.getMediaUrl(audioUrl);
+        
+        // Download audio file to local storage first (to avoid cleartext HTTP issues)
+        final httpResponse = await http.get(Uri.parse(fullUrl));
+        if (httpResponse.statusCode != 200) {
+          throw Exception('HTTP ${httpResponse.statusCode}: ${httpResponse.reasonPhrase}');
+        }
+
+        final directory = await getTemporaryDirectory();
+        final filename = 'tts_${koreanText.hashCode}.mp3';
+        final localFile = File('${directory.path}/$filename');
+
+        // Delete old temp file if exists
+        if (_tempAudioFile != null && await _tempAudioFile!.exists()) {
+          await _tempAudioFile!.delete();
+        }
+
+        await localFile.writeAsBytes(httpResponse.bodyBytes);
+        _tempAudioFile = localFile;
+        
+        // Cancel previous subscription if exists
+        await _playerCompleteSubscription?.cancel();
+        
+        // Play audio from local file
+        await _audioPlayer.stop();
+        await _audioPlayer.play(DeviceFileSource(localFile.path));
+        
+        // Wait for audio to finish
+        _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((_) {
+          if (mounted) {
+            setState(() {
+              _isPlayingAudio = false;
+            });
+          }
+        });
+      } else {
+        if (mounted) {
+          setState(() {
+            _isPlayingAudio = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isPlayingAudio = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi phát âm: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _checkAnswer() {
@@ -115,19 +206,32 @@ class _ListenWriteScreenState extends State<ListenWriteScreen> {
                 child: Column(
                   children: [
                     IconButton(
-                      onPressed: _playAudio,
+                      onPressed: _isPlayingAudio ? null : _playAudio,
                       iconSize: 64,
                       icon: Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF9800),
+                          color: _isPlayingAudio 
+                              ? const Color(0xFFFF9800).withOpacity(0.6)
+                              : const Color(0xFFFF9800),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.volume_up,
-                          color: AppColors.primaryWhite,
-                          size: 48,
-                        ),
+                        child: _isPlayingAudio
+                            ? const SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.primaryWhite,
+                                  ),
+                                ),
+                              )
+                            : const Icon(
+                                Icons.volume_up,
+                                color: AppColors.primaryWhite,
+                                size: 48,
+                              ),
                       ),
                     ),
                     const SizedBox(height: 16),

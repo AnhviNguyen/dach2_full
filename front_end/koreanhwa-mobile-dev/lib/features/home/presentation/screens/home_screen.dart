@@ -299,15 +299,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         context.push('/textbook');
                       },
                     ),
-                    const SizedBox(height: 24),
-                    _buildCourseSection(
-                      title: 'Khóa học đang học',
-                      icon: Icons.school_outlined,
-                      actionLabel: 'Xem thêm',
-                      onTap: () {
-                        context.push('/lessons');
-                      },
-                    ),
+                    // const SizedBox(height: 24),
+                    // _buildCourseSection(
+                    //   title: 'Khóa học đang học',
+                    //   icon: Icons.school_outlined,
+                    //   actionLabel: 'Xem thêm',
+                    //   onTap: () {
+                    //     context.push('/lessons');
+                    //   },
+                    // ),
                     const SizedBox(height: 24),
                     _buildAchievementSection(),
                     const SizedBox(height: 24),
@@ -337,9 +337,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               break;
             case MainNavItem.curriculum:
               context.push('/textbook');
-              break;
-            case MainNavItem.lessons:
-              context.push('/lessons');
               break;
             case MainNavItem.vocabulary:
               context.push('/my-vocabulary');
@@ -1432,9 +1429,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       case 'Giáo trình':
         context.push('/textbook');
         break;
-      case 'Khóa học':
-        context.push('/lessons');
-        break;
+      // case 'Khóa học':
+      //   context.push('/lessons');
+      //   break;
       case 'Roadmap':
         context.push('/roadmap');
         break;

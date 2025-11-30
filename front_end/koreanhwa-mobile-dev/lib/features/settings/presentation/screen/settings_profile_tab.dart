@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:koreanhwa_flutter/models/settings_model.dart';
 import 'package:koreanhwa_flutter/services/settings_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/features/auth/data/services/user_api_service.dart';
+import 'package:koreanhwa_flutter/core/utils/user_utils.dart';
+import 'package:koreanhwa_flutter/core/storage/shared_preferences_service.dart';
 
 class SettingsProfileTab extends StatefulWidget {
   const SettingsProfileTab({super.key});
@@ -13,6 +18,11 @@ class SettingsProfileTab extends StatefulWidget {
 class _SettingsProfileTabState extends State<SettingsProfileTab> {
   late ProfileSettings _profile;
   final _formKey = GlobalKey<FormState>();
+  final ImagePicker _picker = ImagePicker();
+  final UserApiService _userApiService = UserApiService();
+  File? _avatarFile;
+  String? _avatarPath;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -24,15 +34,109 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
     final settings = await SettingsService.getSettings();
     setState(() {
       _profile = settings.profile;
+      _avatarPath = _profile.avatar;
     });
   }
 
-  void _saveProfile() {
-    if (_formKey.currentState!.validate()) {
-      SettingsService.updateProfile(_profile);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã cập nhật hồ sơ')),
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
       );
+      
+      if (image != null) {
+        setState(() {
+          _avatarFile = File(image.path);
+          _avatarPath = image.path;
+        });
+        
+        // Update profile with new avatar path
+        final updatedProfile = ProfileSettings(
+          firstName: _profile.firstName,
+          lastName: _profile.lastName,
+          email: _profile.email,
+          phone: _profile.phone,
+          avatar: image.path, // Store local path
+          level: _profile.level,
+          goal: _profile.goal,
+          birthday: _profile.birthday,
+          location: _profile.location,
+          bio: _profile.bio,
+          interests: _profile.interests,
+          studyTime: _profile.studyTime,
+          timezone: _profile.timezone,
+        );
+        
+        await SettingsService.updateProfile(updatedProfile);
+        setState(() {
+          _profile = updatedProfile;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi khi chọn ảnh: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isSaving = true;
+      });
+
+      try {
+        // Save to SharedPreferences
+        await SettingsService.updateProfile(_profile);
+
+        // Save to database via API
+        final userId = await UserUtils.getUserId();
+        if (userId != null) {
+          final updateData = <String, dynamic>{
+            'name': '${_profile.firstName} ${_profile.lastName}'.trim(),
+            'level': _profile.level,
+          };
+          
+          // Only include avatar if it's a URL (not local path)
+          if (_profile.avatar.startsWith('http://') || _profile.avatar.startsWith('https://')) {
+            updateData['avatar'] = _profile.avatar;
+          } else if (_avatarFile != null) {
+            // TODO: Upload image to server and get URL
+            // For now, we'll skip avatar upload if it's a local file
+          }
+
+          final updatedUser = await _userApiService.updateUser(userId, updateData);
+          
+          // Update SharedPreferences with new user data
+          final user = await SharedPreferencesService.getUser();
+          if (user != null) {
+            await SharedPreferencesService.saveUser(updatedUser);
+          }
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Đã cập nhật hồ sơ thành công')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Lỗi khi lưu: ${e.toString()}')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isSaving = false;
+          });
+        }
+      }
     }
   }
 
@@ -74,33 +178,42 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                               width: 2,
                             ),
                           ),
-                          child: _profile.avatar.startsWith('http://') || _profile.avatar.startsWith('https://')
+                          child: _avatarFile != null
                               ? ClipOval(
-                                  child: Image.network(
-                                    _profile.avatar,
+                                  child: Image.file(
+                                    _avatarFile!,
                                     width: 96,
                                     height: 96,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Text(
-                                      _profile.firstName.isNotEmpty ? _profile.firstName[0].toUpperCase() : 'U',
-                                      style: const TextStyle(
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryBlack,
-                                      ),
-                                    ),
                                   ),
                                 )
-                              : Center(
-                                  child: Text(
-                                    _profile.avatar.isNotEmpty ? _profile.avatar : (_profile.firstName.isNotEmpty ? _profile.firstName[0].toUpperCase() : 'U'),
-                                    style: const TextStyle(
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primaryBlack,
+                              : (_profile.avatar.startsWith('http://') || _profile.avatar.startsWith('https://'))
+                                  ? ClipOval(
+                                      child: Image.network(
+                                        _profile.avatar,
+                                        width: 96,
+                                        height: 96,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => Text(
+                                          _profile.firstName.isNotEmpty ? _profile.firstName[0].toUpperCase() : 'U',
+                                          style: const TextStyle(
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primaryBlack,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : Center(
+                                      child: Text(
+                                        _profile.avatar.isNotEmpty ? _profile.avatar : (_profile.firstName.isNotEmpty ? _profile.firstName[0].toUpperCase() : 'U'),
+                                        style: const TextStyle(
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primaryBlack,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
                         ),
 
                         // ICON CAMERA
@@ -159,7 +272,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                           children: [
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed: () {},
+                                onPressed: () => _pickImage(ImageSource.gallery),
                                 icon: const Icon(Icons.upload, size: 16),
                                 label: const Text('Tải ảnh lên'),
                                 style: ElevatedButton.styleFrom(
@@ -177,7 +290,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () {},
+                                onPressed: () => _pickImage(ImageSource.camera),
                                 icon: const Icon(Icons.camera_alt, size: 16),
                                 label: const Text('Chụp ảnh'),
                                 style: OutlinedButton.styleFrom(
@@ -239,7 +352,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                                 lastName: _profile.lastName,
                                 email: _profile.email,
                                 phone: _profile.phone,
-                                avatar: _profile.avatar,
+                                avatar: _avatarPath ?? _profile.avatar,
                                 level: _profile.level,
                                 goal: _profile.goal,
                                 birthday: _profile.birthday,
@@ -268,7 +381,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                                 lastName: value,
                                 email: _profile.email,
                                 phone: _profile.phone,
-                                avatar: _profile.avatar,
+                                avatar: _avatarPath ?? _profile.avatar,
                                 level: _profile.level,
                                 goal: _profile.goal,
                                 birthday: _profile.birthday,
@@ -299,7 +412,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                           lastName: _profile.lastName,
                           email: value,
                           phone: _profile.phone,
-                          avatar: _profile.avatar,
+                          avatar: _avatarPath ?? _profile.avatar,
                           level: _profile.level,
                           goal: _profile.goal,
                           birthday: _profile.birthday,
@@ -327,7 +440,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                           lastName: _profile.lastName,
                           email: _profile.email,
                           phone: value,
-                          avatar: _profile.avatar,
+                          avatar: _avatarPath ?? _profile.avatar,
                           level: _profile.level,
                           goal: _profile.goal,
                           birthday: _profile.birthday,
@@ -365,7 +478,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                                   lastName: _profile.lastName,
                                   email: _profile.email,
                                   phone: _profile.phone,
-                                  avatar: _profile.avatar,
+                                  avatar: _avatarPath ?? _profile.avatar,
                                   level: _profile.level,
                                   goal: _profile.goal,
                                   birthday: '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
@@ -395,7 +508,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                                 lastName: _profile.lastName,
                                 email: _profile.email,
                                 phone: _profile.phone,
-                                avatar: _profile.avatar,
+                                avatar: _avatarPath ?? _profile.avatar,
                                 level: _profile.level,
                                 goal: _profile.goal,
                                 birthday: _profile.birthday,
@@ -624,7 +737,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                                         lastName: _profile.lastName,
                                         email: _profile.email,
                                         phone: _profile.phone,
-                                        avatar: _profile.avatar,
+                                        avatar: _avatarPath ?? _profile.avatar,
                                         level: value,
                                         goal: _profile.goal,
                                         birthday: _profile.birthday,
@@ -653,7 +766,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                                         lastName: _profile.lastName,
                                         email: _profile.email,
                                         phone: _profile.phone,
-                                        avatar: _profile.avatar,
+                                        avatar: _avatarPath ?? _profile.avatar,
                                         level: _profile.level,
                                         goal: value,
                                         birthday: _profile.birthday,
@@ -686,7 +799,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                                         lastName: _profile.lastName,
                                         email: _profile.email,
                                         phone: _profile.phone,
-                                        avatar: _profile.avatar,
+                                        avatar: _avatarPath ?? _profile.avatar,
                                         level: _profile.level,
                                         goal: _profile.goal,
                                         birthday: _profile.birthday,
@@ -715,7 +828,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                                         lastName: _profile.lastName,
                                         email: _profile.email,
                                         phone: _profile.phone,
-                                        avatar: _profile.avatar,
+                                        avatar: _avatarPath ?? _profile.avatar,
                                         level: _profile.level,
                                         goal: _profile.goal,
                                         birthday: _profile.birthday,
@@ -743,7 +856,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _saveProfile,
+                onPressed: _isSaving ? null : _saveProfile,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryYellow,
                   foregroundColor: AppColors.primaryBlack,
@@ -752,13 +865,22 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Lưu thay đổi',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryBlack),
+                        ),
+                      )
+                    : const Text(
+                        'Lưu thay đổi',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
               ),
             ),
           ],

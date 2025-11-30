@@ -1,12 +1,14 @@
 """
 Vocabulary Router - Endpoints for vocabulary learning methods
 Provides flashcard, match, pronunciation, listen_write, quiz, and test modes
+Also provides word lookup and save functionality
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Form
 from typing import List, Dict, Any, Optional
 import logging
 from services import database_service, openai_service
 from services.error_handlers import handle_openai_error
+from services.vocabulary_lookup_service import lookup_word
 import random
 
 logger = logging.getLogger(__name__)
@@ -265,4 +267,240 @@ def _format_test(vocab_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         })
     
     return test_questions
+
+
+# ===== WORD LOOKUP & SAVE ENDPOINTS =====
+
+@router.get("/lookup")
+async def lookup_vocabulary_word(
+    word: str = Query(..., description="Từ tiếng Hàn cần tra")
+) -> Dict[str, Any]:
+    """
+    Tra từ vựng tiếng Hàn
+    
+    Tìm từ trong file jsonl trước, nếu không tìm thấy thì dùng GPT để tra.
+    
+    Args:
+        word: Từ tiếng Hàn cần tra
+        
+    Returns:
+        Dictionary với thông tin từ vựng:
+        - word: Từ tiếng Hàn
+        - vietnamese: Nghĩa tiếng Việt
+        - vi_word: Từ tiếng Việt (nếu có)
+        - vi_def: Định nghĩa (nếu có)
+        - source: Nguồn ('file' hoặc 'gpt')
+    """
+    try:
+        if not word or not word.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Word parameter is required"
+            )
+        
+        result = lookup_word(word.strip())
+        
+        logger.info(f"Looked up word: {word}, source: {result.get('source', 'unknown')}")
+        return {
+            "success": True,
+            "data": result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in lookup_vocabulary_word: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to lookup word: {str(e)}"
+        )
+
+
+@router.post("/lookup")
+async def lookup_vocabulary_word_post(
+    word: str = Form(..., description="Từ tiếng Hàn cần tra")
+) -> Dict[str, Any]:
+    """
+    Tra từ vựng tiếng Hàn (POST method)
+    
+    Tìm từ trong file jsonl trước, nếu không tìm thấy thì dùng GPT để tra.
+    
+    Args:
+        word: Từ tiếng Hàn cần tra
+        
+    Returns:
+        Dictionary với thông tin từ vựng
+    """
+    return await lookup_vocabulary_word(word=word)
+
+
+@router.post("/save")
+async def save_vocabulary_word(
+    user_id: str = Form(..., description="User ID"),
+    word: str = Form(..., description="Từ tiếng Hàn"),
+    vietnamese: str = Form(..., description="Nghĩa tiếng Việt"),
+    vi_word: str = Form(default="", description="Từ tiếng Việt (optional)"),
+    vi_def: str = Form(default="", description="Định nghĩa (optional)"),
+    source: str = Form(default="lookup", description="Nguồn (lookup, file, gpt, etc.)")
+) -> Dict[str, Any]:
+    """
+    Lưu từ vựng vào database cho user
+    
+    Args:
+        user_id: User identifier
+        word: Từ tiếng Hàn
+        vietnamese: Nghĩa tiếng Việt
+        vi_word: Từ tiếng Việt (optional)
+        vi_def: Định nghĩa (optional)
+        source: Nguồn (optional, default: 'lookup')
+        
+    Returns:
+        Success confirmation
+    """
+    try:
+        if not word or not word.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Word is required"
+            )
+        
+        if not vietnamese or not vietnamese.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Vietnamese translation is required"
+            )
+        
+        success = database_service.save_user_vocabulary(
+            user_id=user_id,
+            word=word.strip(),
+            vietnamese=vietnamese.strip(),
+            vi_word=vi_word.strip() if vi_word else "",
+            vi_def=vi_def.strip() if vi_def else "",
+            source=source.strip() if source else "lookup"
+        )
+        
+        if not success:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to save vocabulary"
+            )
+        
+        logger.info(f"Saved vocabulary for user {user_id}: {word}")
+        return {
+            "success": True,
+            "message": "Từ vựng đã được lưu thành công",
+            "word": word,
+            "user_id": user_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in save_vocabulary_word: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save vocabulary: {str(e)}"
+        )
+
+
+@router.get("/saved")
+async def get_saved_vocabulary(
+    user_id: str = Query(..., description="User ID"),
+    limit: int = Query(default=100, description="Số lượng từ tối đa")
+) -> Dict[str, Any]:
+    """
+    Lấy danh sách từ vựng đã lưu của user
+    
+    Args:
+        user_id: User identifier
+        limit: Số lượng từ tối đa (default: 100)
+        
+    Returns:
+        Dictionary với danh sách từ vựng đã lưu
+    """
+    try:
+        vocab_list = database_service.get_user_saved_vocabulary(user_id, limit)
+        
+        return {
+            "success": True,
+            "user_id": user_id,
+            "total": len(vocab_list),
+            "vocabulary": vocab_list
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in get_saved_vocabulary: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get saved vocabulary: {str(e)}"
+        )
+
+
+@router.post("/add-to-daily-folder")
+async def add_word_to_daily_folder(
+    user_id: int = Form(..., description="User ID (BIGINT)"),
+    word: str = Form(..., description="Từ tiếng Hàn"),
+    vietnamese: str = Form(..., description="Nghĩa tiếng Việt"),
+    pronunciation: str = Form(default="", description="Cách phát âm (optional)"),
+    example: str = Form(default="", description="Ví dụ (optional)"),
+    date_str: Optional[str] = Form(default=None, description="Ngày YYYY-MM-DD (optional, mặc định hôm nay)")
+) -> Dict[str, Any]:
+    """
+    Thêm từ vựng vào folder theo ngày (tự động tạo folder nếu chưa có)
+    
+    Args:
+        user_id: User ID (BIGINT)
+        word: Từ tiếng Hàn
+        vietnamese: Nghĩa tiếng Việt
+        pronunciation: Cách phát âm (optional)
+        example: Ví dụ (optional)
+        date_str: Ngày YYYY-MM-DD (optional, mặc định hôm nay)
+        
+    Returns:
+        Success confirmation với thông tin folder và từ vựng
+    """
+    try:
+        if not word or not word.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Word is required"
+            )
+        
+        if not vietnamese or not vietnamese.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Vietnamese translation is required"
+            )
+        
+        # Lấy hoặc tạo folder theo ngày
+        folder = database_service.get_or_create_daily_folder(
+            user_id=user_id,
+            date_str=date_str
+        )
+        
+        # Thêm từ vào folder
+        vocab = database_service.add_word_to_folder(
+            folder_id=folder['id'],
+            korean=word.strip(),
+            vietnamese=vietnamese.strip(),
+            pronunciation=pronunciation.strip() if pronunciation else None,
+            example=example.strip() if example else None
+        )
+        
+        logger.info(f"Added word to daily folder: user={user_id}, folder={folder['name']}, word={word}")
+        return {
+            "success": True,
+            "message": "Từ vựng đã được thêm vào folder theo ngày",
+            "folder": folder,
+            "vocabulary": vocab
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in add_word_to_daily_folder: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to add word to daily folder: {str(e)}"
+        )
 

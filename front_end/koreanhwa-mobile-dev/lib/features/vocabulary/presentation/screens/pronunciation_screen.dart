@@ -1,5 +1,11 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/features/speak_practice/data/services/tts_api_service.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
 
 class PronunciationScreen extends StatefulWidget {
   final int bookId;
@@ -19,9 +25,99 @@ class PronunciationScreen extends StatefulWidget {
 
 class _PronunciationScreenState extends State<PronunciationScreen> {
   int _currentWord = 0;
+  final TtsApiService _ttsService = TtsApiService();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlayingAudio = false;
+  StreamSubscription? _playerCompleteSubscription;
+  File? _tempAudioFile;
 
-  void _playPronunciation() {
-    // TODO: Implement text-to-speech
+  @override
+  void dispose() {
+    _playerCompleteSubscription?.cancel();
+    _audioPlayer.dispose();
+    _tempAudioFile?.delete();
+    super.dispose();
+  }
+
+  Future<void> _playPronunciation() async {
+    if (_isPlayingAudio || !mounted) return;
+    
+    final vocab = widget.vocabList[_currentWord];
+    final koreanText = vocab['korean'] ?? '';
+    
+    if (koreanText.isEmpty) return;
+
+    if (!mounted) return;
+    setState(() {
+      _isPlayingAudio = true;
+    });
+
+    try {
+      // Generate TTS
+      final response = await _ttsService.generateSpeech(
+        text: koreanText,
+        lang: 'ko', // Korean
+      );
+
+      if (!mounted) return;
+
+      final audioUrl = response['audio_url'] as String?;
+      if (audioUrl != null) {
+        final fullUrl = _ttsService.getMediaUrl(audioUrl);
+        
+        // Download audio file to local storage first (to avoid cleartext HTTP issues)
+        final httpResponse = await http.get(Uri.parse(fullUrl));
+        if (httpResponse.statusCode != 200) {
+          throw Exception('HTTP ${httpResponse.statusCode}: ${httpResponse.reasonPhrase}');
+        }
+
+        final directory = await getTemporaryDirectory();
+        final filename = 'tts_${koreanText.hashCode}.mp3';
+        final localFile = File('${directory.path}/$filename');
+
+        // Delete old temp file if exists
+        if (_tempAudioFile != null && await _tempAudioFile!.exists()) {
+          await _tempAudioFile!.delete();
+        }
+
+        await localFile.writeAsBytes(httpResponse.bodyBytes);
+        _tempAudioFile = localFile;
+        
+        // Cancel previous subscription if exists
+        await _playerCompleteSubscription?.cancel();
+        
+        // Play audio from local file
+        await _audioPlayer.stop();
+        await _audioPlayer.play(DeviceFileSource(localFile.path));
+        
+        // Wait for audio to finish
+        _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((_) {
+          if (mounted) {
+            setState(() {
+              _isPlayingAudio = false;
+            });
+          }
+        });
+      } else {
+        if (mounted) {
+          setState(() {
+            _isPlayingAudio = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isPlayingAudio = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi phát âm: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -117,17 +213,30 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _playPronunciation,
-              icon: const Icon(Icons.volume_up, size: 28),
-              label: const Text(
-                'Nghe phát âm',
-                style: TextStyle(
+              onPressed: _isPlayingAudio ? null : _playPronunciation,
+              icon: _isPlayingAudio
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.primaryWhite,
+                        ),
+                      ),
+                    )
+                  : const Icon(Icons.volume_up, size: 28),
+              label: Text(
+                _isPlayingAudio ? 'Đang phát...' : 'Nghe phát âm',
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4CAF50),
+                backgroundColor: _isPlayingAudio
+                    ? const Color(0xFF4CAF50).withOpacity(0.6)
+                    : const Color(0xFF4CAF50),
                 foregroundColor: AppColors.primaryWhite,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,

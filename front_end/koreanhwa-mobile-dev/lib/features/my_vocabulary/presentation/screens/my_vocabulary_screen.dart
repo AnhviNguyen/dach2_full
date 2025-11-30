@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/models/vocabulary_folder_model.dart';
 import 'package:koreanhwa_flutter/features/my_vocabulary/data/services/vocabulary_folder_api_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/shared/widgets/main_bottom_nav.dart';
 import 'package:koreanhwa_flutter/features/my_vocabulary/presentation/widgets/curriculum_vocabulary_card.dart';
 import 'package:koreanhwa_flutter/features/my_vocabulary/presentation/widgets/vocabulary_folder_tile.dart';
 import 'package:koreanhwa_flutter/features/my_vocabulary/presentation/widgets/empty_folders_state.dart';
@@ -23,6 +24,7 @@ class _MyVocabularyScreenState extends ConsumerState<MyVocabularyScreen> {
   bool _personalExpanded = true;
   bool _isLoading = true;
   String? _errorMessage;
+  MainNavItem _currentNavItem = MainNavItem.vocabulary;
 
   @override
   void initState() {
@@ -254,7 +256,7 @@ class _MyVocabularyScreenState extends ConsumerState<MyVocabularyScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/home'),
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -319,6 +321,28 @@ class _MyVocabularyScreenState extends ConsumerState<MyVocabularyScreen> {
               ),
             )
           : null,
+      bottomNavigationBar: MainBottomNavBar(
+        current: _currentNavItem,
+        onChanged: (item) {
+          setState(() {
+            _currentNavItem = item;
+          });
+          switch (item) {
+            case MainNavItem.home:
+              context.go('/home');
+              break;
+            case MainNavItem.curriculum:
+              context.go('/textbook');
+              break;
+            case MainNavItem.vocabulary:
+              // Already on vocabulary screen
+              break;
+            case MainNavItem.settings:
+              context.go('/settings');
+              break;
+          }
+        },
+      ),
     );
   }
 

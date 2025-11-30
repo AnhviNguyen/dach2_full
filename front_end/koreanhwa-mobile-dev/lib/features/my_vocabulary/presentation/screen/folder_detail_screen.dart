@@ -11,6 +11,9 @@ import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/pronu
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/listen_write_screen.dart';
 import 'package:koreanhwa_flutter/features/vocabulary/presentation/screens/vocab_test_screen.dart';
 import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
+import 'package:koreanhwa_flutter/features/vocabulary/presentation/widgets/learning_mode_button.dart';
+import 'package:koreanhwa_flutter/features/vocabulary/data/models/learning_mode.dart';
+import 'package:koreanhwa_flutter/features/vocabulary/presentation/widgets/vocabulary_info_card.dart';
 
 class FolderDetailScreen extends ConsumerStatefulWidget {
   final int folderId;
@@ -345,18 +348,22 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
     );
   }
 
-  void _navigateToLearningMode(String mode) {
-    if (_folder == null || _folder!.words.isEmpty) return;
-
-    final vocabList = _folder!.words.map((word) => {
+  List<Map<String, String>> _getVocabList() {
+    if (_folder == null || _folder!.words.isEmpty) return [];
+    return _folder!.words.map((word) => {
       'korean': word.korean,
       'vietnamese': word.vietnamese,
       'pronunciation': word.pronunciation ?? '',
       'example': word.example ?? '',
     }).toList();
+  }
+
+  void _navigateToLearningMode(String modeId) {
+    final vocabList = _getVocabList();
+    if (vocabList.isEmpty) return;
 
     Widget? screen;
-    switch (mode) {
+    switch (modeId) {
       case 'flashcard':
         screen = FlashcardScreen(
           bookId: 0,
@@ -385,7 +392,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
           vocabList: vocabList,
         );
         break;
-      case 'listen':
+      case 'listen_write':
         screen = ListenWriteScreen(
           bookId: 0,
           lessonId: 0,
@@ -513,7 +520,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Learning modes
-            if (_folder!.words.length >= 4) ...[
+            if (_folder!.words.isNotEmpty) ...[
+              VocabularyInfoCard(totalWords: _folder!.words.length),
+              const SizedBox(height: 24),
               const Text(
                 'Chọn phương thức học',
                 style: TextStyle(
@@ -531,41 +540,59 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                 mainAxisSpacing: 12,
                 childAspectRatio: 1.5,
                 children: [
-                  _buildLearningModeButton(
-                    'Flashcard',
-                    Icons.book,
-                    const Color(0xFF2196F3),
-                    () => _navigateToLearningMode('flashcard'),
+                  LearningModeButton(
+                    mode: const LearningMode(
+                      id: 'flashcard',
+                      name: 'Flashcard',
+                      icon: Icons.book,
+                      color: Color(0xFF2196F3),
+                    ),
+                    onTap: () => _navigateToLearningMode('flashcard'),
                   ),
-                  _buildLearningModeButton(
-                    'Match',
-                    Icons.shuffle,
-                    const Color(0xFF9C27B0),
-                    () => _navigateToLearningMode('match'),
+                  LearningModeButton(
+                    mode: const LearningMode(
+                      id: 'match',
+                      name: 'Ghép từ',
+                      icon: Icons.compare_arrows,
+                      color: Color(0xFF4CAF50),
+                    ),
+                    onTap: () => _navigateToLearningMode('match'),
                   ),
-                  _buildLearningModeButton(
-                    'Pronunciation',
-                    Icons.volume_up,
-                    const Color(0xFF4CAF50),
-                    () => _navigateToLearningMode('pronunciation'),
+                  LearningModeButton(
+                    mode: const LearningMode(
+                      id: 'pronunciation',
+                      name: 'Phát âm',
+                      icon: Icons.record_voice_over,
+                      color: Color(0xFF9C27B0),
+                    ),
+                    onTap: () => _navigateToLearningMode('pronunciation'),
                   ),
-                  _buildLearningModeButton(
-                    'Quiz',
-                    Icons.quiz,
-                    const Color(0xFFF44336),
-                    () => _navigateToLearningMode('quiz'),
+                  LearningModeButton(
+                    mode: const LearningMode(
+                      id: 'quiz',
+                      name: 'Trắc nghiệm',
+                      icon: Icons.quiz,
+                      color: Color(0xFFFF9800),
+                    ),
+                    onTap: () => _navigateToLearningMode('quiz'),
                   ),
-                  _buildLearningModeButton(
-                    'Listen & Write',
-                    Icons.headphones,
-                    const Color(0xFFFF9800),
-                    () => _navigateToLearningMode('listen'),
+                  LearningModeButton(
+                    mode: const LearningMode(
+                      id: 'listen_write',
+                      name: 'Nghe - Viết',
+                      icon: Icons.hearing,
+                      color: Color(0xFFE91E63),
+                    ),
+                    onTap: () => _navigateToLearningMode('listen_write'),
                   ),
-                  _buildLearningModeButton(
-                    'Test',
-                    Icons.edit,
-                    const Color(0xFFE91E63),
-                    () => _navigateToLearningMode('test'),
+                  LearningModeButton(
+                    mode: const LearningMode(
+                      id: 'test',
+                      name: 'Kiểm tra',
+                      icon: Icons.assignment,
+                      color: Color(0xFFF44336),
+                    ),
+                    onTap: () => _navigateToLearningMode('test'),
                   ),
                 ],
               ),
@@ -751,52 +778,5 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
     );
   }
 
-  Widget _buildLearningModeButton(
-    String label,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [color, color.withOpacity(0.8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.primaryBlack,
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.4),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: AppColors.primaryWhite),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryWhite,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 

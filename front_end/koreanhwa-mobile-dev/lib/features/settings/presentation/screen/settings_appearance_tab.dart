@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koreanhwa_flutter/models/settings_model.dart';
 import 'package:koreanhwa_flutter/services/settings_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/controllers/theme_provider.dart';
 
-class SettingsAppearanceTab extends StatefulWidget {
+class SettingsAppearanceTab extends ConsumerStatefulWidget {
   const SettingsAppearanceTab({super.key});
 
   @override
-  State<SettingsAppearanceTab> createState() => _SettingsAppearanceTabState();
+  ConsumerState<SettingsAppearanceTab> createState() => _SettingsAppearanceTabState();
 }
 
-class _SettingsAppearanceTabState extends State<SettingsAppearanceTab> {
+class _SettingsAppearanceTabState extends ConsumerState<SettingsAppearanceTab> {
   AppearanceSettings? _appearance;
   bool _isLoading = true;
 
@@ -78,9 +80,26 @@ class _SettingsAppearanceTabState extends State<SettingsAppearanceTab> {
                     DropdownMenuItem(value: 'dark', child: Text('Tối')),
                     DropdownMenuItem(value: 'auto', child: Text('Tự động')),
                   ],
-                  onChanged: (value) {
+                  onChanged: (value) async {
                     if (value != null) {
-                      SettingsService.updateAppearance(AppearanceSettings(
+                      // Update theme mode in provider (this will change the app theme immediately)
+                      ThemeMode themeMode;
+                      switch (value) {
+                        case 'light':
+                          themeMode = ThemeMode.light;
+                          break;
+                        case 'dark':
+                          themeMode = ThemeMode.dark;
+                          break;
+                        case 'auto':
+                        default:
+                          themeMode = ThemeMode.system;
+                          break;
+                      }
+                      ref.read(themeModeProvider.notifier).setThemeMode(themeMode);
+
+                      // Save to settings
+                      final updated = AppearanceSettings(
                         theme: value,
                         fontSize: appearance.fontSize,
                         compactMode: appearance.compactMode,
@@ -91,7 +110,19 @@ class _SettingsAppearanceTabState extends State<SettingsAppearanceTab> {
                         cardStyle: appearance.cardStyle,
                         showAvatars: appearance.showAvatars,
                         showIcons: appearance.showIcons,
-                      ));
+                      );
+                      await SettingsService.updateAppearance(updated);
+                      setState(() {
+                        _appearance = updated;
+                      });
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Đã cập nhật giao diện'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      }
                     }
                   },
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/models/settings_model.dart';
 import 'package:koreanhwa_flutter/services/settings_service.dart';
+import 'package:koreanhwa_flutter/services/notification_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 
 class SettingsNotificationsTab extends StatefulWidget {
@@ -26,8 +27,39 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
     });
   }
 
-  void _updateNotifications() {
-    SettingsService.updateNotifications(_notifications);
+  Future<void> _updateNotifications() async {
+    await SettingsService.updateNotifications(_notifications);
+    
+    // Update study reminder notification if enabled
+    if (_notifications.studyReminders && _notifications.pushNotifications) {
+      // Parse study time from profile settings
+      // For now, we'll use a default time (can be improved to get from profile)
+      final studyTime = _notifications.studyReminders ? '20:00' : null;
+      if (studyTime != null) {
+        final parts = studyTime.split(':');
+        if (parts.length == 2) {
+          final hour = int.tryParse(parts[0]) ?? 20;
+          final minute = int.tryParse(parts[1]) ?? 0;
+          await NotificationService.scheduleStudyReminder(
+            hour: hour,
+            minute: minute,
+            message: 'Đã đến giờ học tập rồi! Hãy dành ít phút để học tiếng Hàn nhé! 🔥',
+          );
+        }
+      }
+    } else {
+      // Cancel reminder if disabled
+      await NotificationService.cancelStudyReminder();
+    }
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã cập nhật cài đặt thông báo'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
   }
 
   @override
@@ -46,55 +78,6 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
             ),
           ),
           const SizedBox(height: 24),
-          // Email Notifications
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.primaryWhite,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primaryBlack.withOpacity(0.1)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Thông báo Email',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryBlack,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildSwitchTile(
-                  'Nhận thông báo qua email',
-                  'Nhận email về các cập nhật và thông báo quan trọng',
-                  _notifications.emailNotifications,
-                  (value) {
-                    setState(() {
-                      _notifications = NotificationSettings(
-                        emailNotifications: value,
-                        pushNotifications: _notifications.pushNotifications,
-                        studyReminders: _notifications.studyReminders,
-                        competitionUpdates: _notifications.competitionUpdates,
-                        blogUpdates: _notifications.blogUpdates,
-                        weeklyReports: _notifications.weeklyReports,
-                        dailyGoals: _notifications.dailyGoals,
-                        streakAlerts: _notifications.streakAlerts,
-                        achievementAlerts: _notifications.achievementAlerts,
-                        friendActivity: _notifications.friendActivity,
-                        soundEnabled: _notifications.soundEnabled,
-                        vibrationEnabled: _notifications.vibrationEnabled,
-                        quietHours: _notifications.quietHours,
-                      );
-                    });
-                    _updateNotifications();
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
           // Push Notifications
           Container(
             padding: const EdgeInsets.all(20),
@@ -119,7 +102,7 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
                   'Bật thông báo đẩy',
                   'Nhận thông báo trên thiết bị của bạn',
                   _notifications.pushNotifications,
-                  (value) {
+                  (value) async {
                     setState(() {
                       _notifications = NotificationSettings(
                         emailNotifications: _notifications.emailNotifications,
@@ -137,7 +120,7 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
                         quietHours: _notifications.quietHours,
                       );
                     });
-                    _updateNotifications();
+                    await _updateNotifications();
                   },
                 ),
                 const Divider(),
@@ -155,110 +138,6 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
                         blogUpdates: _notifications.blogUpdates,
                         weeklyReports: _notifications.weeklyReports,
                         dailyGoals: _notifications.dailyGoals,
-                        streakAlerts: _notifications.streakAlerts,
-                        achievementAlerts: _notifications.achievementAlerts,
-                        friendActivity: _notifications.friendActivity,
-                        soundEnabled: _notifications.soundEnabled,
-                        vibrationEnabled: _notifications.vibrationEnabled,
-                        quietHours: _notifications.quietHours,
-                      );
-                    });
-                    _updateNotifications();
-                  },
-                ),
-                const Divider(),
-                _buildSwitchTile(
-                  'Cập nhật cuộc thi',
-                  'Thông báo về các cuộc thi mới và kết quả',
-                  _notifications.competitionUpdates,
-                  (value) {
-                    setState(() {
-                      _notifications = NotificationSettings(
-                        emailNotifications: _notifications.emailNotifications,
-                        pushNotifications: _notifications.pushNotifications,
-                        studyReminders: _notifications.studyReminders,
-                        competitionUpdates: value,
-                        blogUpdates: _notifications.blogUpdates,
-                        weeklyReports: _notifications.weeklyReports,
-                        dailyGoals: _notifications.dailyGoals,
-                        streakAlerts: _notifications.streakAlerts,
-                        achievementAlerts: _notifications.achievementAlerts,
-                        friendActivity: _notifications.friendActivity,
-                        soundEnabled: _notifications.soundEnabled,
-                        vibrationEnabled: _notifications.vibrationEnabled,
-                        quietHours: _notifications.quietHours,
-                      );
-                    });
-                    _updateNotifications();
-                  },
-                ),
-                const Divider(),
-                _buildSwitchTile(
-                  'Cập nhật blog',
-                  'Thông báo về bài viết mới và tương tác',
-                  _notifications.blogUpdates,
-                  (value) {
-                    setState(() {
-                      _notifications = NotificationSettings(
-                        emailNotifications: _notifications.emailNotifications,
-                        pushNotifications: _notifications.pushNotifications,
-                        studyReminders: _notifications.studyReminders,
-                        competitionUpdates: _notifications.competitionUpdates,
-                        blogUpdates: value,
-                        weeklyReports: _notifications.weeklyReports,
-                        dailyGoals: _notifications.dailyGoals,
-                        streakAlerts: _notifications.streakAlerts,
-                        achievementAlerts: _notifications.achievementAlerts,
-                        friendActivity: _notifications.friendActivity,
-                        soundEnabled: _notifications.soundEnabled,
-                        vibrationEnabled: _notifications.vibrationEnabled,
-                        quietHours: _notifications.quietHours,
-                      );
-                    });
-                    _updateNotifications();
-                  },
-                ),
-                const Divider(),
-                _buildSwitchTile(
-                  'Báo cáo hàng tuần',
-                  'Nhận báo cáo tiến độ học tập hàng tuần',
-                  _notifications.weeklyReports,
-                  (value) {
-                    setState(() {
-                      _notifications = NotificationSettings(
-                        emailNotifications: _notifications.emailNotifications,
-                        pushNotifications: _notifications.pushNotifications,
-                        studyReminders: _notifications.studyReminders,
-                        competitionUpdates: _notifications.competitionUpdates,
-                        blogUpdates: _notifications.blogUpdates,
-                        weeklyReports: value,
-                        dailyGoals: _notifications.dailyGoals,
-                        streakAlerts: _notifications.streakAlerts,
-                        achievementAlerts: _notifications.achievementAlerts,
-                        friendActivity: _notifications.friendActivity,
-                        soundEnabled: _notifications.soundEnabled,
-                        vibrationEnabled: _notifications.vibrationEnabled,
-                        quietHours: _notifications.quietHours,
-                      );
-                    });
-                    _updateNotifications();
-                  },
-                ),
-                const Divider(),
-                _buildSwitchTile(
-                  'Mục tiêu hàng ngày',
-                  'Thông báo về mục tiêu học tập hàng ngày',
-                  _notifications.dailyGoals,
-                  (value) {
-                    setState(() {
-                      _notifications = NotificationSettings(
-                        emailNotifications: _notifications.emailNotifications,
-                        pushNotifications: _notifications.pushNotifications,
-                        studyReminders: _notifications.studyReminders,
-                        competitionUpdates: _notifications.competitionUpdates,
-                        blogUpdates: _notifications.blogUpdates,
-                        weeklyReports: _notifications.weeklyReports,
-                        dailyGoals: value,
                         streakAlerts: _notifications.streakAlerts,
                         achievementAlerts: _notifications.achievementAlerts,
                         friendActivity: _notifications.friendActivity,
@@ -314,32 +193,6 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
                         streakAlerts: _notifications.streakAlerts,
                         achievementAlerts: value,
                         friendActivity: _notifications.friendActivity,
-                        soundEnabled: _notifications.soundEnabled,
-                        vibrationEnabled: _notifications.vibrationEnabled,
-                        quietHours: _notifications.quietHours,
-                      );
-                    });
-                    _updateNotifications();
-                  },
-                ),
-                const Divider(),
-                _buildSwitchTile(
-                  'Hoạt động bạn bè',
-                  'Thông báo về hoạt động của bạn bè',
-                  _notifications.friendActivity,
-                  (value) {
-                    setState(() {
-                      _notifications = NotificationSettings(
-                        emailNotifications: _notifications.emailNotifications,
-                        pushNotifications: _notifications.pushNotifications,
-                        studyReminders: _notifications.studyReminders,
-                        competitionUpdates: _notifications.competitionUpdates,
-                        blogUpdates: _notifications.blogUpdates,
-                        weeklyReports: _notifications.weeklyReports,
-                        dailyGoals: _notifications.dailyGoals,
-                        streakAlerts: _notifications.streakAlerts,
-                        achievementAlerts: _notifications.achievementAlerts,
-                        friendActivity: value,
                         soundEnabled: _notifications.soundEnabled,
                         vibrationEnabled: _notifications.vibrationEnabled,
                         quietHours: _notifications.quietHours,
@@ -484,13 +337,14 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
                   Row(
                     children: [
                       Expanded(
-                        child: TextFormField(
-                          initialValue: _notifications.quietHours.start,
-                          decoration: const InputDecoration(
-                            labelText: 'Bắt đầu',
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (value) {
+                        child:                       InkWell(
+                        onTap: () async {
+                          final TimeOfDay? picked = await showTimePicker(
+                            context: context,
+                            initialTime: _parseTime(_notifications.quietHours.start),
+                          );
+                          if (picked != null) {
+                            final timeStr = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
                             setState(() {
                               _notifications = NotificationSettings(
                                 emailNotifications: _notifications.emailNotifications,
@@ -507,24 +361,35 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
                                 vibrationEnabled: _notifications.vibrationEnabled,
                                 quietHours: QuietHours(
                                   enabled: _notifications.quietHours.enabled,
-                                  start: value,
+                                  start: timeStr,
                                   end: _notifications.quietHours.end,
                                 ),
                               );
                             });
-                            _updateNotifications();
-                          },
+                            await _updateNotifications();
+                          }
+                        },
+                        child: TextFormField(
+                          enabled: false,
+                          initialValue: _notifications.quietHours.start,
+                          decoration: const InputDecoration(
+                            labelText: 'Bắt đầu',
+                            border: OutlineInputBorder(),
+                            suffixIcon: Icon(Icons.access_time),
+                          ),
                         ),
+                      ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: TextFormField(
-                          initialValue: _notifications.quietHours.end,
-                          decoration: const InputDecoration(
-                            labelText: 'Kết thúc',
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (value) {
+                        child:                       InkWell(
+                        onTap: () async {
+                          final TimeOfDay? picked = await showTimePicker(
+                            context: context,
+                            initialTime: _parseTime(_notifications.quietHours.end),
+                          );
+                          if (picked != null) {
+                            final timeStr = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
                             setState(() {
                               _notifications = NotificationSettings(
                                 emailNotifications: _notifications.emailNotifications,
@@ -542,13 +407,23 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
                                 quietHours: QuietHours(
                                   enabled: _notifications.quietHours.enabled,
                                   start: _notifications.quietHours.start,
-                                  end: value,
+                                  end: timeStr,
                                 ),
                               );
                             });
-                            _updateNotifications();
-                          },
+                            await _updateNotifications();
+                          }
+                        },
+                        child: TextFormField(
+                          enabled: false,
+                          initialValue: _notifications.quietHours.end,
+                          decoration: const InputDecoration(
+                            labelText: 'Kết thúc',
+                            border: OutlineInputBorder(),
+                            suffixIcon: Icon(Icons.access_time),
+                          ),
                         ),
+                      ),
                       ),
                     ],
                   ),
@@ -584,6 +459,21 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
         activeColor: AppColors.primaryYellow,
       ),
     );
+  }
+
+  TimeOfDay _parseTime(String timeStr) {
+    try {
+      final parts = timeStr.split(':');
+      if (parts.length == 2) {
+        return TimeOfDay(
+          hour: int.parse(parts[0]),
+          minute: int.parse(parts[1]),
+        );
+      }
+    } catch (e) {
+      // Fallback to default
+    }
+    return const TimeOfDay(hour: 22, minute: 0);
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/learning_curriculum/data/models/grammar_item.dart';
+import 'package:koreanhwa_flutter/shared/widgets/selectable_korean_text.dart';
 
 class GrammarCard extends StatelessWidget {
   final GrammarItem grammar;
@@ -68,8 +69,8 @@ class GrammarCard extends StatelessWidget {
                 color: AppColors.primaryBlack,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(
-                example,
+              child: SelectableKoreanText(
+                text: example,
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppColors.primaryWhite,

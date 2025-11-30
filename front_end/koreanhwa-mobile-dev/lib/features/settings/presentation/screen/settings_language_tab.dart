@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:koreanhwa_flutter/models/settings_model.dart';
 import 'package:koreanhwa_flutter/services/settings_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/controllers/locale_provider.dart';
 
-class SettingsLanguageTab extends StatefulWidget {
+class SettingsLanguageTab extends ConsumerStatefulWidget {
   const SettingsLanguageTab({super.key});
 
   @override
-  State<SettingsLanguageTab> createState() => _SettingsLanguageTabState();
+  ConsumerState<SettingsLanguageTab> createState() => _SettingsLanguageTabState();
 }
 
-class _SettingsLanguageTabState extends State<SettingsLanguageTab> {
+class _SettingsLanguageTabState extends ConsumerState<SettingsLanguageTab> {
   LanguageSettings? _language;
   bool _isLoading = true;
 
@@ -78,9 +80,13 @@ class _SettingsLanguageTabState extends State<SettingsLanguageTab> {
                     DropdownMenuItem(value: 'en', child: Text('English')),
                     DropdownMenuItem(value: 'ko', child: Text('한국어')),
                   ],
-                  onChanged: (value) {
+                  onChanged: (value) async {
                     if (value != null) {
-                      SettingsService.updateLanguage(LanguageSettings(
+                      // Update app locale immediately
+                      await ref.read(localeProvider.notifier).setLocaleFromCode(value);
+
+                      // Save to settings
+                      final updated = LanguageSettings(
                         interfaceLanguage: value,
                         studyLanguage: language.studyLanguage,
                         subtitles: language.subtitles,
@@ -89,7 +95,19 @@ class _SettingsLanguageTabState extends State<SettingsLanguageTab> {
                         translationLanguage: language.translationLanguage,
                         autoTranslate: language.autoTranslate,
                         showBothLanguages: language.showBothLanguages,
-                      ));
+                      );
+                      await SettingsService.updateLanguage(updated);
+                      setState(() {
+                        _language = updated;
+                      });
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Đã cập nhật ngôn ngữ'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      }
                     }
                   },
                 ),

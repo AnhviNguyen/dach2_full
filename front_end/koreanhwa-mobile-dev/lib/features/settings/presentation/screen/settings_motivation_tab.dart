@@ -26,8 +26,16 @@ class _SettingsMotivationTabState extends State<SettingsMotivationTab> {
     });
   }
 
-  void _updateMotivation() {
-    SettingsService.updateMotivation(_motivation);
+  Future<void> _updateMotivation() async {
+    await SettingsService.updateMotivation(_motivation);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã cập nhật cài đặt động lực'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
   }
 
   @override
@@ -161,7 +169,7 @@ class _SettingsMotivationTabState extends State<SettingsMotivationTab> {
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
-                  onChanged: (value) {
+                  onChanged: (value) async {
                     final goal = int.tryParse(value) ?? _motivation.studyStreak.goal;
                     setState(() {
                       _motivation = MotivationSettings(
@@ -182,6 +190,7 @@ class _SettingsMotivationTabState extends State<SettingsMotivationTab> {
                         ),
                       );
                     });
+                    await _updateMotivation();
                   },
                 ),
                 const SizedBox(height: 20),
@@ -265,7 +274,7 @@ class _SettingsMotivationTabState extends State<SettingsMotivationTab> {
                   'Hiển thị thành tích',
                   'Hiển thị thành tích và huy hiệu',
                   _motivation.achievementDisplay,
-                  (value) {
+                  (value) async {
                     setState(() {
                       _motivation = MotivationSettings(
                         streakGoal: _motivation.streakGoal,
@@ -280,7 +289,7 @@ class _SettingsMotivationTabState extends State<SettingsMotivationTab> {
                         studyStreak: _motivation.studyStreak,
                       );
                     });
-                    _updateMotivation();
+                    await _updateMotivation();
                   },
                 ),
                 const Divider(),
@@ -318,206 +327,6 @@ class _SettingsMotivationTabState extends State<SettingsMotivationTab> {
                         weeklyChallenges: _motivation.weeklyChallenges,
                         achievementDisplay: _motivation.achievementDisplay,
                         progressCelebration: value,
-                        milestoneRewards: _motivation.milestoneRewards,
-                        socialFeatures: _motivation.socialFeatures,
-                        leaderboardParticipation: _motivation.leaderboardParticipation,
-                        customRewards: _motivation.customRewards,
-                        motivationMessages: _motivation.motivationMessages,
-                        studyStreak: _motivation.studyStreak,
-                      );
-                    });
-                    _updateMotivation();
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Custom Rewards
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.primaryWhite,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primaryBlack.withOpacity(0.1)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Phần thưởng tùy chỉnh',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
-                      ),
-                    ),
-                    Switch(
-                      value: _motivation.customRewards.enabled,
-                      onChanged: (value) {
-                        setState(() {
-                          _motivation = MotivationSettings(
-                            streakGoal: _motivation.streakGoal,
-                            weeklyChallenges: _motivation.weeklyChallenges,
-                            achievementDisplay: _motivation.achievementDisplay,
-                            progressCelebration: _motivation.progressCelebration,
-                            milestoneRewards: _motivation.milestoneRewards,
-                            socialFeatures: _motivation.socialFeatures,
-                            leaderboardParticipation: _motivation.leaderboardParticipation,
-                            customRewards: CustomRewards(
-                              enabled: value,
-                              rewards: _motivation.customRewards.rewards,
-                            ),
-                            motivationMessages: _motivation.motivationMessages,
-                            studyStreak: _motivation.studyStreak,
-                          );
-                        });
-                        _updateMotivation();
-                      },
-                      activeColor: AppColors.primaryYellow,
-                    ),
-                  ],
-                ),
-                if (_motivation.customRewards.enabled) ...[
-                  const SizedBox(height: 20),
-                  ..._motivation.customRewards.rewards.map((reward) {
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.whiteGray,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            reward.completed ? Icons.check_circle : Icons.card_giftcard,
-                            color: reward.completed ? AppColors.success : AppColors.info,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  reward.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                Text(
-                                  '${reward.points} điểm',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.grayLight,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.edit, size: 20),
-                            onPressed: () {},
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                  OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.add),
-                    label: const Text('Thêm phần thưởng mới'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 48),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Social Features
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.primaryWhite,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primaryBlack.withOpacity(0.1)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Tính năng xã hội',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryBlack,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                _buildSwitchTile(
-                  'Tham gia bảng xếp hạng',
-                  'Hiển thị trong bảng xếp hạng toàn cầu',
-                  _motivation.leaderboardParticipation,
-                  (value) {
-                    setState(() {
-                      _motivation = MotivationSettings(
-                        streakGoal: _motivation.streakGoal,
-                        weeklyChallenges: _motivation.weeklyChallenges,
-                        achievementDisplay: _motivation.achievementDisplay,
-                        progressCelebration: _motivation.progressCelebration,
-                        milestoneRewards: _motivation.milestoneRewards,
-                        socialFeatures: _motivation.socialFeatures,
-                        leaderboardParticipation: value,
-                        customRewards: _motivation.customRewards,
-                        motivationMessages: _motivation.motivationMessages,
-                        studyStreak: _motivation.studyStreak,
-                      );
-                    });
-                    _updateMotivation();
-                  },
-                ),
-                const Divider(),
-                _buildSwitchTile(
-                  'Tính năng xã hội',
-                  'Kết nối với bạn bè và chia sẻ tiến độ',
-                  _motivation.socialFeatures,
-                  (value) {
-                    setState(() {
-                      _motivation = MotivationSettings(
-                        streakGoal: _motivation.streakGoal,
-                        weeklyChallenges: _motivation.weeklyChallenges,
-                        achievementDisplay: _motivation.achievementDisplay,
-                        progressCelebration: _motivation.progressCelebration,
-                        milestoneRewards: _motivation.milestoneRewards,
-                        socialFeatures: value,
-                        leaderboardParticipation: _motivation.leaderboardParticipation,
-                        customRewards: _motivation.customRewards,
-                        motivationMessages: _motivation.motivationMessages,
-                        studyStreak: _motivation.studyStreak,
-                      );
-                    });
-                    _updateMotivation();
-                  },
-                ),
-                const Divider(),
-                _buildSwitchTile(
-                  'Thử thách hàng tuần',
-                  'Tham gia các thử thách học tập hàng tuần',
-                  _motivation.weeklyChallenges,
-                  (value) {
-                    setState(() {
-                      _motivation = MotivationSettings(
-                        streakGoal: _motivation.streakGoal,
-                        weeklyChallenges: value,
-                        achievementDisplay: _motivation.achievementDisplay,
-                        progressCelebration: _motivation.progressCelebration,
                         milestoneRewards: _motivation.milestoneRewards,
                         socialFeatures: _motivation.socialFeatures,
                         leaderboardParticipation: _motivation.leaderboardParticipation,
