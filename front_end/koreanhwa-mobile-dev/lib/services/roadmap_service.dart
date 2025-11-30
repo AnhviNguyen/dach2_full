@@ -1,9 +1,16 @@
 import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_placement_result.dart';
 import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_section.dart';
 import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_day.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RoadmapService {
   static RoadmapPlacementResult? _placementResult;
+  static int? _userLevel;
+  static int? _textbookUnlock;
+  
+  static const String _keyPlacementResult = 'roadmap_placement_result';
+  static const String _keyUserLevel = 'roadmap_user_level';
+  static const String _keyTextbookUnlock = 'roadmap_textbook_unlock';
 
   static bool hasCompletedPlacement() {
     return _placementResult != null;
@@ -13,12 +20,62 @@ class RoadmapService {
     return _placementResult;
   }
 
-  static void savePlacementResult(int level, int score) {
+  static Future<void> savePlacementResult(int level, int score) async {
     _placementResult = RoadmapPlacementResult(
       level: level,
       score: score,
       completedAt: DateTime.now(),
     );
+    
+    // Save to SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyUserLevel, level);
+    await prefs.setInt(_keyTextbookUnlock, level > 1 ? level - 1 : 0);
+  }
+  
+  static Future<void> loadPlacementResult() async {
+    final prefs = await SharedPreferences.getInstance();
+    final level = prefs.getInt(_keyUserLevel);
+    final unlock = prefs.getInt(_keyTextbookUnlock);
+    
+    if (level != null) {
+      _userLevel = level;
+      _textbookUnlock = unlock ?? (level > 1 ? level - 1 : 0);
+      _placementResult = RoadmapPlacementResult(
+        level: level,
+        score: 0, // Score not saved separately
+        completedAt: DateTime.now(),
+      );
+    }
+  }
+  
+  static int? getUserLevel() {
+    return _userLevel;
+  }
+  
+  static int? getTextbookUnlock() {
+    return _textbookUnlock;
+  }
+  
+  static Future<void> setUserLevel(int level, int textbookUnlock) async {
+    _userLevel = level;
+    _textbookUnlock = textbookUnlock;
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyUserLevel, level);
+    await prefs.setInt(_keyTextbookUnlock, textbookUnlock);
+  }
+  
+  /// Clear placement result to allow retaking the test
+  static Future<void> clearPlacementResult() async {
+    _placementResult = null;
+    _userLevel = null;
+    _textbookUnlock = null;
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyUserLevel);
+    await prefs.remove(_keyTextbookUnlock);
+    await prefs.remove(_keyPlacementResult);
   }
 
   static List<RoadmapSection> getRoadmapSections() {

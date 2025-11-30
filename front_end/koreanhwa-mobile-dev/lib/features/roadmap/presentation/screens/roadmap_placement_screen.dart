@@ -4,7 +4,9 @@ import 'package:koreanhwa_flutter/services/roadmap_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 
 class RoadmapPlacementScreen extends StatefulWidget {
-  const RoadmapPlacementScreen({super.key});
+  final Map<String, dynamic>? surveyData;
+  
+  const RoadmapPlacementScreen({super.key, this.surveyData});
 
   @override
   State<RoadmapPlacementScreen> createState() => _RoadmapPlacementScreenState();
@@ -14,6 +16,8 @@ class _RoadmapPlacementScreenState extends State<RoadmapPlacementScreen> {
   @override
   void initState() {
     super.initState();
+    // Load placement result from storage
+    RoadmapService.loadPlacementResult();
     // Check if user has already completed placement test
     if (RoadmapService.hasCompletedPlacement()) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -133,7 +137,9 @@ class _RoadmapPlacementScreenState extends State<RoadmapPlacementScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      context.push('/roadmap/test');
+                      context.push('/roadmap/test', extra: {
+                        'surveyData': widget.surveyData,
+                      });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryYellow,

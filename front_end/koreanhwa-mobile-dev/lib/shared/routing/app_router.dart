@@ -37,6 +37,7 @@ import 'package:koreanhwa_flutter/features/competition/data/models/competition_r
 import 'package:koreanhwa_flutter/features/roadmap/presentation/screens/roadmap_placement_screen.dart';
 import 'package:koreanhwa_flutter/features/roadmap/presentation/screens/roadmap_detail_screen.dart';
 import 'package:koreanhwa_flutter/features/roadmap/presentation/screens/roadmap_test_screen.dart';
+import 'package:koreanhwa_flutter/features/roadmap/presentation/screens/roadmap_survey_screen.dart';
 import 'package:koreanhwa_flutter/features/material/presentation/screens/material_screen.dart';
 import 'package:koreanhwa_flutter/features/material/presentation/screens/material_detail_screen.dart';
 import 'package:koreanhwa_flutter/services/roadmap_service.dart';
@@ -396,8 +397,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           if (RoadmapService.hasCompletedPlacement()) {
             return const RoadmapDetailScreen();
           }
-          return const RoadmapPlacementScreen();
+          return const RoadmapSurveyScreen();
         },
+      ),
+      GoRoute(
+        path: '/roadmap/survey',
+        name: 'roadmap-survey',
+        builder: (context, state) => const RoadmapSurveyScreen(),
       ),
       GoRoute(
         path: '/roadmap/detail',
@@ -410,6 +416,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
           return RoadmapTestScreen(extra: extra);
+        },
+      ),
+      GoRoute(
+        path: '/roadmap/placement',
+        name: 'roadmap-placement',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return RoadmapPlacementScreen(surveyData: extra);
         },
       ),
       GoRoute(

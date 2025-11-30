@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/services/roadmap_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/roadmap/presentation/screens/roadmap_detail_screen.dart';
+import 'package:koreanhwa_flutter/features/roadmap/data/services/roadmap_api_service.dart';
+import 'package:koreanhwa_flutter/core/utils/user_utils.dart';
 import 'dart:async';
 
 class RoadmapTestScreen extends StatefulWidget {
@@ -15,44 +17,83 @@ class RoadmapTestScreen extends StatefulWidget {
 }
 
 class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
+  final RoadmapApiService _apiService = RoadmapApiService();
   Map<int, String> _selectedAnswers = {};
   int _timeLeft = 8 * 60; // 8 minutes
   Timer? _timer;
   bool _showQuestionList = false;
   final ScrollController _scrollController = ScrollController();
   final Map<int, GlobalKey> _questionKeys = {};
-
-  final List<Map<String, dynamic>> _questions = [
-    {
-      'id': 1,
-      'question': "한국어에서 '안녕하세요'의 의미는 무엇입니까? 다음 중 올바른 답을 선택하세요.",
-      'options': [
-        {'value': 'A', 'text': '좋은 아침입니다'},
-        {'value': 'B', 'text': '안녕히 가세요'},
-        {'value': 'C', 'text': '반갑습니다'},
-        {'value': 'D', 'text': '감사합니다'}
-      ]
-    },
-    {
-      'id': 2,
-      'question': "다음 문장에서 빈칸에 들어갈 가장 적절한 단어를 고르세요: '저는 한국 음식을 _____ 좋아해요.'",
-      'options': [
-        {'value': 'A', 'text': '매우'},
-        {'value': 'B', 'text': '조금'},
-        {'value': 'C', 'text': '전혀'},
-        {'value': 'D', 'text': '가끔'}
-      ]
-    },
-  ];
-
-  final List<int> _questionNumbers = List.generate(8, (index) => index + 1);
+  
+  List<Map<String, dynamic>> _questions = [];
+  List<Map<String, dynamic>> _originalQuestions = []; // Store original questions from API
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _startTimer();
-    for (var question in _questions) {
-      _questionKeys[question['id'] as int] = GlobalKey();
+    _loadQuestions();
+  }
+  
+  Future<void> _loadQuestions() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
+    try {
+      final response = await _apiService.getPlacementQuestions(count: 8);
+      final questions = (response['questions'] as List<dynamic>)
+          .map((q) => q as Map<String, dynamic>)
+          .toList();
+      
+      // Store original questions
+      _originalQuestions = questions;
+      
+      // Transform questions to match UI format
+      _questions = questions.asMap().entries.map((entry) {
+        final index = entry.key;
+        final q = entry.value;
+        
+        // Extract options (GPT format)
+        final options = (q['options'] as List<dynamic>?) ?? [];
+        final optionsList = options.map((a) {
+          return {
+            'value': a['value'] ?? '',
+            'text': a['text'] ?? '',
+          };
+        }).toList();
+        
+        // Get question text
+        final questionText = q['question'] ?? '';
+        
+        return {
+          'id': index + 1,
+          'question_id': q['id'] ?? 'q${index + 1}',
+          'question': questionText,
+          'options': optionsList,
+          'correct_answer': q['correct_answer'] ?? '',
+          'difficulty': q['difficulty'] ?? '1',
+          'type': q['type'] ?? 'general',
+        };
+      }).toList();
+      
+      // Create keys for questions
+      for (var question in _questions) {
+        _questionKeys[question['id'] as int] = GlobalKey();
+      }
+      
+      _startTimer();
+      
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Lỗi tải câu hỏi: ${e.toString()}';
+      });
     }
   }
 
@@ -87,6 +128,98 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
       _selectedAnswers[questionId] = answer;
     });
   }
+  
+  bool _isAnswerCorrect(int questionId, String? selectedAnswer) {
+    if (selectedAnswer == null) return false;
+    final question = _questions.firstWhere(
+      (q) => q['id'] == questionId,
+      orElse: () => {},
+    );
+    final correctAnswer = question['correct_answer'] as String? ?? '';
+    return selectedAnswer == correctAnswer;
+  }
+  
+  Color _getOptionColor(int questionId, String optionValue, String? selectedAnswer) {
+    if (selectedAnswer == null) return Colors.transparent;
+    
+    final question = _questions.firstWhere(
+      (q) => q['id'] == questionId,
+      orElse: () => {},
+    );
+    final correctAnswer = question['correct_answer'] as String? ?? '';
+    
+    // If this is the correct answer, show green
+    if (optionValue == correctAnswer) {
+      return AppColors.success.withOpacity(0.2);
+    }
+    // If this is selected but wrong, show red
+    if (optionValue == selectedAnswer && optionValue != correctAnswer) {
+      return AppColors.error.withOpacity(0.2);
+    }
+    return Colors.transparent;
+  }
+  
+  Color _getOptionBorderColor(int questionId, String optionValue, String? selectedAnswer) {
+    if (selectedAnswer == null) {
+      return AppColors.primaryBlack.withOpacity(0.2);
+    }
+    
+    final question = _questions.firstWhere(
+      (q) => q['id'] == questionId,
+      orElse: () => {},
+    );
+    final correctAnswer = question['correct_answer'] as String? ?? '';
+    
+    // If this is the correct answer, show green border
+    if (optionValue == correctAnswer) {
+      return AppColors.success;
+    }
+    // If this is selected but wrong, show red border
+    if (optionValue == selectedAnswer && optionValue != correctAnswer) {
+      return AppColors.error;
+    }
+    // If selected but not this option
+    if (selectedAnswer == optionValue) {
+      return AppColors.primaryYellow;
+    }
+    return AppColors.primaryBlack.withOpacity(0.2);
+  }
+  
+  Widget? _getOptionIcon(int questionId, String optionValue, String? selectedAnswer) {
+    if (selectedAnswer == null) return null;
+    
+    final question = _questions.firstWhere(
+      (q) => q['id'] == questionId,
+      orElse: () => {},
+    );
+    final correctAnswer = question['correct_answer'] as String? ?? '';
+    
+    // Show check icon for correct answer
+    if (optionValue == correctAnswer) {
+      return const Icon(
+        Icons.check_circle,
+        size: 20,
+        color: AppColors.success,
+      );
+    }
+    // Show X icon for wrong selected answer
+    if (optionValue == selectedAnswer && optionValue != correctAnswer) {
+      return const Icon(
+        Icons.cancel,
+        size: 20,
+        color: AppColors.error,
+      );
+    }
+    // Show check for selected correct answer
+    if (optionValue == selectedAnswer && optionValue == correctAnswer) {
+      return const Icon(
+        Icons.check_circle,
+        size: 20,
+        color: AppColors.success,
+      );
+    }
+    return null;
+  }
 
   void _scrollToQuestion(int questionId) {
     final key = _questionKeys[questionId];
@@ -103,27 +236,149 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
     }
   }
 
-  void _submitTest() {
+  Future<void> _submitTest() async {
     _timer?.cancel();
-    // Calculate score and level
-    final score = (_selectedAnswers.length / _questions.length * 100).round();
-    int level = 1;
-    if (score >= 90) level = 4;
-    else if (score >= 70) level = 3;
-    else if (score >= 50) level = 2;
     
-    RoadmapService.savePlacementResult(level, score);
+    if (_questions.isEmpty) return;
     
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const RoadmapDetailScreen(),
-      ),
-    );
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final userId = await UserUtils.getUserId();
+      if (userId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Vui lòng đăng nhập để nộp bài')),
+          );
+        }
+        return;
+      }
+      
+      // Prepare answers for submission
+      final answers = _questions.map((q) {
+        final questionId = q['question_id'] ?? q['id'].toString();
+        final userAnswer = _selectedAnswers[q['id'] as int] ?? '';
+        final correctAnswer = q['correct_answer'] ?? '';
+        final isCorrect = userAnswer == correctAnswer;
+        
+        return {
+          'question_id': questionId,
+          'question': q['question'] ?? '',
+          'user_answer': userAnswer,
+          'correct_answer': correctAnswer,
+          'is_correct': isCorrect,
+          'difficulty': q['difficulty'] ?? '1',
+          'type': q['type'] ?? 'general',
+        };
+      }).toList();
+      
+      // Get survey data from extra
+      final surveyData = widget.extra?['surveyData'] ?? {};
+      
+      // Submit to API with original questions
+      final result = await _apiService.submitPlacementTest(
+        userId: userId,
+        surveyData: surveyData,
+        answers: answers,
+        questions: _originalQuestions,
+      );
+      
+      // Save result
+      final level = result['level'] as int? ?? 1;
+      final score = (result['score'] as num?)?.toDouble() ?? 0.0;
+      final textbookUnlock = result['textbook_unlock'] as int? ?? 0;
+      await RoadmapService.savePlacementResult(level, score.round());
+      await RoadmapService.setUserLevel(level, textbookUnlock);
+      
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const RoadmapDetailScreen(),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Lỗi nộp bài: ${e.toString()}';
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi nộp bài: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading && _questions.isEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFFFFDE7),
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 2,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'Bài kiểm tra đầu vào',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryBlack,
+            ),
+          ),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
+    if (_errorMessage != null && _questions.isEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFFFFDE7),
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryWhite,
+          elevation: 2,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'Bài kiểm tra đầu vào',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryBlack,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: AppColors.error),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadQuestions,
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return Scaffold(
       backgroundColor: const Color(0xFFFFFDE7),
       appBar: AppBar(
@@ -245,10 +500,14 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              ...(question['options'] as List).map((option) {
+                              ...((question['options'] as List?) ?? []).map((option) {
                                 final value = option['value'] as String;
                                 final text = option['text'] as String;
                                 final isSelected = selectedAnswer == value;
+                                final optionColor = _getOptionColor(questionId, value, selectedAnswer);
+                                final borderColor = _getOptionBorderColor(questionId, value, selectedAnswer);
+                                final optionIcon = _getOptionIcon(questionId, value, selectedAnswer);
+                                
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
                                   child: InkWell(
@@ -258,46 +517,46 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? AppColors.primaryYellow
-                                                .withOpacity(0.2)
-                                            : AppColors.primaryWhite,
+                                        color: optionColor != Colors.transparent
+                                            ? optionColor
+                                            : (isSelected
+                                                ? AppColors.primaryYellow.withOpacity(0.2)
+                                                : AppColors.primaryWhite),
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
-                                          color: isSelected
-                                              ? AppColors.primaryYellow
-                                              : AppColors.primaryBlack
-                                                  .withOpacity(0.2),
-                                          width: isSelected ? 2 : 1,
+                                          color: borderColor,
+                                          width: (isSelected || optionColor != Colors.transparent) ? 2 : 1,
                                         ),
                                       ),
                                       child: Row(
                                         children: [
-                                          Container(
-                                            width: 18,
-                                            height: 18,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
+                                          if (optionIcon != null)
+                                            optionIcon
+                                          else
+                                            Container(
+                                              width: 18,
+                                              height: 18,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: isSelected
+                                                      ? AppColors.primaryYellow
+                                                      : AppColors.primaryBlack
+                                                          .withOpacity(0.3),
+                                                  width: 2,
+                                                ),
                                                 color: isSelected
                                                     ? AppColors.primaryYellow
-                                                    : AppColors.primaryBlack
-                                                        .withOpacity(0.3),
-                                                width: 2,
+                                                    : Colors.transparent,
                                               ),
-                                              color: isSelected
-                                                  ? AppColors.primaryYellow
-                                                  : Colors.transparent,
+                                              child: isSelected
+                                                  ? const Icon(
+                                                Icons.check,
+                                                size: 12,
+                                                color: AppColors.primaryBlack,
+                                              )
+                                                  : null,
                                             ),
-                                            child: isSelected
-                                                ? const Icon(
-                                              Icons.check,
-                                              size: 12,
-                                              color:
-                                              AppColors.primaryBlack,
-                                            )
-                                                : null,
-                                          ),
                                           const SizedBox(width: 10),
                                           Expanded(
                                             child: Text(
@@ -305,7 +564,11 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
                                               style: TextStyle(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w500,
-                                                color: AppColors.primaryBlack,
+                                                color: optionColor == AppColors.error.withOpacity(0.2)
+                                                    ? AppColors.error
+                                                    : (optionColor == AppColors.success.withOpacity(0.2)
+                                                        ? AppColors.success
+                                                        : AppColors.primaryBlack),
                                               ),
                                             ),
                                           ),
@@ -370,9 +633,9 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
                               crossAxisSpacing: 8,
                               mainAxisSpacing: 8,
                             ),
-                            itemCount: _questionNumbers.length,
+                            itemCount: _questions.length,
                             itemBuilder: (context, index) {
-                              final num = _questionNumbers[index];
+                              final num = index + 1;
                               final isAnswered = _selectedAnswers[num] != null;
                               final isCurrent = num <= _questions.length;
 
@@ -462,7 +725,7 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: _submitTest,
+                  onPressed: _isLoading ? null : _submitTest,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryBlack,
                     foregroundColor: AppColors.primaryWhite,
