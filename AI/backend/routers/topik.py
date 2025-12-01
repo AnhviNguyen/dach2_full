@@ -586,15 +586,12 @@ async def explain_topik_question(
         if correct_answer:
             prompt_parts.append(f"Đáp án đúng: {correct_answer}\n\n")
         
-        prompt_parts.append("""Hãy giải thích chi tiết câu hỏi này bằng tiếng Việt:
-1. Giải thích nội dung câu hỏi và yêu cầu
-2. Giải thích từng đáp án (A, B, C, D) và ý nghĩa của chúng
-3. Nếu có đáp án đúng, giải thích tại sao đáp án đó đúng
-4. Nếu không có đáp án đúng, phân tích các đáp án và gợi ý cách làm
-5. Liệt kê các từ vựng và ngữ pháp quan trọng trong câu hỏi
-6. Đưa ra lời khuyên để làm tốt loại câu hỏi này
+        prompt_parts.append("""Hãy giải thích ngắn gọn đáp án đúng bằng tiếng Việt (chỉ 2-3 câu):
+- Giải thích tại sao đáp án đúng là đáp án đó
+- Nếu có thể, giải thích ngắn gọn tại sao các đáp án khác sai
+- Giữ giải thích ngắn gọn, dễ hiểu, phù hợp với người học tiếng Hàn
 
-Hãy viết giải thích rõ ràng, dễ hiểu, phù hợp với người học tiếng Hàn.""")
+QUAN TRỌNG: Chỉ viết 2-3 câu, không cần giải thích dài dòng.""")
         
         full_prompt = "".join(prompt_parts)
         

@@ -4,6 +4,8 @@ import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/speak_practice/data/services/speaking_api_service.dart';
 import 'package:koreanhwa_flutter/features/speak_practice/data/services/tts_api_service.dart';
 import 'package:koreanhwa_flutter/features/speak_practice/data/services/user_progress_api_service.dart';
+import 'package:koreanhwa_flutter/features/home/data/services/task_progress_service.dart';
+import 'package:koreanhwa_flutter/core/utils/user_utils.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -21,6 +23,7 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
   final SpeakingApiService _apiService = SpeakingApiService();
   final TtsApiService _ttsService = TtsApiService();
   final UserProgressApiService _progressService = UserProgressApiService();
+  final TaskProgressService _taskProgressService = TaskProgressService();
   bool _isRecording = false;
   bool _isProcessing = false;
   double? _score;
@@ -254,6 +257,23 @@ class _PronunciationPracticeScreenState extends State<PronunciationPracticeScree
       // Save weak words if score is low
       if (score < 85 && wordErrors.isNotEmpty) {
         await _saveWeakWords(expectedText, wordErrors);
+      }
+
+      // Cập nhật task progress nếu đạt điểm >= 85%
+      if (score >= 85) {
+        try {
+          final userId = await UserUtils.getUserId();
+          if (userId != null) {
+            await _taskProgressService.completeSpeakingPractice(
+              userId: userId,
+              phrase: expectedText,
+            );
+            debugPrint('✅ Task progress updated for speaking practice');
+          }
+        } catch (e) {
+          debugPrint('⚠️ Failed to update task progress: $e');
+          // Không throw error, chỉ log để không ảnh hưởng đến flow chính
+        }
       }
 
       // Show success message

@@ -5,6 +5,8 @@ import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:koreanhwa_flutter/features/topik/data/services/exam_result_service.dart';
 import 'package:koreanhwa_flutter/features/topik/data/services/topik_api_service.dart';
+import 'package:koreanhwa_flutter/features/home/data/services/task_progress_service.dart';
+import 'package:koreanhwa_flutter/core/utils/user_utils.dart';
 
 class ExamResultScreen extends StatefulWidget {
   final String examId;
@@ -29,6 +31,7 @@ class ExamResultScreen extends StatefulWidget {
 class _ExamResultScreenState extends State<ExamResultScreen> {
   final TextEditingController _commentController = TextEditingController();
   final TopikApiService _apiService = TopikApiService();
+  final TaskProgressService _taskProgressService = TaskProgressService();
   bool _isLoadingExplanation = false;
   final List<Map<String, dynamic>> _comments = [
     {
@@ -84,6 +87,23 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
         completedAt: DateTime.now(),
       );
       await ExamResultService.saveExamResult(result);
+      
+      // Cập nhật task progress trong roadmap
+      try {
+        final userId = await UserUtils.getUserId();
+        if (userId != null) {
+          final examNumber = _getExamNumber();
+          await _taskProgressService.completeTopikExam(
+            userId: userId,
+            examId: widget.examId,
+            examNumber: examNumber,
+          );
+          debugPrint('✅ Task progress updated for TOPIK exam');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to update task progress: $e');
+        // Không throw error, chỉ log để không ảnh hưởng đến flow chính
+      }
     } catch (e) {
       debugPrint('Error saving exam result: $e');
     }
@@ -367,46 +387,96 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
     String? userAnswer,
     required bool isCorrect,
   }) {
+    final introText = question['intro_text'] as String? ?? '';
+    final prompt = question['prompt'] as String? ?? '';
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
+        height: MediaQuery.of(context).size.height * 0.75,
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
-            // Header
+            // Header với gradient
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
               decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                border: Border(
-                  bottom: BorderSide(
-                    color: AppColors.primaryBlack.withOpacity(0.1),
-                    width: 1,
-                  ),
+                gradient: LinearGradient(
+                  colors: [
+                    isCorrect ? AppColors.success : const Color(0xFFF44336),
+                    isCorrect 
+                        ? AppColors.success.withOpacity(0.7) 
+                        : const Color(0xFFF44336).withOpacity(0.7),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Giải thích câu $questionNumber',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
-                      ),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isCorrect ? Icons.check_circle : Icons.cancel,
+                      color: Colors.white,
+                      size: 24,
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Câu $questionNumber',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          isCorrect ? 'Trả lời đúng' : 'Trả lời sai',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (userAnswer != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Bạn: $userAnswer',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: AppColors.primaryBlack),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
@@ -414,216 +484,180 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             // Content
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Kết quả
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: isCorrect
-                            ? AppColors.success.withOpacity(0.1)
-                            : const Color(0xFFF44336).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isCorrect ? AppColors.success : const Color(0xFFF44336),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isCorrect ? Icons.check_circle : Icons.cancel,
-                            color: isCorrect ? AppColors.success : const Color(0xFFF44336),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              isCorrect
-                                  ? 'Bạn đã trả lời đúng'
-                                  : 'Bạn đã trả lời sai',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: isCorrect ? AppColors.success : const Color(0xFFF44336),
-                              ),
-                            ),
-                          ),
-                          if (userAnswer != null)
-                            Text(
-                              'Đáp án của bạn: $userAnswer',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primaryBlack.withOpacity(0.7),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
+                    // Đáp án đúng - Highlight
                     if (correctAnswer != null) ...[
-                      const SizedBox(height: 12),
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryYellow.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: AppColors.primaryYellow,
-                            width: 1,
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.primaryYellow,
+                              AppColors.primaryYellow.withOpacity(0.8),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.lightbulb_outline,
-                              color: AppColors.primaryYellow,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Đáp án đúng: $correctAnswer',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primaryBlack,
-                              ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryYellow.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
                             ),
                           ],
-                        ),
-                      ),
-                    ],
-                    // Câu hỏi
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Câu hỏi:',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryBlack.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        question['prompt'] as String? ?? question['intro_text'] as String? ?? '',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.primaryBlack.withOpacity(0.8),
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                    // Các đáp án
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Các đáp án:',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...(question['answers'] as List<dynamic>? ?? []).asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final answer = entry.value as Map<String, dynamic>;
-                      final option = answer['option'] as String? ?? String.fromCharCode(65 + index);
-                      final text = answer['text'] as String? ?? '';
-                      final isCorrectOption = correctAnswer != null && option == correctAnswer;
-                      
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: isCorrectOption
-                              ? AppColors.success.withOpacity(0.1)
-                              : AppColors.primaryBlack.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isCorrectOption
-                                ? AppColors.success
-                                : AppColors.primaryBlack.withOpacity(0.2),
-                            width: 1,
-                          ),
                         ),
                         child: Row(
                           children: [
                             Container(
-                              width: 24,
-                              height: 24,
+                              width: 40,
+                              height: 40,
                               decoration: BoxDecoration(
-                                color: isCorrectOption
-                                    ? AppColors.success
-                                    : AppColors.primaryBlack.withOpacity(0.2),
+                                color: Colors.white.withOpacity(0.3),
                                 shape: BoxShape.circle,
                               ),
                               child: Center(
                                 child: Text(
-                                  option,
-                                  style: TextStyle(
-                                    fontSize: 12,
+                                  correctAnswer,
+                                  style: const TextStyle(
+                                    fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: isCorrectOption
-                                        ? Colors.white
-                                        : AppColors.primaryBlack,
+                                    color: AppColors.primaryBlack,
                                   ),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Expanded(
+                            const Expanded(
                               child: Text(
-                                text,
+                                'Đáp án đúng',
                                 style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.primaryBlack.withOpacity(0.8),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryBlack,
                                 ),
                               ),
                             ),
-                            if (isCorrectOption)
-                              const Icon(
-                                Icons.check_circle,
-                                color: AppColors.success,
-                                size: 20,
-                              ),
+                            const Icon(
+                              Icons.emoji_events,
+                              color: AppColors.primaryBlack,
+                              size: 24,
+                            ),
                           ],
                         ),
-                      );
-                    }),
-                    // Giải thích
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Giải thích:',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
                       ),
-                    ),
-                    const SizedBox(height: 8),
+                      const SizedBox(height: 20),
+                    ],
+                    
+                    // Đoạn dịch của bài
+                    if (introText.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryBlack.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.primaryBlack.withOpacity(0.1),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.translate,
+                                  size: 18,
+                                  color: AppColors.primaryBlack.withOpacity(0.6),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Đoạn văn',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primaryBlack.withOpacity(0.6),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              introText,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: AppColors.primaryBlack.withOpacity(0.9),
+                                height: 1.6,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    
+                    // Giải thích
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryYellow.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.primaryYellow.withOpacity(0.1),
+                            AppColors.primaryYellow.withOpacity(0.05),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: AppColors.primaryYellow.withOpacity(0.3),
-                          width: 1,
+                          width: 1.5,
                         ),
                       ),
-                      child: Text(
-                        explanation,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.primaryBlack.withOpacity(0.8),
-                          height: 1.6,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryYellow,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.lightbulb,
+                                  color: AppColors.primaryBlack,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              const Text(
+                                'Giải thích',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryBlack,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            explanation,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.primaryBlack.withOpacity(0.85),
+                              height: 1.7,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -956,103 +990,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                         top: Radius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      'Phân tích chi tiết',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
-                      ),
-                    ),
                   ),
-                  ..._testData.map((row) {
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          top: BorderSide(
-                            color: AppColors.primaryBlack.withOpacity(0.1),
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            row['category'] as String,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primaryBlack,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              _buildMiniStat('Đúng', row['correct'].toString(), AppColors.success),
-                              const SizedBox(width: 8),
-                              _buildMiniStat('Sai', row['wrong'].toString(), const Color(0xFFF44336)),
-                              const SizedBox(width: 8),
-                              _buildMiniStat('Bỏ qua', row['skipped'].toString(), AppColors.primaryBlack.withOpacity(0.4)),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryYellow.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              'Độ chính xác: ${row['accuracy']}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primaryBlack,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: (row['questions'] as List<int>).map((q) {
-                              final isWrong = row['wrong'] as int > 0;
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isWrong
-                                      ? const Color(0xFFF44336).withOpacity(0.2)
-                                      : AppColors.success.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: isWrong
-                                        ? const Color(0xFFF44336)
-                                        : AppColors.success,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  q.toString(),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: isWrong
-                                        ? const Color(0xFFF44336)
-                                        : AppColors.success,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
                 ],
               ),
             ),

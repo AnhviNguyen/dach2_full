@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/features/home/data/services/task_progress_service.dart';
+import 'package:koreanhwa_flutter/core/utils/user_utils.dart';
 
 class FlashcardScreen extends StatefulWidget {
   final int bookId;
@@ -23,6 +25,8 @@ class _FlashcardScreenState extends State<FlashcardScreen>
   bool _isFlipped = false;
   late AnimationController _animationController;
   late Animation<double> _flipAnimation;
+  final TaskProgressService _taskProgressService = TaskProgressService();
+  final Set<int> _viewedCards = {}; // Track cards đã xem
 
   @override
   void initState() {
@@ -49,6 +53,29 @@ class _FlashcardScreenState extends State<FlashcardScreen>
     } else {
       _animationController.forward();
       setState(() => _isFlipped = true);
+      // Đánh dấu card đã xem
+      _viewedCards.add(_currentCardIndex);
+      // Kiểm tra nếu đã xem hết tất cả cards
+      _checkCompletion();
+    }
+  }
+  
+  Future<void> _checkCompletion() async {
+    // Nếu đã xem >= 80% số cards, đánh dấu hoàn thành
+    if (_viewedCards.length >= (widget.vocabList.length * 0.8).ceil()) {
+      try {
+        final userId = await UserUtils.getUserId();
+        if (userId != null) {
+          await _taskProgressService.completeVocabularyFlashcard(
+            userId: userId,
+            bookId: widget.bookId,
+            lessonId: widget.lessonId,
+          );
+          debugPrint('✅ Task progress updated for vocabulary flashcard');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to update task progress: $e');
+      }
     }
   }
 

@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
+import 'package:koreanhwa_flutter/features/home/data/services/task_progress_service.dart';
+import 'package:koreanhwa_flutter/core/utils/user_utils.dart';
 
 class VocabTestScreen extends StatefulWidget {
   final int bookId;
@@ -23,6 +25,7 @@ class _VocabTestScreenState extends State<VocabTestScreen> {
   Map<int, String> _answers = {};
   bool _showResults = false;
   final Random _random = Random();
+  final TaskProgressService _taskProgressService = TaskProgressService();
 
   List<String> _getOptionsForQuestion(int index) {
     final correct = widget.vocabList[index]['vietnamese']!;
@@ -56,10 +59,31 @@ class _VocabTestScreenState extends State<VocabTestScreen> {
     }
   }
 
-  void _submitTest() {
+  void _submitTest() async {
     setState(() {
       _showResults = true;
     });
+    
+    // Cập nhật task progress nếu đạt điểm >= 80%
+    final score = _calculateScore();
+    final percentage = (score / widget.vocabList.length * 100).round();
+    
+    if (percentage >= 80) {
+      try {
+        final userId = await UserUtils.getUserId();
+        if (userId != null) {
+          await _taskProgressService.completeVocabularyTest(
+            userId: userId,
+            bookId: widget.bookId,
+            lessonId: widget.lessonId,
+          );
+          debugPrint('✅ Task progress updated for vocabulary test');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to update task progress: $e');
+        // Không throw error, chỉ log để không ảnh hưởng đến flow chính
+      }
+    }
   }
 
   int _calculateScore() {

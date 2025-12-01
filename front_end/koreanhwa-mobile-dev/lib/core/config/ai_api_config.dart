@@ -68,6 +68,10 @@ class AiApiConfig {
   static const String userSavePhrase = '/user/save-phrase';
   static const String userPhrases = '/user/phrases';
   static const String userProgress = '/user/progress';
+  
+  // Task Progress endpoints
+  static const String progressSave = '/progress/save';
+  static const String progressTaskComplete = '/progress/task/complete';
 
   // Headers
   static const String headerContentType = 'Content-Type';
