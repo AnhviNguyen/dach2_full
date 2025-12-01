@@ -18,7 +18,7 @@ class GrammarCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primaryWhite,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppColors.primaryBlack,
@@ -71,9 +71,9 @@ class GrammarCard extends StatelessWidget {
               ),
               child: SelectableKoreanText(
                 text: example,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.primaryWhite,
+                  color: Colors.white, // Text trắng trên nền đen
                 ),
               ),
             );

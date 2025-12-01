@@ -19,11 +19,13 @@ class TopikApiService {
   /// Lấy câu hỏi TOPIK cho một kỳ thi cụ thể
   /// 
   /// [examNumber] - Số kỳ thi (ví dụ: "35", "36", "37")
+  /// [topikLevel] - Cấp độ TOPIK ("1" hoặc "2")
   /// [questionType] - Loại câu hỏi: "listening" hoặc "reading"
   /// [limit] - Số lượng câu hỏi tối đa (tùy chọn)
   /// [offset] - Offset cho phân trang (mặc định: 0)
   Future<Map<String, dynamic>> getTopikQuestions({
     required String examNumber,
+    required String topikLevel, // "1" hoặc "2"
     required String questionType, // "listening" hoặc "reading"
     int? limit,
     int offset = 0,
@@ -35,6 +37,7 @@ class TopikApiService {
       final response = await _dioClient.get(
         path,
         queryParameters: {
+          'topik_level': topikLevel,
           'question_type': questionType,
           if (limit != null) 'limit': limit,
           'offset': offset,
@@ -136,6 +139,8 @@ class TopikApiService {
   Future<Map<String, dynamic>> getCompetitionQuestions({
     int count = 20,
     bool mixTypes = true,
+    bool mixLevels = true,
+    String? topikLevel,
   }) async {
     try {
       final response = await _dioClient.get(
@@ -143,8 +148,72 @@ class TopikApiService {
         queryParameters: {
           'count': count,
           'mix_types': mixTypes,
+          'mix_levels': mixLevels,
+          if (topikLevel != null) 'topik_level': topikLevel,
         },
       );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Giải thích câu hỏi TOPIK bằng GPT
+  /// 
+  /// [examNumber] - Số kỳ thi (ví dụ: "35", "36", "37")
+  /// [questionId] - ID của câu hỏi
+  /// [topikLevel] - Cấp độ TOPIK ("1" hoặc "2")
+  /// [questionType] - Loại câu hỏi: "listening" hoặc "reading"
+  Future<Map<String, dynamic>> explainTopikQuestion({
+    required String examNumber,
+    required String questionId,
+    required String topikLevel,
+    required String questionType,
+  }) async {
+    try {
+      final path = AiApiConfig.topikQuestionExplain
+          .replaceAll('{examNumber}', examNumber)
+          .replaceAll('{questionId}', questionId);
+      
+      final response = await _dioClient.get(
+        path,
+        queryParameters: {
+          'topik_level': topikLevel,
+          'question_type': questionType,
+        },
+      );
+      
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Giải thích câu hỏi TOPIK bằng GPT (theo số thứ tự)
+  /// 
+  /// [examNumber] - Số kỳ thi (ví dụ: "35", "36", "37")
+  /// [number] - Số thứ tự câu hỏi (1-indexed)
+  /// [topikLevel] - Cấp độ TOPIK ("1" hoặc "2")
+  /// [questionType] - Loại câu hỏi: "listening" hoặc "reading"
+  Future<Map<String, dynamic>> explainTopikQuestionByNumber({
+    required String examNumber,
+    required int number,
+    required String topikLevel,
+    required String questionType,
+  }) async {
+    try {
+      final path = AiApiConfig.topikQuestionByNumberExplain
+          .replaceAll('{examNumber}', examNumber)
+          .replaceAll('{number}', number.toString());
+      
+      final response = await _dioClient.get(
+        path,
+        queryParameters: {
+          'topik_level': topikLevel,
+          'question_type': questionType,
+        },
+      );
+      
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);

@@ -104,19 +104,22 @@ class _ExamStatisticsScreenState extends State<ExamStatisticsScreen> {
   Widget build(BuildContext context) {
     final stats = _overallStats;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFDE7),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         elevation: 2,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
         ),
-        title: const Text(
+        title: Text(
           'Thống kê kết quả',
           style: TextStyle(
-            color: AppColors.primaryBlack,
+            color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -163,7 +166,7 @@ class _ExamStatisticsScreenState extends State<ExamStatisticsScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryWhite,
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: AppColors.primaryYellow.withOpacity(0.5),
@@ -234,7 +237,7 @@ class _ExamStatisticsScreenState extends State<ExamStatisticsScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryWhite,
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: AppColors.primaryYellow.withOpacity(0.5),
@@ -263,10 +266,10 @@ class _ExamStatisticsScreenState extends State<ExamStatisticsScreen> {
                                       color: AppColors.success,
                                       title: 'Đúng\n${stats['totalCorrect']}',
                                       radius: 60,
-                                      titleStyle: const TextStyle(
+                                      titleStyle: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryWhite,
+                                        color: Theme.of(context).cardColor,
                                       ),
                                     ),
                                     PieChartSectionData(
@@ -274,10 +277,10 @@ class _ExamStatisticsScreenState extends State<ExamStatisticsScreen> {
                                       color: const Color(0xFFF44336),
                                       title: 'Sai\n${stats['totalWrong']}',
                                       radius: 60,
-                                      titleStyle: const TextStyle(
+                                      titleStyle: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryWhite,
+                                        color: Theme.of(context).cardColor,
                                       ),
                                     ),
                                     if (stats['totalSkipped'] > 0)
@@ -286,10 +289,10 @@ class _ExamStatisticsScreenState extends State<ExamStatisticsScreen> {
                                         color: AppColors.primaryBlack.withOpacity(0.4),
                                         title: 'Bỏ qua\n${stats['totalSkipped']}',
                                         radius: 60,
-                                        titleStyle: const TextStyle(
+                                        titleStyle: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.bold,
-                                          color: AppColors.primaryWhite,
+                                          color: Theme.of(context).cardColor,
                                         ),
                                       ),
                                   ],

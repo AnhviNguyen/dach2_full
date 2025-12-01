@@ -84,21 +84,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Thanh toán',
           style: TextStyle(
-            color: AppColors.primaryBlack,
+            color: isDark ? Colors.white : AppColors.primaryBlack,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppColors.primaryBlack),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -122,16 +125,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
         });
       },
       borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? color : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
+      child: Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
+          final isDark = theme.brightness == Brightness.dark;
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isSelected ? color.withOpacity(0.1) : (isDark ? AppColors.darkSurface : Colors.white),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected ? color : (isDark ? AppColors.darkDivider : Colors.grey.shade300),
+                width: isSelected ? 2 : 1,
+              ),
+            ),
         child: Row(
           children: [
             Container(
@@ -153,10 +160,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
               ),
             ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: color, size: 24),
-          ],
-        ),
+                if (isSelected)
+                  Icon(Icons.check_circle, color: color, size: 24),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -201,17 +210,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return Column(
       children: [
         // Bank Selection
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              isExpanded: true,
-              value: _selectedBank,
+        Builder(
+          builder: (context) {
+            final theme = Theme.of(context);
+            final isDark = theme.brightness == Brightness.dark;
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isDark ? AppColors.darkDivider : Colors.grey.shade300),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: _selectedBank,
               hint: Row(
                 children: [
                   Icon(Icons.account_balance, color: Colors.blue.shade600, size: 22),
@@ -253,6 +266,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               },
             ),
           ),
+            );
+          },
         ),
         const SizedBox(height: 16),
         _PaymentField(
@@ -733,8 +748,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildError() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Container(
-      color: Colors.white,
+      color: isDark ? AppColors.darkBackground : Colors.white,
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -821,10 +839,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildSummary() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: AppColors.primaryYellow.withOpacity(0.3),

@@ -88,12 +88,12 @@ class _StreakSectionState extends ConsumerState<StreakSection> {
                 child: const Icon(Icons.local_fire_department, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Streak học tập',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primaryBlack,
+                  color: Theme.of(context).textTheme.titleLarge?.color ?? AppColors.primaryBlack,
                 ),
               ),
             ],

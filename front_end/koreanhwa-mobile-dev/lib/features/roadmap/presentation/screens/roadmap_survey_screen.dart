@@ -28,19 +28,22 @@ class _RoadmapSurveyScreenState extends State<RoadmapSurveyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.primaryBlack,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.primaryBlack,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryBlack,
+        backgroundColor: isDark ? AppColors.darkSurface : AppColors.primaryBlack,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryWhite),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppColors.primaryWhite),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Khảo sát trình độ',
           style: TextStyle(
-            color: AppColors.primaryWhite,
+            color: isDark ? Colors.white : AppColors.primaryWhite,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -155,10 +158,10 @@ class _RoadmapSurveyScreenState extends State<RoadmapSurveyScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Bạn đã học tiếng Hàn chưa?',
           style: TextStyle(
-            color: AppColors.primaryWhite,
+            color: Theme.of(context).textTheme.titleLarge?.color ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryWhite),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -167,7 +170,7 @@ class _RoadmapSurveyScreenState extends State<RoadmapSurveyScreen> {
         Text(
           'Câu trả lời sẽ giúp chúng tôi xây dựng lộ trình phù hợp với bạn',
           style: TextStyle(
-            color: AppColors.grayLight,
+            color: Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.grayLight,
             fontSize: 14,
           ),
         ),
@@ -200,10 +203,10 @@ class _RoadmapSurveyScreenState extends State<RoadmapSurveyScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Bạn học tiếng Hàn vì lý do gì?',
           style: TextStyle(
-            color: AppColors.primaryWhite,
+            color: Theme.of(context).textTheme.titleLarge?.color ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryWhite),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -212,7 +215,7 @@ class _RoadmapSurveyScreenState extends State<RoadmapSurveyScreen> {
         Text(
           'Chọn lý do chính khiến bạn muốn học tiếng Hàn',
           style: TextStyle(
-            color: AppColors.grayLight,
+            color: Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.grayLight,
             fontSize: 14,
           ),
         ),
@@ -244,10 +247,10 @@ class _RoadmapSurveyScreenState extends State<RoadmapSurveyScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Bạn tự đánh giá mình ở cấp độ nào?',
           style: TextStyle(
-            color: AppColors.primaryWhite,
+            color: Theme.of(context).textTheme.titleLarge?.color ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryWhite),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -256,7 +259,7 @@ class _RoadmapSurveyScreenState extends State<RoadmapSurveyScreen> {
         Text(
           'Chọn cấp độ bạn nghĩ mình đang ở (1-6)',
           style: TextStyle(
-            color: AppColors.grayLight,
+            color: Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.grayLight,
             fontSize: 14,
           ),
         ),
@@ -281,6 +284,9 @@ class _RoadmapSurveyScreenState extends State<RoadmapSurveyScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -290,7 +296,7 @@ class _RoadmapSurveyScreenState extends State<RoadmapSurveyScreen> {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primaryYellow
-              : AppColors.primaryBlack.withOpacity(0.5),
+              : (isDark ? AppColors.darkSurface : AppColors.primaryBlack.withOpacity(0.5)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
@@ -331,7 +337,7 @@ class _RoadmapSurveyScreenState extends State<RoadmapSurveyScreen> {
                 style: TextStyle(
                   color: isSelected
                       ? AppColors.primaryBlack
-                      : AppColors.primaryWhite,
+                      : (isDark ? Colors.white : AppColors.primaryWhite),
                   fontSize: 16,
                   fontWeight: isSelected
                       ? FontWeight.bold

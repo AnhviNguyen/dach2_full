@@ -14,14 +14,17 @@ class BlogPostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primaryWhite,
+        color: isDark ? AppColors.darkSurface : AppColors.primaryWhite,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.primaryBlack.withOpacity(0.1),
+          color: isDark ? AppColors.darkDivider : AppColors.primaryBlack.withOpacity(0.1),
           width: 1,
         ),
         boxShadow: [
@@ -68,7 +71,7 @@ class BlogPostCard extends StatelessWidget {
                         post.author.level,
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.primaryBlack.withOpacity(0.6),
+                          color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6) ?? AppColors.primaryBlack.withOpacity(0.6),
                         ),
                       ),
                     ],
@@ -112,9 +115,10 @@ class BlogPostCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               post.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.titleLarge?.color,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -124,7 +128,7 @@ class BlogPostCard extends StatelessWidget {
               post.content,
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.primaryBlack.withOpacity(0.7),
+                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7) ?? AppColors.primaryBlack.withOpacity(0.7),
               ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -145,7 +149,7 @@ class BlogPostCard extends StatelessWidget {
                       '#$tag',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.primaryBlack.withOpacity(0.7),
+                        color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7) ?? AppColors.primaryBlack.withOpacity(0.7),
                       ),
                     ),
                   );
@@ -159,7 +163,7 @@ class BlogPostCard extends StatelessWidget {
                   onPressed: () {},
                   icon: Icon(
                     post.isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: post.isLiked ? Colors.red : AppColors.primaryBlack,
+                    color: post.isLiked ? Colors.red : (Theme.of(context).iconTheme.color ?? AppColors.primaryBlack),
                     size: 20,
                   ),
                 ),
@@ -167,35 +171,35 @@ class BlogPostCard extends StatelessWidget {
                   '${post.likes}',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.primaryBlack.withOpacity(0.7),
+                    color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7) ?? AppColors.primaryBlack.withOpacity(0.7),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Icon(
                   Icons.comment_outlined,
                   size: 20,
-                  color: AppColors.primaryBlack.withOpacity(0.7),
+                  color: Theme.of(context).iconTheme.color?.withOpacity(0.7) ?? AppColors.primaryBlack.withOpacity(0.7),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${post.comments}',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.primaryBlack.withOpacity(0.7),
+                    color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7) ?? AppColors.primaryBlack.withOpacity(0.7),
                   ),
                 ),
                 const Spacer(),
                 Icon(
                   Icons.visibility_outlined,
                   size: 18,
-                  color: AppColors.primaryBlack.withOpacity(0.7),
+                  color: Theme.of(context).iconTheme.color?.withOpacity(0.7) ?? AppColors.primaryBlack.withOpacity(0.7),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${post.views}',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.primaryBlack.withOpacity(0.6),
+                    color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6) ?? AppColors.primaryBlack.withOpacity(0.6),
                   ),
                 ),
               ],

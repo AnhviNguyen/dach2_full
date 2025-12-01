@@ -94,19 +94,22 @@ class _MatchScreenState extends State<MatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E5F5),
+      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF3E5F5),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF9C27B0),
+        backgroundColor: isDark ? AppColors.darkSurface : const Color(0xFF9C27B0),
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryWhite),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppColors.primaryWhite),
         ),
-        title: const Text(
+        title: Text(
           'Match Game',
           style: TextStyle(
-            color: AppColors.primaryWhite,
+            color: isDark ? Colors.white : AppColors.primaryWhite,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -115,7 +118,7 @@ class _MatchScreenState extends State<MatchScreen> {
         actions: [
           IconButton(
             onPressed: _resetGame,
-            icon: const Icon(Icons.refresh, color: AppColors.primaryWhite),
+            icon: Icon(Icons.refresh, color: isDark ? Colors.white : AppColors.primaryWhite),
           ),
         ],
       ),

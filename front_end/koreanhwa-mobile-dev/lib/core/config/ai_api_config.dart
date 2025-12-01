@@ -45,6 +45,8 @@ class AiApiConfig {
   static const String topikQuestion = '/topik/exams/{examNumber}/questions/{questionId}';
   static const String topikQuestionByNumber = '/topik/exams/{examNumber}/questions/number/{number}';
   static const String topikQuestionVocabulary = '/topik/exams/{examNumber}/questions/{questionId}/vocabulary';
+  static const String topikQuestionExplain = '/topik/exams/{examNumber}/questions/{questionId}/explain';
+  static const String topikQuestionByNumberExplain = '/topik/exams/{examNumber}/questions/number/{number}/explain';
   static const String topikStats = '/topik/stats';
   static const String topikCompetitionQuestions = '/topik/competition/questions';
   

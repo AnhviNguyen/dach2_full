@@ -78,19 +78,22 @@ class _VocabTestScreenState extends State<VocabTestScreen> {
       final score = _calculateScore();
       final percentage = (score / widget.vocabList.length * 100).round();
 
+      final theme = Theme.of(context);
+      final isDark = theme.brightness == Brightness.dark;
+      
       return Scaffold(
-        backgroundColor: const Color(0xFFFCE4EC),
+        backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFFCE4EC),
         appBar: AppBar(
-          backgroundColor: const Color(0xFFE91E63),
+          backgroundColor: isDark ? AppColors.darkSurface : const Color(0xFFE91E63),
           elevation: 0,
           leading: IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryWhite),
+            icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppColors.primaryWhite),
           ),
-          title: const Text(
+          title: Text(
             'Kết quả Test',
             style: TextStyle(
-              color: AppColors.primaryWhite,
+              color: isDark ? Colors.white : AppColors.primaryWhite,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -101,10 +104,10 @@ class _VocabTestScreenState extends State<VocabTestScreen> {
           child: Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: AppColors.primaryWhite,
+              color: theme.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: const Color(0xFFE91E63),
+                color: isDark ? AppColors.darkDivider : const Color(0xFFE91E63),
                 width: 4,
               ),
               boxShadow: [
@@ -229,19 +232,22 @@ class _VocabTestScreenState extends State<VocabTestScreen> {
     final options = _getOptionsForQuestion(_currentQuestion);
     final selectedAnswer = _answers[_currentQuestion];
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFFCE4EC),
+      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFFCE4EC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFE91E63),
+        backgroundColor: isDark ? AppColors.darkSurface : const Color(0xFFE91E63),
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryWhite),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppColors.primaryWhite),
         ),
-        title: const Text(
+        title: Text(
           'Test',
           style: TextStyle(
-            color: AppColors.primaryWhite,
+            color: isDark ? Colors.white : AppColors.primaryWhite,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -253,8 +259,8 @@ class _VocabTestScreenState extends State<VocabTestScreen> {
             child: Center(
               child: Text(
                 '${_currentQuestion + 1} / ${widget.vocabList.length}',
-                style: const TextStyle(
-                  color: AppColors.primaryWhite,
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppColors.primaryWhite,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -269,7 +275,7 @@ class _VocabTestScreenState extends State<VocabTestScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
                   color: const Color(0xFFE91E63),

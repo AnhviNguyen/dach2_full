@@ -28,8 +28,11 @@ class _RoadmapPlacementScreenState extends State<RoadmapPlacementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.primaryBlack,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.primaryBlack,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -65,10 +68,10 @@ class _RoadmapPlacementScreenState extends State<RoadmapPlacementScreen> {
                   ),
                 ),
                 const SizedBox(height: 48),
-                const Text(
+                Text(
                   'TOPIK Learning',
                   style: TextStyle(
-                    color: AppColors.primaryWhite,
+                    color: isDark ? Colors.white : AppColors.primaryWhite,
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                   ),
@@ -77,7 +80,7 @@ class _RoadmapPlacementScreenState extends State<RoadmapPlacementScreen> {
                 Text(
                   'Chào mừng bạn đến với lộ trình học TOPIK!',
                   style: TextStyle(
-                    color: AppColors.grayLight,
+                    color: isDark ? AppColors.grayLight : AppColors.grayLight,
                     fontSize: 18,
                   ),
                   textAlign: TextAlign.center,
@@ -86,16 +89,16 @@ class _RoadmapPlacementScreenState extends State<RoadmapPlacementScreen> {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryBlack.withOpacity(0.5),
+                    color: isDark ? AppColors.darkSurface : AppColors.primaryBlack.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: AppColors.primaryYellow.withOpacity(0.3)),
                   ),
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         'Bài kiểm tra đầu vào',
                         style: TextStyle(
-                          color: AppColors.primaryWhite,
+                          color: Theme.of(context).textTheme.titleLarge?.color ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack),
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -104,7 +107,7 @@ class _RoadmapPlacementScreenState extends State<RoadmapPlacementScreen> {
                       Text(
                         'Để xây dựng lộ trình phù hợp, bạn cần làm bài kiểm tra đầu vào. Bài kiểm tra này chỉ thực hiện 1 lần duy nhất.',
                         style: TextStyle(
-                          color: AppColors.primaryWhite,
+                          color: Theme.of(context).textTheme.titleLarge?.color ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack),
                           fontSize: 14,
                           height: 1.5,
                         ),
@@ -116,16 +119,16 @@ class _RoadmapPlacementScreenState extends State<RoadmapPlacementScreen> {
                         children: [
                           Icon(Icons.access_time, color: AppColors.primaryYellow, size: 20),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             '8 phút',
-                            style: TextStyle(color: AppColors.primaryWhite),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack)),
                           ),
                           const SizedBox(width: 24),
                           Icon(Icons.quiz, color: AppColors.primaryYellow, size: 20),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             '8 câu',
-                            style: TextStyle(color: AppColors.primaryWhite),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack)),
                           ),
                         ],
                       ),

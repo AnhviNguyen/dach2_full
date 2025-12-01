@@ -53,7 +53,7 @@ class _SettingsAppearanceTabState extends ConsumerState<SettingsAppearanceTab> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.primaryWhite,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.primaryBlack.withOpacity(0.1)),
             ),

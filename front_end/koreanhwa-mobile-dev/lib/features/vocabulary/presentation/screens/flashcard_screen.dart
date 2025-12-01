@@ -74,19 +74,22 @@ class _FlashcardScreenState extends State<FlashcardScreen>
   Widget build(BuildContext context) {
     final vocab = widget.vocabList[_currentCardIndex];
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFE3F2FD),
+      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFE3F2FD),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2196F3),
+        backgroundColor: isDark ? AppColors.darkSurface : const Color(0xFF2196F3),
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryWhite),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppColors.primaryWhite),
         ),
-        title: const Text(
+        title: Text(
           'Flashcard',
           style: TextStyle(
-            color: AppColors.primaryWhite,
+            color: isDark ? Colors.white : AppColors.primaryWhite,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -98,8 +101,8 @@ class _FlashcardScreenState extends State<FlashcardScreen>
             child: Center(
               child: Text(
                 '${_currentCardIndex + 1} / ${widget.vocabList.length}',
-                style: const TextStyle(
-                  color: AppColors.primaryWhite,
+                style: TextStyle(
+                  color: Theme.of(context).cardColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),

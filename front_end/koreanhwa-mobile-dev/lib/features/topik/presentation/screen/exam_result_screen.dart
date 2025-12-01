@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:koreanhwa_flutter/features/topik/presentation/screen/topik_test_form_screen.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:koreanhwa_flutter/features/topik/data/services/exam_result_service.dart';
+import 'package:koreanhwa_flutter/features/topik/data/services/topik_api_service.dart';
 
 class ExamResultScreen extends StatefulWidget {
   final String examId;
@@ -26,6 +28,8 @@ class ExamResultScreen extends StatefulWidget {
 
 class _ExamResultScreenState extends State<ExamResultScreen> {
   final TextEditingController _commentController = TextEditingController();
+  final TopikApiService _apiService = TopikApiService();
+  bool _isLoadingExplanation = false;
   final List<Map<String, dynamic>> _comments = [
     {
       'id': 1,
@@ -86,10 +90,63 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
   }
 
   // Tính toán kết quả thực tế dựa trên answers và questions
-  // Tạm thời đáp án đúng là "B" cho tất cả câu hỏi
   String _getCorrectAnswer(int questionId) {
-    // Tạm thời trả về "B" cho tất cả câu hỏi
-    return 'B';
+    // Tìm câu hỏi trong danh sách
+    final question = widget.questions.firstWhere(
+      (q) => q['id'] == questionId,
+      orElse: () => {},
+    );
+    
+    // Lấy correct_answer từ question (đã được lưu từ API)
+    final correctAnswer = question['correct_answer'] as String?;
+    if (correctAnswer != null && correctAnswer.isNotEmpty) {
+      return correctAnswer;
+    }
+    
+    // Nếu không có correct_answer (TOPIK 1 hoặc chưa có data), trả về empty string
+    // Frontend sẽ hiển thị "-" hoặc không hiển thị đáp án đúng
+    return '';
+  }
+  
+  // Lấy thông tin exam từ examId hoặc questions
+  String _getExamNumber() {
+    // Parse từ examId (ví dụ: "TK35" -> "35")
+    if (widget.examId.startsWith('TK')) {
+      return widget.examId.replaceAll('TK', '');
+    }
+    // Hoặc lấy từ question đầu tiên nếu có
+    if (widget.questions.isNotEmpty) {
+      final examNumber = widget.questions.first['exam_number'] as String?;
+      if (examNumber != null && examNumber.isNotEmpty) {
+        return examNumber;
+      }
+    }
+    // Fallback: lấy từ examId trực tiếp
+    return widget.examId;
+  }
+  
+  String _getTopikLevel() {
+    // Lấy từ question đầu tiên nếu có
+    if (widget.questions.isNotEmpty) {
+      final topikLevel = widget.questions.first['topik_level'] as String?;
+      if (topikLevel != null && (topikLevel == '1' || topikLevel == '2')) {
+        return topikLevel;
+      }
+    }
+    // Fallback: mặc định là TOPIK 1
+    return '1';
+  }
+  
+  String _getQuestionType() {
+    // Lấy từ question đầu tiên nếu có
+    if (widget.questions.isNotEmpty) {
+      final questionType = widget.questions.first['question_type'] as String?;
+      if (questionType != null && (questionType == 'listening' || questionType == 'reading')) {
+        return questionType;
+      }
+    }
+    // Fallback: mặc định là reading
+    return 'reading';
   }
 
   bool _isCorrect(int questionId, String? userAnswer) {
@@ -217,21 +274,386 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
     });
   }
 
+  // Hiển thị bottom sheet giải thích câu hỏi
+  Future<void> _showQuestionExplanation(int questionId) async {
+    // Tìm câu hỏi trong danh sách
+    final question = widget.questions.firstWhere(
+      (q) => q['id'] == questionId,
+      orElse: () => {},
+    );
+    
+    if (question.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không tìm thấy câu hỏi'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    
+    // Lấy thông tin cần thiết
+    final questionIdStr = question['question_id'] as String? ?? '';
+    final questionNumber = question['number'] as int? ?? questionId;
+    
+    if (questionIdStr.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Câu hỏi này không có ID để giải thích'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    
+    setState(() {
+      _isLoadingExplanation = true;
+    });
+    
+    try {
+      final examNumber = _getExamNumber();
+      final topikLevel = _getTopikLevel();
+      final questionType = _getQuestionType();
+      
+      // Gọi API giải thích
+      final response = await _apiService.explainTopikQuestion(
+        examNumber: examNumber,
+        questionId: questionIdStr,
+        topikLevel: topikLevel,
+        questionType: questionType,
+      );
+      
+      final explanation = response['explanation'] as String? ?? 'Không có giải thích';
+      final questionData = response['question'] as Map<String, dynamic>? ?? {};
+      final correctAnswer = response['correct_answer'] as String?;
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoadingExplanation = false;
+      });
+      
+      // Hiển thị bottom sheet
+      _showExplanationBottomSheet(
+        questionNumber: questionNumber,
+        question: questionData,
+        explanation: explanation,
+        correctAnswer: correctAnswer,
+        userAnswer: widget.answers[questionId],
+        isCorrect: _isCorrect(questionId, widget.answers[questionId]),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoadingExplanation = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi tải giải thích: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Bottom sheet hiển thị giải thích
+  void _showExplanationBottomSheet({
+    required int questionNumber,
+    required Map<String, dynamic> question,
+    required String explanation,
+    String? correctAnswer,
+    String? userAnswer,
+    required bool isCorrect,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppColors.primaryBlack.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Giải thích câu $questionNumber',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlack,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: AppColors.primaryBlack),
+                  ),
+                ],
+              ),
+            ),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Kết quả
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isCorrect
+                            ? AppColors.success.withOpacity(0.1)
+                            : const Color(0xFFF44336).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isCorrect ? AppColors.success : const Color(0xFFF44336),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isCorrect ? Icons.check_circle : Icons.cancel,
+                            color: isCorrect ? AppColors.success : const Color(0xFFF44336),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isCorrect
+                                  ? 'Bạn đã trả lời đúng'
+                                  : 'Bạn đã trả lời sai',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isCorrect ? AppColors.success : const Color(0xFFF44336),
+                              ),
+                            ),
+                          ),
+                          if (userAnswer != null)
+                            Text(
+                              'Đáp án của bạn: $userAnswer',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryBlack.withOpacity(0.7),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (correctAnswer != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryYellow.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.primaryYellow,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.lightbulb_outline,
+                              color: AppColors.primaryYellow,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Đáp án đúng: $correctAnswer',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryBlack,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    // Câu hỏi
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Câu hỏi:',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlack,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryBlack.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        question['prompt'] as String? ?? question['intro_text'] as String? ?? '',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.primaryBlack.withOpacity(0.8),
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                    // Các đáp án
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Các đáp án:',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlack,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...(question['answers'] as List<dynamic>? ?? []).asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final answer = entry.value as Map<String, dynamic>;
+                      final option = answer['option'] as String? ?? String.fromCharCode(65 + index);
+                      final text = answer['text'] as String? ?? '';
+                      final isCorrectOption = correctAnswer != null && option == correctAnswer;
+                      
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isCorrectOption
+                              ? AppColors.success.withOpacity(0.1)
+                              : AppColors.primaryBlack.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isCorrectOption
+                                ? AppColors.success
+                                : AppColors.primaryBlack.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: isCorrectOption
+                                    ? AppColors.success
+                                    : AppColors.primaryBlack.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  option,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: isCorrectOption
+                                        ? Colors.white
+                                        : AppColors.primaryBlack,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                text,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.primaryBlack.withOpacity(0.8),
+                                ),
+                              ),
+                            ),
+                            if (isCorrectOption)
+                              const Icon(
+                                Icons.check_circle,
+                                color: AppColors.success,
+                                size: 20,
+                              ),
+                          ],
+                        ),
+                      );
+                    }),
+                    // Giải thích
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Giải thích:',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlack,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryYellow.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.primaryYellow.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        explanation,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.primaryBlack.withOpacity(0.8),
+                          height: 1.6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFDE7),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         elevation: 2,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
         ),
-        title: const Text(
+        title: Text(
           'Kết quả luyện tập',
           style: TextStyle(
-            color: AppColors.primaryBlack,
+            color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -247,7 +669,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppColors.primaryYellow.withOpacity(0.5),
@@ -320,7 +742,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                         child: ElevatedButton(
                           onPressed: () => Navigator.pop(context),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryWhite,
+                            backgroundColor: Theme.of(context).cardColor,
                             foregroundColor: AppColors.primaryBlack,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
@@ -352,7 +774,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppColors.primaryYellow.withOpacity(0.5),
@@ -456,7 +878,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppColors.primaryYellow.withOpacity(0.5),
@@ -485,10 +907,10 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                             color: AppColors.success,
                             title: 'Đúng\n$_correctCount',
                             radius: 60,
-                            titleStyle: const TextStyle(
+                            titleStyle: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primaryWhite,
+                              color: Theme.of(context).cardColor,
                             ),
                           ),
                           PieChartSectionData(
@@ -496,10 +918,10 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                             color: const Color(0xFFF44336),
                             title: 'Sai\n$_wrongCount',
                             radius: 60,
-                            titleStyle: const TextStyle(
+                            titleStyle: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primaryWhite,
+                              color: Theme.of(context).cardColor,
                             ),
                           ),
                         ],
@@ -516,7 +938,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             // Analysis Table (Mobile Friendly)
             Container(
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppColors.primaryYellow.withOpacity(0.5),
@@ -640,7 +1062,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppColors.primaryYellow.withOpacity(0.5),
@@ -768,11 +1190,14 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                       final userAnswer = widget.answers[questionId];
                       final correctAnswer = _getCorrectAnswer(questionId);
                       final isCorrect = userAnswer != null && _isCorrect(questionId, userAnswer);
-                      return _buildQuestionItem(
-                        questionId,
-                        userAnswer ?? '-',
-                        correctAnswer,
-                        isCorrect,
+                      return GestureDetector(
+                        onTap: () => _showQuestionExplanation(questionId),
+                        child: _buildQuestionItem(
+                          questionId,
+                          userAnswer ?? '-',
+                          correctAnswer,
+                          isCorrect,
+                        ),
                       );
                     }).toList(),
                   ),
@@ -785,7 +1210,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppColors.primaryYellow.withOpacity(0.5),
@@ -1056,10 +1481,10 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
               ),
               child: Text(
                 userAnswer,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primaryWhite,
+                  color: Theme.of(context).cardColor,
                 ),
               ),
             ),
@@ -1093,13 +1518,30 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
               color: color,
             ),
           const SizedBox(width: 4),
-          Text(
-            correctAnswer,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primaryBlack,
+          if (correctAnswer.isNotEmpty)
+            Text(
+              correctAnswer,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryBlack,
+              ),
+            )
+          else
+            Text(
+              'N/A',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryBlack.withOpacity(0.5),
+                fontStyle: FontStyle.italic,
+              ),
             ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.info_outline,
+            size: 14,
+            color: AppColors.primaryBlack.withOpacity(0.5),
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:koreanhwa_flutter/services/blog_service.dart';
 import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
+import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'dart:io';
 
 // Model cho Block
@@ -288,30 +289,31 @@ class _CreateBlogScreenState extends ConsumerState<CreateBlogScreen> {
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back),
+            icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+              foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   'Tạo Bài Blog Mới',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.titleLarge?.color,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   'Chia sẻ kiến thức và kinh nghiệm học tiếng Hàn của bạn',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                 ),
               ],
@@ -325,8 +327,8 @@ class _CreateBlogScreenState extends ConsumerState<CreateBlogScreen> {
             },
             icon: Icon(isPreviewVisible ? Icons.visibility_off : Icons.visibility),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.yellow.shade600,
-              foregroundColor: Colors.black,
+              backgroundColor: AppColors.primaryYellow,
+              foregroundColor: AppColors.primaryBlack,
             ),
           ),
         ],
@@ -509,8 +511,8 @@ class _CreateBlogScreenState extends ConsumerState<CreateBlogScreen> {
                 icon: const Icon(Icons.add),
                 label: const Text('Thêm khối văn bản'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).cardColor,
+                  foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
                   padding: const EdgeInsets.all(16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -525,8 +527,8 @@ class _CreateBlogScreenState extends ConsumerState<CreateBlogScreen> {
                 icon: const Icon(Icons.image),
                 label: const Text('Thêm hình ảnh'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.yellow.shade600,
-                  foregroundColor: Colors.black,
+                  backgroundColor: AppColors.primaryYellow,
+                  foregroundColor: AppColors.primaryBlack,
                   padding: const EdgeInsets.all(16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -541,12 +543,15 @@ class _CreateBlogScreenState extends ConsumerState<CreateBlogScreen> {
   }
 
   Widget _buildBlock(int index, ContentBlock block) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: isDark ? AppColors.darkDivider : Colors.grey.shade300),
       ),
       child: Stack(
         children: [
@@ -779,8 +784,8 @@ class _CreateBlogScreenState extends ConsumerState<CreateBlogScreen> {
           icon: const Icon(Icons.close),
           label: const Text('Hủy'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
+            backgroundColor: Theme.of(context).cardColor,
+            foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -793,8 +798,8 @@ class _CreateBlogScreenState extends ConsumerState<CreateBlogScreen> {
           icon: const Icon(Icons.save),
           label: Text(isSubmitting ? 'Đang lưu...' : 'Lưu bài viết'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.yellow.shade600,
-            foregroundColor: Colors.black,
+            backgroundColor: AppColors.primaryYellow,
+            foregroundColor: AppColors.primaryBlack,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -885,10 +890,12 @@ class _CreateBlogScreenState extends ConsumerState<CreateBlogScreen> {
                           spacing: 8,
                           runSpacing: 8,
                           children: tags.map((tag) {
+                            final theme = Theme.of(context);
+                            final isDark = theme.brightness == Brightness.dark;
                             return Chip(
-                              label: Text(tag, style: const TextStyle(fontSize: 10)),
-                              backgroundColor: Colors.black,
-                              labelStyle: const TextStyle(color: Colors.white),
+                              label: Text(tag, style: TextStyle(fontSize: 10, color: isDark ? Colors.white : Colors.white)),
+                              backgroundColor: isDark ? AppColors.darkSurface : Colors.black,
+                              labelStyle: TextStyle(color: isDark ? Colors.white : Colors.white),
                               padding: EdgeInsets.zero,
                             );
                           }).toList(),

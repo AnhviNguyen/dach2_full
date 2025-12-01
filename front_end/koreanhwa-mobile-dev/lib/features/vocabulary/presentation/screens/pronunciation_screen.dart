@@ -124,19 +124,22 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
   Widget build(BuildContext context) {
     final vocab = widget.vocabList[_currentWord];
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F5E9),
+      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFE8F5E9),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF4CAF50),
+        backgroundColor: isDark ? AppColors.darkSurface : const Color(0xFF4CAF50),
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryWhite),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppColors.primaryWhite),
         ),
-        title: const Text(
+        title: Text(
           'Pronunciation',
           style: TextStyle(
-            color: AppColors.primaryWhite,
+            color: isDark ? Colors.white : AppColors.primaryWhite,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -148,8 +151,8 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
             child: Center(
               child: Text(
                 '${_currentWord + 1} / ${widget.vocabList.length}',
-                style: const TextStyle(
-                  color: AppColors.primaryWhite,
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppColors.primaryWhite,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -164,10 +167,10 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: theme.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: const Color(0xFF4CAF50),
+                  color: isDark ? AppColors.darkDivider : const Color(0xFF4CAF50),
                   width: 4,
                 ),
                 boxShadow: [
@@ -182,20 +185,20 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
                 children: [
                   Text(
                     vocab['korean']!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 56,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primaryBlack,
+                      color: theme.textTheme.displayLarge?.color ?? (isDark ? Colors.white : AppColors.primaryBlack),
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     vocab['pronunciation']!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF4CAF50),
+                      color: const Color(0xFF4CAF50),
                     ),
                     textAlign: TextAlign.center,
                   ),

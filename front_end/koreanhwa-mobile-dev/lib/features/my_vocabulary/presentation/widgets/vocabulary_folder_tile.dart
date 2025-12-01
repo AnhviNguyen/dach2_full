@@ -4,6 +4,7 @@ import 'package:koreanhwa_flutter/models/vocabulary_folder_model.dart';
 import 'package:koreanhwa_flutter/features/my_vocabulary/data/services/vocabulary_folder_api_service.dart';
 import 'package:koreanhwa_flutter/features/my_vocabulary/presentation/screen/folder_detail_screen.dart';
 import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
+import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 
 class VocabularyFolderTile extends ConsumerWidget {
   final VocabularyFolder folder;
@@ -49,7 +50,7 @@ class VocabularyFolderTile extends ConsumerWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor ?? Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -70,17 +71,17 @@ class VocabularyFolderTile extends ConsumerWidget {
                 children: [
                   Text(
                     folder.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
-                      color: Color(0xFF1A1A1A),
+                      color: Theme.of(context).textTheme.titleMedium?.color ?? const Color(0xFF1A1A1A),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${folder.words.length} từ vựng',
-                    style: const TextStyle(
-                      color: Color(0xFF6B6B6B),
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium?.color ?? const Color(0xFF6B6B6B),
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -92,7 +93,7 @@ class VocabularyFolderTile extends ConsumerWidget {
               icon: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor ?? Colors.white,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.delete_outline, color: Color(0xFFFF6B6B), size: 18),
@@ -100,26 +101,32 @@ class VocabularyFolderTile extends ConsumerWidget {
               onPressed: () {
                 showDialog(
                   context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    title: const Text(
-                      'Xóa folder này?',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          'Hủy',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w600,
-                          ),
+                  builder: (context) {
+                    final theme = Theme.of(context);
+                    final isDark = theme.brightness == Brightness.dark;
+                    return AlertDialog(
+                      backgroundColor: theme.dialogBackgroundColor ?? (isDark ? AppColors.darkSurface : Colors.white),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      title: Text(
+                        'Xóa folder này?',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: theme.textTheme.titleLarge?.color,
                         ),
                       ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            'Hủy',
+                            style: TextStyle(
+                              color: theme.textTheme.bodyLarge?.color ?? (isDark ? AppColors.grayLight : Colors.grey[600]),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       TextButton(
                         onPressed: () async {
                           try {
@@ -155,7 +162,8 @@ class VocabularyFolderTile extends ConsumerWidget {
                         ),
                       ),
                     ],
-                  ),
+                  );
+                  },
                 );
               },
             ),

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:koreanhwa_flutter/services/roadmap_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/roadmap/presentation/screens/roadmap_detail_screen.dart';
+import 'package:koreanhwa_flutter/features/roadmap/presentation/screens/roadmap_goal_screen.dart';
 import 'package:koreanhwa_flutter/features/roadmap/data/services/roadmap_api_service.dart';
 import 'package:koreanhwa_flutter/core/utils/user_utils.dart';
 import 'dart:async';
@@ -293,10 +294,17 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
       await RoadmapService.setUserLevel(level, textbookUnlock);
       
       if (mounted) {
+        // Get survey data from extra
+        final surveyData = widget.extra?['surveyData'] ?? {};
+        
+        // Navigate to goal screen to set target and timeline
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const RoadmapDetailScreen(),
+            builder: (context) => RoadmapGoalScreen(
+              currentLevel: level,
+              surveyData: surveyData as Map<String, dynamic>,
+            ),
           ),
         );
       }
@@ -316,22 +324,25 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     if (_isLoading && _questions.isEmpty) {
       return Scaffold(
-        backgroundColor: const Color(0xFFFFFDE7),
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.primaryWhite,
+          backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
           elevation: 2,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
+          title: Text(
             'Bài kiểm tra đầu vào',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppColors.primaryBlack,
+              color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
             ),
           ),
         ),
@@ -343,20 +354,20 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
     
     if (_errorMessage != null && _questions.isEmpty) {
       return Scaffold(
-        backgroundColor: const Color(0xFFFFFDE7),
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.primaryWhite,
+          backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
           elevation: 2,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
+          title: Text(
             'Bài kiểm tra đầu vào',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppColors.primaryBlack,
+              color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
             ),
           ),
         ),
@@ -366,7 +377,7 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
             children: [
               Text(
                 _errorMessage!,
-                style: const TextStyle(color: AppColors.error),
+                style: TextStyle(color: theme.colorScheme.error),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -380,15 +391,15 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
     }
     
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFDE7),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         elevation: 2,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -452,7 +463,7 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryWhite,
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: AppColors.primaryYellow.withOpacity(0.5),
@@ -482,10 +493,10 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
                                 ),
                                 child: Text(
                                   'Câu $questionId',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.primaryWhite,
+                                    color: Theme.of(context).cardColor,
                                   ),
                                 ),
                               ),
@@ -599,7 +610,7 @@ class _RoadmapTestScreenState extends State<RoadmapTestScreen> {
                     margin: const EdgeInsets.all(24),
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryWhite,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(

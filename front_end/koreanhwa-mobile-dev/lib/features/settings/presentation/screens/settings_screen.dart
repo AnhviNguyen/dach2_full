@@ -20,19 +20,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
           onPressed: () => context.go('/home'),
         ),
-        title: const Text(
+        title: Text(
           'Cài đặt',
           style: TextStyle(
-            color: AppColors.primaryBlack,
+            color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
             fontWeight: FontWeight.bold,
             fontSize: 24,
           ),
@@ -45,10 +48,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SnackBar(content: Text('Đã lưu thay đổi')),
               );
             },
-            icon: const Icon(Icons.save, color: AppColors.primaryBlack),
-            label: const Text(
+            icon: Icon(Icons.save, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
+            label: Text(
               'Lưu',
-              style: TextStyle(color: AppColors.primaryBlack),
+              style: TextStyle(color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
             ),
           ),
           const SizedBox(width: 8),
@@ -77,15 +80,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               title: Text(
                 section.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primaryBlack,
+                  color: theme.textTheme.titleMedium?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack),
                 ),
               ),
               subtitle: Text(
                 section.description,
                 style: TextStyle(
-                  color: AppColors.primaryBlack.withOpacity(0.6),
+                  color: theme.textTheme.bodyMedium?.color ?? (isDark ? AppColors.grayLight : AppColors.primaryBlack.withOpacity(0.6)),
                 ),
               ),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),

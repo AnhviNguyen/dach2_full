@@ -42,20 +42,23 @@ class _RankingScreenState extends State<RankingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     if (isLoading) {
       return Scaffold(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.primaryWhite,
+          backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
           elevation: 0,
           leading: IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
           ),
-          title: const Text(
+          title: Text(
             'Bảng xếp hạng',
             style: TextStyle(
-              color: AppColors.primaryBlack,
+              color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
               fontWeight: FontWeight.bold,
               fontSize: 20,
             ),
@@ -67,18 +70,18 @@ class _RankingScreenState extends State<RankingScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
         ),
-        title: const Text(
+        title: Text(
           'Bảng xếp hạng',
           style: TextStyle(
-            color: AppColors.primaryBlack,
+            color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -215,7 +218,7 @@ class _RankingScreenState extends State<RankingScreen> {
               Container(
                 padding: EdgeInsets.all(isFirst ? 8 : 6),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryWhite,
+                  color: Theme.of(context).cardColor,
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: AppColors.primaryBlack,

@@ -238,9 +238,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: theme.scaffoldBackgroundColor,
       drawer: _buildDrawer(),
       body: SafeArea(
         child: Column(
@@ -353,12 +354,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildTopAppBar() {
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     const colorRed = Color(0xFFEF4444);
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.primaryWhite,
+        color: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -378,7 +381,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onPressed: () {
                 _scaffoldKey.currentState?.openDrawer();
               },
-              icon: const Icon(Icons.menu_rounded, color: AppColors.primaryBlack),
+              icon: Icon(Icons.menu_rounded, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
             ),
           ),
           const SizedBox(width: 12),
@@ -403,20 +406,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         placeholder: (context, url) => const CircularProgressIndicator(),
                         errorWidget: (context, url, error) => Text(
                           user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primaryBlack,
+                            color: isDark ? AppColors.primaryBlack : AppColors.primaryBlack,
                           ),
                         ),
                       ),
                     )
                   : Text(
                       user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
+                        color: isDark ? AppColors.primaryBlack : AppColors.primaryBlack,
                       ),
                     ),
             ),
@@ -426,20 +429,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Xin chào,',
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.primaryBlack,
+                    color: theme.textTheme.bodyMedium?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack),
                     fontWeight: FontWeight.w400,
                   ),
                 ),
                 Text(
                   user?.name ?? 'Người dùng',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primaryBlack,
+                    color: theme.textTheme.titleLarge?.color ?? (isDark ? Colors.white : AppColors.primaryBlack),
                   ),
                 ),
               ],
@@ -454,7 +457,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onPressed: () {},
               icon: Stack(
                 children: [
-                  const Icon(Icons.notifications_none_outlined, color: AppColors.primaryBlack),
+                  Icon(Icons.notifications_none_outlined, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
                   Positioned(
                     right: 0,
                     top: 0,
@@ -483,7 +486,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     return Drawer(
       child: Container(
-        color: AppColors.primaryWhite,
+        color: Theme.of(context).cardColor,
         child: Column(
           children: [
             Container(
@@ -500,7 +503,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Container(
                         padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryWhite,
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
@@ -609,7 +612,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   return Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryWhite,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: item.color.withOpacity(0.2),
@@ -772,7 +775,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 width: 200,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  color: AppColors.primaryWhite,
+                  color: Theme.of(context).cardColor,
                   boxShadow: [
                     BoxShadow(
                       color: card.accentColor.withOpacity(0.2),
@@ -938,7 +941,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 width: 280,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryWhite,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: course.accentColor.withOpacity(0.3),
@@ -1309,7 +1312,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.primaryWhite,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -1454,9 +1457,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.primaryWhite,
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(24),
               topRight: Radius.circular(24),
             ),

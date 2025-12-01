@@ -90,15 +90,27 @@ class RoadmapApiService {
     required int userId,
     required String taskId,
     required bool completed,
+    String? roadmapId,
+    int? current,
   }) async {
     try {
+      final data = {
+        'user_id': userId,
+        'task_id': taskId,
+        'completed': completed,
+      };
+      
+      if (roadmapId != null) {
+        data['roadmap_id'] = roadmapId;
+      }
+      
+      if (current != null) {
+        data['current'] = current;
+      }
+      
       final response = await _dioClient.post(
         '/roadmap/tasks/update',
-        data: {
-          'user_id': userId,
-          'task_id': taskId,
-          'completed': completed,
-        },
+        data: data,
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
@@ -113,6 +125,53 @@ class RoadmapApiService {
     try {
       final response = await _dioClient.get(
         '/roadmap/user/$userId',
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Generate roadmap with timeline based on goals
+  Future<Map<String, dynamic>> generateRoadmap({
+    required int userId,
+    required int currentLevel,
+    required int targetLevel,
+    required int timelineMonths,
+    int? timelineDays,  // Optional: actual days (takes precedence)
+    required Map<String, dynamic> surveyData,
+  }) async {
+    try {
+      final data = {
+        'user_id': userId,
+        'current_level': currentLevel,
+        'target_level': targetLevel,
+        'timeline_months': timelineMonths,
+        'survey_data': surveyData,
+      };
+      
+      // If timelineDays is provided, use it instead of calculating from months
+      if (timelineDays != null) {
+        data['timeline_days'] = timelineDays;
+      }
+      
+      final response = await _dioClient.post(
+        '/roadmap/generate',
+        data: data,
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get roadmap timeline with progress from database
+  Future<Map<String, dynamic>> getRoadmapTimeline({
+    required int userId,
+  }) async {
+    try {
+      final response = await _dioClient.get(
+        '/roadmap/timeline/$userId',
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {

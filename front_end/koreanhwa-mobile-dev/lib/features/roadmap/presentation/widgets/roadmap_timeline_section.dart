@@ -82,8 +82,8 @@ class RoadmapTimelineSection extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     section.title,
-                    style: const TextStyle(
-                      color: AppColors.primaryWhite,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.titleLarge?.color ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack),
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),

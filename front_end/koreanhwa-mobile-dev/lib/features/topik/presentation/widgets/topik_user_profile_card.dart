@@ -157,7 +157,7 @@ class _TopikUserProfileCardState extends State<TopikUserProfileCard> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.primaryWhite,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: AppColors.primaryBlack.withOpacity(0.1),
@@ -182,9 +182,9 @@ class _TopikUserProfileCardState extends State<TopikUserProfileCard> {
                   color: AppColors.primaryBlack,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.person,
-                  color: AppColors.primaryWhite,
+                  color: Theme.of(context).cardColor,
                   size: 32,
                 ),
               ),

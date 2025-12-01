@@ -60,8 +60,8 @@ class _ExerciseCardState extends State<ExerciseCard> {
                 ? AppColors.success.withOpacity(0.1)
                 : isCorrect == false
                     ? const Color(0xFFF44336).withOpacity(0.1)
-                    : AppColors.primaryWhite)
-            : AppColors.primaryWhite,
+                    : Theme.of(context).cardColor)
+            : Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: widget.showResult

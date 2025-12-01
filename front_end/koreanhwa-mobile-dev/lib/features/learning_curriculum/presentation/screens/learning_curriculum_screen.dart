@@ -124,23 +124,26 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
   Widget build(BuildContext context) {
     final tabs = LearningCurriculumMockData.tabs;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_errorMessage != null) {
       return Scaffold(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 _errorMessage!,
-                style: const TextStyle(color: AppColors.primaryBlack),
+                style: TextStyle(color: theme.textTheme.bodyLarge?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -160,13 +163,13 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
 
     if (_lessonData == null) {
       return Scaffold(
-        backgroundColor: AppColors.primaryWhite,
-        body: const Center(child: Text('Không tìm thấy dữ liệu bài học')),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: Center(child: Text('Không tìm thấy dữ liệu bài học', style: TextStyle(color: theme.textTheme.bodyLarge?.color))),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
           _buildHeader(_lessonData!),
@@ -209,9 +212,9 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
           children: [
             IconButton(
               onPressed: () => Navigator.pop(context),
-              icon: const Icon(
+              icon: Icon(
                 Icons.arrow_back,
-                color: AppColors.primaryWhite,
+                color: Theme.of(context).appBarTheme.foregroundColor ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack),
               ),
             ),
             Expanded(
@@ -220,8 +223,8 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
                 children: [
                   Text(
                     lessonData.title,
-                    style: const TextStyle(
-                      color: AppColors.primaryWhite,
+                    style: TextStyle(
+                      color: Theme.of(context).appBarTheme.foregroundColor ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack),
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                     ),
@@ -258,8 +261,8 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
                 const SizedBox(width: 8),
                 Text(
                   '${lessonData.progress}%',
-                  style: const TextStyle(
-                    color: AppColors.primaryWhite,
+                  style: TextStyle(
+                    color: Theme.of(context).appBarTheme.foregroundColor ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack),
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -276,7 +279,7 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.primaryWhite,
+        color: Theme.of(context).cardColor,
         border: Border(
           bottom: BorderSide(
             color: AppColors.primaryBlack,
@@ -367,10 +370,10 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
                       color: AppColors.primaryYellow,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Video bài giảng',
                       style: TextStyle(
-                        color: AppColors.primaryWhite,
+                        color: Theme.of(context).cardColor,
                         fontSize: 16,
                       ),
                     ),
@@ -403,7 +406,7 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
                         },
                         icon: Icon(
                           _isMuted ? Icons.volume_off : Icons.volume_up,
-                          color: AppColors.primaryWhite,
+                          color: Theme.of(context).cardColor,
                         ),
                       ),
                       Expanded(
@@ -433,7 +436,7 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
                         },
                         icon: Icon(
                           _isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
-                          color: AppColors.primaryWhite,
+                          color: Theme.of(context).cardColor,
                         ),
                       ),
                     ],
@@ -1101,7 +1104,7 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primaryWhite,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: AppColors.primaryBlack.withOpacity(0.1),
@@ -1167,7 +1170,7 @@ class _LearningCurriculumScreenState extends State<LearningCurriculumScreen> {
                                   width: 32,
                                   height: 32,
                                   decoration: BoxDecoration(
-                                    color: AppColors.primaryWhite,
+                                    color: Theme.of(context).cardColor,
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: AppColors.primaryBlack.withOpacity(0.2),

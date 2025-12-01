@@ -68,18 +68,21 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
     final pronunciationController = TextEditingController();
     final exampleController = TextEditingController();
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.dialogBackgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppColors.primaryBlack, width: 2),
+          side: BorderSide(color: isDark ? AppColors.darkDivider : AppColors.primaryBlack, width: 2),
         ),
-        title: const Text(
+        title: Text(
           'Thêm Từ Vựng Mới',
           style: TextStyle(
-            color: AppColors.primaryBlack,
+            color: theme.textTheme.titleLarge?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -211,18 +214,21 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
     final pronunciationController = TextEditingController(text: word.pronunciation ?? '');
     final exampleController = TextEditingController(text: word.example ?? '');
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.dialogBackgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppColors.primaryBlack, width: 2),
+          side: BorderSide(color: isDark ? AppColors.darkDivider : AppColors.primaryBlack, width: 2),
         ),
-        title: const Text(
+        title: Text(
           'Chỉnh Sửa Từ Vựng',
           style: TextStyle(
-            color: AppColors.primaryBlack,
+            color: theme.textTheme.titleLarge?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -415,14 +421,18 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     if (_isLoading) {
       return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.primaryWhite,
+          backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
           elevation: 0,
           leading: IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
           ),
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -431,12 +441,13 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
 
     if (_errorMessage != null || _folder == null) {
       return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.primaryWhite,
+          backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
           elevation: 0,
           leading: IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
           ),
         ),
         body: Center(
@@ -445,7 +456,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
             children: [
               Text(
                 _errorMessage ?? 'Folder không tồn tại',
-                style: const TextStyle(color: AppColors.primaryBlack),
+                style: TextStyle(color: theme.textTheme.bodyLarge?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -464,13 +475,13 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
         ),
         title: Row(
           children: [
@@ -649,7 +660,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryWhite,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: AppColors.primaryBlack.withOpacity(0.1),

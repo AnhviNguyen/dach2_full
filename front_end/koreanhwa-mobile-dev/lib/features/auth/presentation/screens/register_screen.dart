@@ -124,9 +124,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final isLoading = authState.isLoading;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Form(
@@ -151,12 +153,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 24),
-                      const Text(
+                      Text(
                         'Sign up',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primaryBlack,
+                          color: theme.textTheme.titleLarge?.color ?? (isDark ? Colors.white : AppColors.primaryBlack),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -165,7 +167,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         'Hãy tạo 1 tài khoản mới nhé!',
                         style: TextStyle(
                           fontSize: 16,
-                          color: AppColors.grayMedium,
+                          color: theme.textTheme.bodyMedium?.color ?? AppColors.grayMedium,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -176,7 +178,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           labelText: 'Name',
                           hintText: 'Name',
                           filled: true,
-                          fillColor: AppColors.primaryWhite,
+                          fillColor: isDark ? AppColors.darkSurface : AppColors.primaryWhite,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppColors.grayLight),
@@ -206,7 +208,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           labelText: 'Email Address',
                           hintText: 'name@email.com',
                           filled: true,
-                          fillColor: AppColors.primaryWhite,
+                          fillColor: isDark ? AppColors.darkSurface : AppColors.primaryWhite,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppColors.grayLight),
@@ -239,7 +241,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           labelText: 'Password',
                           hintText: 'Create a password',
                           filled: true,
-                          fillColor: AppColors.primaryWhite,
+                          fillColor: isDark ? AppColors.darkSurface : AppColors.primaryWhite,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppColors.grayLight),
@@ -283,7 +285,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           labelText: 'Confirm password',
                           hintText: 'Confirm password',
                           filled: true,
-                          fillColor: AppColors.primaryWhite,
+                          fillColor: isDark ? AppColors.darkSurface : AppColors.primaryWhite,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppColors.grayLight),
@@ -395,7 +397,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.primaryWhite,
+                                  color: AppColors.primaryBlack,
                                 ),
                               ),
                       ),

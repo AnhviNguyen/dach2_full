@@ -107,9 +107,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final isLoading = authState.isLoading;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Form(
@@ -124,12 +126,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 24),
-                      const Text(
+                      Text(
                         'Chào bạn!',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primaryBlack,
+                          color: theme.textTheme.titleLarge?.color ?? (isDark ? Colors.white : AppColors.primaryBlack),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -141,7 +143,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           labelText: 'Email Address',
                           hintText: 'Email Address',
                           filled: true,
-                          fillColor: AppColors.primaryWhite,
+                          fillColor: isDark ? AppColors.darkSurface : AppColors.primaryWhite,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppColors.grayLight),
@@ -174,7 +176,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           labelText: 'Password',
                           hintText: 'Password',
                           filled: true,
-                          fillColor: AppColors.primaryWhite,
+                          fillColor: isDark ? AppColors.darkSurface : AppColors.primaryWhite,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppColors.grayLight),
@@ -256,7 +258,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.primaryWhite,
+                                  color: AppColors.primaryBlack,
                                 ),
                               ),
                       ),
@@ -280,10 +282,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            child: const Text(
+                            child: Text(
                               'Register now',
                               style: TextStyle(
-                                color: AppColors.primaryBlack,
+                                color: theme.colorScheme.primary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),

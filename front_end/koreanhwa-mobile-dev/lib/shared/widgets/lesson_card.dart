@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/models/lesson_model.dart.dart';
+import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 
 
 class LessonCard extends StatelessWidget {
@@ -14,13 +15,16 @@ class LessonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Theme.of(context).dividerColor.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -64,9 +68,9 @@ class LessonCard extends StatelessWidget {
                     color: Colors.amber,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.star,
-                    color: Colors.white,
+                    color: theme.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
                     size: 14,
                   ),
                 ),
@@ -75,10 +79,10 @@ class LessonCard extends StatelessWidget {
                 // Title
                 Text(
                   lesson.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: theme.textTheme.titleLarge?.color ?? (isDark ? AppColors.darkOnSurface : Colors.black87),
                     height: 1.3,
                   ),
                 ),
@@ -89,7 +93,7 @@ class LessonCard extends StatelessWidget {
                   lesson.description,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: theme.textTheme.bodyMedium?.color ?? (isDark ? AppColors.grayLight : Colors.grey[600]),
                     height: 1.5,
                   ),
                 ),
@@ -101,8 +105,8 @@ class LessonCard extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: onTap,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFFDD835),
-                      foregroundColor: Colors.black87,
+                      backgroundColor: AppColors.primaryYellow,
+                      foregroundColor: AppColors.primaryBlack,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

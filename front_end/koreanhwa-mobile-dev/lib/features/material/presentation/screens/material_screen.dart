@@ -127,16 +127,18 @@ class _MaterialScreenState extends ConsumerState<MaterialScreen> {
   @override
   Widget build(BuildContext context) {
     final userPoints = ref.read(authProvider).user?.points ?? 0;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Tài liệu học tập',
           style: TextStyle(
-            color: AppColors.primaryBlack,
+            color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
             fontWeight: FontWeight.bold,
             fontSize: 24,
           ),
@@ -171,7 +173,7 @@ class _MaterialScreenState extends ConsumerState<MaterialScreen> {
             // Filter section - không scroll
             Container(
               padding: const EdgeInsets.all(16),
-              color: AppColors.primaryWhite,
+              color: Theme.of(context).cardColor,
               child: Column(
                 children: [
                   TextField(

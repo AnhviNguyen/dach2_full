@@ -38,9 +38,9 @@ class StatChips extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   chip.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.primaryBlack,
+                    color: Theme.of(context).textTheme.bodySmall?.color ?? AppColors.primaryBlack,
                     fontWeight: FontWeight.w500,
                   ),
                   textAlign: TextAlign.center,

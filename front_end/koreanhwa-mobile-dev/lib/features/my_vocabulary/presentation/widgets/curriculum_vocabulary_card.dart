@@ -36,7 +36,7 @@ class CurriculumVocabularyCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor ?? Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -52,20 +52,20 @@ class CurriculumVocabularyCard extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Từ vựng giáo trình',
                     style: TextStyle(
-                      color: Color(0xFF1A1A1A),
+                      color: Theme.of(context).textTheme.titleLarge?.color ?? const Color(0xFF1A1A1A),
                       fontWeight: FontWeight.w700,
                       fontSize: 17,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Theo dõi từ vựng từng bài học',
                     style: TextStyle(
-                      color: Color(0xFF6B6B6B),
+                      color: Theme.of(context).textTheme.bodyMedium?.color ?? const Color(0xFF6B6B6B),
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),

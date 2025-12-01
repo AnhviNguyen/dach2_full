@@ -16,23 +16,26 @@ class ExamCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.primaryWhite,
+          color: theme.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isCompleted
                 ? AppColors.success
-                : AppColors.primaryBlack.withOpacity(0.1),
+                : (isDark ? AppColors.darkDivider : AppColors.primaryBlack.withOpacity(0.1)),
             width: isCompleted ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Theme.of(context).dividerColor.withOpacity(0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -66,7 +69,7 @@ class ExamCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         color: isCompleted
                             ? AppColors.success
-                            : AppColors.primaryBlack,
+                            : (theme.textTheme.bodySmall?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack)),
                       ),
                     ),
                   ),
@@ -80,10 +83,10 @@ class ExamCard extends StatelessWidget {
                       color: AppColors.success,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.check,
                       size: 16,
-                      color: AppColors.primaryWhite,
+                      color: Theme.of(context).cardColor,
                     ),
                   ),
               ],
@@ -93,10 +96,10 @@ class ExamCard extends StatelessWidget {
             Expanded(
               child: Text(
                 exam.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primaryBlack,
+                  color: theme.textTheme.titleMedium?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack),
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -114,14 +117,14 @@ class ExamCard extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryBlack.withOpacity(0.1),
+                    color: isDark ? AppColors.darkDivider : AppColors.primaryBlack.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     tag,
                     style: TextStyle(
                       fontSize: 10,
-                      color: AppColors.primaryBlack.withOpacity(0.7),
+                      color: (theme.textTheme.bodySmall?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack)).withOpacity(0.7),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -135,28 +138,28 @@ class ExamCard extends StatelessWidget {
                 Icon(
                   Icons.access_time,
                   size: 14,
-                  color: AppColors.primaryBlack.withOpacity(0.6),
+                  color: (theme.iconTheme.color ?? (isDark ? Colors.white : AppColors.primaryBlack)).withOpacity(0.6),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   exam.duration,
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.primaryBlack.withOpacity(0.6),
+                    color: (theme.textTheme.bodySmall?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack)).withOpacity(0.6),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Icon(
                   Icons.people,
                   size: 14,
-                  color: AppColors.primaryBlack.withOpacity(0.6),
+                  color: (theme.iconTheme.color ?? (isDark ? Colors.white : AppColors.primaryBlack)).withOpacity(0.6),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${exam.participants}',
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.primaryBlack.withOpacity(0.6),
+                    color: (theme.textTheme.bodySmall?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack)).withOpacity(0.6),
                   ),
                 ),
               ],
@@ -166,7 +169,7 @@ class ExamCard extends StatelessWidget {
               exam.questions,
               style: TextStyle(
                 fontSize: 11,
-                color: AppColors.primaryBlack.withOpacity(0.5),
+                color: (theme.textTheme.bodySmall?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack)).withOpacity(0.5),
               ),
             ),
           ],

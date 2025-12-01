@@ -1,12 +1,16 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:koreanhwa_flutter/services/roadmap_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_section.dart';
 import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_task.dart';
+import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_period.dart';
 import 'package:koreanhwa_flutter/features/roadmap/data/roadmap_mock_data.dart';
 import 'package:koreanhwa_flutter/features/roadmap/data/services/roadmap_api_service.dart';
 import 'package:koreanhwa_flutter/features/roadmap/presentation/widgets/roadmap_timeline_section.dart';
+import 'package:koreanhwa_flutter/features/roadmap/presentation/widgets/roadmap_timeline_period.dart';
 import 'package:koreanhwa_flutter/features/roadmap/presentation/widgets/roadmap_stats_card.dart';
 import 'package:koreanhwa_flutter/core/utils/user_utils.dart';
 
@@ -25,11 +29,21 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
   int _textbookUnlock = 0;
   bool _isLoading = true;
   String? _errorMessage;
+  RoadmapTimeline? _roadmapTimeline;
 
   @override
   void initState() {
     super.initState();
     _loadRoadmapData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh when coming back from other screens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRoadmapData();
+    });
   }
 
   Future<void> _loadRoadmapData() async {
@@ -48,11 +62,57 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
         return;
       }
 
+      // Load roadmap data from API (includes progress from database)
       final roadmapData = await _apiService.getUserRoadmap(userId: userId);
       final tasksData = await _apiService.getRoadmapTasks(userId: userId);
+      
+      // Try to load timeline from API (with progress from database)
+      try {
+        final timelineData = await _apiService.getRoadmapTimeline(userId: userId);
+        final timeline = RoadmapTimeline.fromJson(timelineData);
+        setState(() {
+          _roadmapTimeline = timeline;
+          _userLevel = timeline.currentLevel;
+        });
+        
+        // Save roadmap_id and timeline for future updates
+        await RoadmapService.saveRoadmapTimeline(timelineData);
+      } catch (e) {
+        developer.log('Error loading roadmap timeline from API: $e');
+        // Fallback: Try to load from API response
+        if (roadmapData['roadmap_data'] != null) {
+          try {
+            final timeline = RoadmapTimeline.fromJson(roadmapData['roadmap_data'] as Map<String, dynamic>);
+            setState(() {
+              _roadmapTimeline = timeline;
+              _userLevel = timeline.currentLevel;
+            });
+            await RoadmapService.saveRoadmapTimeline(roadmapData['roadmap_data'] as Map<String, dynamic>);
+          } catch (e2) {
+            developer.log('Error parsing roadmap data: $e2');
+            // Fallback to local storage
+            final timeline = await RoadmapService.loadRoadmapTimeline();
+            if (timeline != null) {
+              setState(() {
+                _roadmapTimeline = timeline;
+                _userLevel = timeline.currentLevel;
+              });
+            }
+          }
+        } else {
+          // Fallback to local storage
+          final timeline = await RoadmapService.loadRoadmapTimeline();
+          if (timeline != null) {
+            setState(() {
+              _roadmapTimeline = timeline;
+              _userLevel = timeline.currentLevel;
+            });
+          }
+        }
+      }
 
       setState(() {
-        _userLevel = roadmapData['level'] as int? ?? 1;
+        _userLevel = roadmapData['level'] as int? ?? _userLevel;
         _textbookUnlock = roadmapData['textbook_unlock'] as int? ?? 0;
         _taskCategories = (tasksData['tasks'] as List<dynamic>?)
                 ?.map((cat) => RoadmapTaskCategory.fromJson(cat as Map<String, dynamic>))
@@ -65,6 +125,26 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
         _isLoading = false;
         _errorMessage = 'Lỗi tải dữ liệu: ${e.toString()}';
       });
+    }
+  }
+
+  Future<void> _handleTaskCompleted(RoadmapTask task) async {
+    // Refresh roadmap data
+    await _loadRoadmapData();
+    
+    // Show success message
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã hoàn thành: ${task.title}'),
+          backgroundColor: AppColors.success,
+          action: SnackBarAction(
+            label: 'Tuyệt vời!',
+            textColor: AppColors.primaryWhite,
+            onPressed: () {},
+          ),
+        ),
+      );
     }
   }
 
@@ -88,7 +168,7 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
         appBar: AppBar(
           backgroundColor: AppColors.primaryBlack,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryWhite),
+            icon: Icon(Icons.arrow_back, color: Theme.of(context).appBarTheme.foregroundColor ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack)),
             onPressed: () => context.go('/home'),
           ),
         ),
@@ -98,7 +178,7 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
             children: [
               Text(
                 _errorMessage!,
-                style: const TextStyle(color: AppColors.primaryWhite),
+                style: TextStyle(color: Theme.of(context).appBarTheme.foregroundColor ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack)),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -111,19 +191,22 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
       );
     }
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.primaryBlack,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.primaryBlack,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 200,
             pinned: true,
-            backgroundColor: AppColors.primaryBlack,
+            backgroundColor: isDark ? AppColors.darkSurface : AppColors.primaryBlack,
             flexibleSpace: FlexibleSpaceBar(
-              title: const Text(
+              title: Text(
                 'TOPIK Learning',
                 style: TextStyle(
-                  color: AppColors.primaryWhite,
+                  color: isDark ? Colors.white : AppColors.primaryWhite,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -131,8 +214,8 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.primaryBlack,
-                      AppColors.primaryBlack.withOpacity(0.8),
+                      isDark ? AppColors.darkBackground : AppColors.primaryBlack,
+                      (isDark ? AppColors.darkBackground : AppColors.primaryBlack).withOpacity(0.8),
                     ],
                   ),
                 ),
@@ -146,7 +229,7 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
               ),
             ),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.primaryWhite),
+              icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppColors.primaryWhite),
               onPressed: () => context.go('/home'),
             ),
             actions: [
@@ -166,7 +249,7 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.refresh, color: AppColors.primaryWhite),
+                icon: Icon(Icons.refresh, color: Theme.of(context).appBarTheme.foregroundColor ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack)),
                 tooltip: 'Làm lại bài test',
                 onPressed: () => _showResetDialog(context),
               ),
@@ -219,10 +302,10 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  const Text(
+                  Text(
                     'Cấu trúc Lộ trình',
                     style: TextStyle(
-                      color: AppColors.primaryWhite,
+                      color: Theme.of(context).cardColor,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -323,7 +406,7 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
                           value: _selectedLevel,
                           isExpanded: true,
                           dropdownColor: AppColors.primaryBlack,
-                          style: const TextStyle(color: AppColors.primaryWhite),
+                          style: TextStyle(color: Theme.of(context).appBarTheme.foregroundColor ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack)),
                           items: RoadmapMockData.levels.map((level) {
                             return DropdownMenuItem<String>(
                               value: level.id,
@@ -388,8 +471,8 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
                             const SizedBox(width: 12),
                             Text(
                               'Cấp độ của bạn: $_userLevel',
-                              style: const TextStyle(
-                                color: AppColors.primaryWhite,
+                              style: TextStyle(
+                                color: Theme.of(context).cardColor,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -418,10 +501,10 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  const Text(
+                  Text(
                     'Nhiệm vụ học tập',
                     style: TextStyle(
-                      color: AppColors.primaryWhite,
+                      color: Theme.of(context).cardColor,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -449,24 +532,78 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
                       return _buildTaskCategory(category);
                     }),
                   const SizedBox(height: 32),
-                  const Text(
-                    'Lộ trình học tập',
-                    style: TextStyle(
-                      color: AppColors.primaryWhite,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                  // Show timeline if available
+                  if (_roadmapTimeline != null) ...[
+                    Text(
+                      'Lộ trình học tập theo timeline',
+                      style: TextStyle(
+                        color: Theme.of(context).cardColor,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  ...sections.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final section = entry.value;
-                    return RoadmapTimelineSection(
-                      section: section,
-                      index: index,
-                      total: sections.length,
-                    );
-                  }),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryYellow.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.primaryYellow.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            color: AppColors.primaryYellow,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Mục tiêu: TOPIK ${_roadmapTimeline!.targetLevel} trong ${_roadmapTimeline!.timelineMonths} tháng',
+                              style: TextStyle(
+                                color: Theme.of(context).cardColor,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ..._roadmapTimeline!.periods.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final period = entry.value;
+                      return RoadmapTimelinePeriod(
+                        period: period,
+                        index: index,
+                        total: _roadmapTimeline!.periods.length,
+                        onTaskCompleted: _handleTaskCompleted,
+                      );
+                    }),
+                  ] else ...[
+                    // Fallback to old timeline sections
+                    Text(
+                      'Lộ trình học tập',
+                      style: TextStyle(
+                        color: Theme.of(context).cardColor,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ...sections.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final section = entry.value;
+                      return RoadmapTimelineSection(
+                        section: section,
+                        index: index,
+                        total: sections.length,
+                      );
+                    }),
+                  ],
                   const SizedBox(height: 32),
                   RoadmapStatsCard(
                     completedDays: completedDays,
@@ -504,8 +641,8 @@ class _RoadmapDetailScreenState extends State<RoadmapDetailScreen> {
               const SizedBox(width: 12),
               Text(
                 category.category,
-                style: const TextStyle(
-                  color: AppColors.primaryWhite,
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.titleLarge?.color ?? (Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryBlack),
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),

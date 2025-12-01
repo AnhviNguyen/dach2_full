@@ -84,6 +84,7 @@ class CompetitionApiService {
       final response = await _topikApiService.getCompetitionQuestions(
         count: 20, // Số lượng câu hỏi mặc định
         mixTypes: true, // Mix listening và reading
+        mixLevels: true, // Mix TOPIK 1 và TOPIK 2
       );
       
       final questionsData = response['questions'] as List<dynamic>? ?? [];

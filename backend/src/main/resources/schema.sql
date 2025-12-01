@@ -515,3 +515,43 @@ CREATE TABLE IF NOT EXISTS vocabulary_words (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (folder_id) REFERENCES vocabulary_folders(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Roadmap Progress Table
+-- Lưu thông tin roadmap của người dùng (current level, target level, timeline)
+CREATE TABLE IF NOT EXISTS roadmap_progress (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    roadmap_id VARCHAR(255) NOT NULL,
+    current_level INT NOT NULL DEFAULT 1,
+    target_level INT NOT NULL DEFAULT 5,
+    timeline_months INT NOT NULL DEFAULT 10,
+    total_days INT NOT NULL DEFAULT 300,
+    roadmap_data JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_roadmap (user_id, roadmap_id),
+    INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Roadmap Task Progress Table
+-- Lưu tiến trình từng task trong roadmap
+CREATE TABLE IF NOT EXISTS roadmap_task_progress (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    roadmap_id VARCHAR(255) NOT NULL,
+    task_id VARCHAR(255) NOT NULL,
+    task_type VARCHAR(100) NOT NULL,
+    task_title VARCHAR(500) NOT NULL,
+    task_description TEXT,
+    target INT NOT NULL DEFAULT 1,
+    current INT NOT NULL DEFAULT 0,
+    completed BOOLEAN DEFAULT FALSE,
+    completed_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_task (user_id, roadmap_id, task_id),
+    INDEX idx_user_roadmap (user_id, roadmap_id),
+    INDEX idx_task_id (task_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

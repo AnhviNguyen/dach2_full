@@ -227,11 +227,14 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
+      final theme = Theme.of(context);
+      final isDark = theme.brightness == Brightness.dark;
+      
       return Scaffold(
-        backgroundColor: const Color(0xFF0A0A0A),
+        backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFF0A0A0A),
         appBar: AppBar(
-          backgroundColor: Colors.black,
-          title: const Text('Đang tải...', style: TextStyle(color: Colors.white)),
+          backgroundColor: isDark ? AppColors.darkSurface : Colors.black,
+          title: Text('Đang tải...', style: TextStyle(color: isDark ? Colors.white : Colors.white)),
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -239,11 +242,14 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
 
     final competition = _competition;
     if (competition == null || _questions.isEmpty || _errorMessage != null) {
+      final theme = Theme.of(context);
+      final isDark = theme.brightness == Brightness.dark;
+      
       return Scaffold(
-        backgroundColor: const Color(0xFF0A0A0A),
+        backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFF0A0A0A),
         appBar: AppBar(
-          backgroundColor: Colors.black,
-          title: const Text('Lỗi', style: TextStyle(color: Colors.white)),
+          backgroundColor: isDark ? AppColors.darkSurface : Colors.black,
+          title: Text('Lỗi', style: TextStyle(color: isDark ? Colors.white : Colors.white)),
         ),
         body: Center(
           child: Column(
@@ -251,7 +257,7 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
             children: [
               Text(
                 _errorMessage ?? 'Không tìm thấy cuộc thi',
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: isDark ? Colors.white : Colors.white),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -281,8 +287,11 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
     final question = _questions[_currentQuestion];
     final progress = ((_currentQuestion + 1) / _questions.length);
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFF0A0A0A),
       body: SafeArea(
         child: Column(
           children: [
@@ -290,7 +299,7 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.black,
+                color: isDark ? AppColors.darkSurface : Colors.black,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.3),
@@ -302,7 +311,7 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.white),
                     onPressed: () => context.pop(),
                   ),
                   Expanded(
@@ -311,8 +320,8 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                       children: [
                         Text(
                           competition.title,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -321,8 +330,8 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                         ),
                         Text(
                           'Câu ${_currentQuestion + 1}/${_questions.length}',
-                          style: const TextStyle(
-                            color: Color(0xFF888888),
+                          style: TextStyle(
+                            color: isDark ? AppColors.grayLight : const Color(0xFF888888),
                             fontSize: 12,
                           ),
                         ),
@@ -370,10 +379,10 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
             // Progress Bar
             Container(
               height: 4,
-              color: const Color(0xFF1A1A1A),
+              color: isDark ? AppColors.darkSurface : const Color(0xFF1A1A1A),
               child: LinearProgressIndicator(
                 value: progress,
-                backgroundColor: const Color(0xFF1A1A1A),
+                backgroundColor: isDark ? AppColors.darkSurface : const Color(0xFF1A1A1A),
                 valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryYellow),
               ),
             ),
@@ -388,7 +397,7 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                       Container(
                         margin: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF141414),
+                          color: isDark ? AppColors.darkSurface : const Color(0xFF141414),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: AppColors.primaryYellow.withOpacity(0.2),
@@ -434,11 +443,11 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                const Expanded(
+                                Expanded(
                                   child: Text(
                                     'Audio',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: isDark ? Colors.white : Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 20,
                                     ),
@@ -480,10 +489,10 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: Colors.black,
+                                    color: isDark ? AppColors.darkBackground : Colors.black,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: const Color(0xFF2A2A2A),
+                                      color: isDark ? AppColors.darkDivider : const Color(0xFF2A2A2A),
                                     ),
                                   ),
                                   child: Column(
@@ -491,8 +500,8 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                                     children: [
                                       Text(
                                         question.title,
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : Colors.white,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                           height: 1.4,
@@ -518,10 +527,10 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                                   height: 120,
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: Colors.black,
+                                    color: isDark ? AppColors.darkBackground : Colors.black,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: const Color(0xFF2A2A2A),
+                                      color: isDark ? AppColors.darkDivider : const Color(0xFF2A2A2A),
                                     ),
                                   ),
                                   child: Row(
@@ -537,7 +546,7 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                                         decoration: BoxDecoration(
                                           color: isActive
                                               ? AppColors.primaryYellow
-                                              : const Color(0xFF2A2A2A),
+                                              : (isDark ? AppColors.darkDivider : const Color(0xFF2A2A2A)),
                                           borderRadius: BorderRadius.circular(2),
                                         ),
                                       );
@@ -578,10 +587,10 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: Colors.black,
+                                    color: isDark ? AppColors.darkBackground : Colors.black,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: const Color(0xFF2A2A2A),
+                                      color: isDark ? AppColors.darkDivider : const Color(0xFF2A2A2A),
                                     ),
                                   ),
                                   child: Row(
@@ -589,7 +598,7 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                                     children: [
                                       _buildAudioButton(
                                         icon: Icons.refresh,
-                                        color: Colors.white70,
+                                        color: isDark ? Colors.white : Colors.white70,
                                         onPressed: () {
                                           _stopAudio();
                                         },
@@ -621,13 +630,13 @@ class _CompetitionJoinScreenState extends ConsumerState<CompetitionJoinScreen> {
                                       if (_audioPlayerState == PlayerState.playing || _audioPlayerState == PlayerState.paused)
                                         _buildAudioButton(
                                           icon: Icons.stop,
-                                          color: Colors.white70,
+                                          color: isDark ? Colors.white : Colors.white70,
                                           onPressed: _stopAudio,
                                         )
                                       else
                                         _buildAudioButton(
                                           icon: Icons.volume_up,
-                                          color: Colors.white70,
+                                          color: isDark ? Colors.white : Colors.white70,
                                           onPressed: () {},
                                         ),
                                     ],

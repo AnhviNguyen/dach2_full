@@ -78,51 +78,55 @@ class _MyVocabularyScreenState extends ConsumerState<MyVocabularyScreen> {
     final nameController = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Tạo Folder Mới',
-          style: TextStyle(
-            color: Color(0xFF1A1A1A),
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: theme.dialogBackgroundColor ?? (isDark ? AppColors.darkSurface : Colors.white),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-        ),
-        content: TextField(
-          controller: nameController,
-          decoration: InputDecoration(
-            hintText: 'Nhập tên folder...',
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            filled: true,
-            fillColor: Colors.grey[50],
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primaryYellow, width: 1.5),
+          title: Text(
+            'Tạo Folder Mới',
+            style: TextStyle(
+              color: theme.textTheme.titleLarge?.color ?? (isDark ? AppColors.darkOnSurface : const Color(0xFF1A1A1A)),
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Hủy',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
+          content: TextField(
+            controller: nameController,
+            style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+            decoration: InputDecoration(
+              hintText: 'Nhập tên folder...',
+              hintStyle: TextStyle(color: isDark ? AppColors.grayLight : Colors.grey[400]),
+              filled: true,
+              fillColor: isDark ? AppColors.darkSurface : Colors.grey[50],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: isDark ? AppColors.darkDivider : Colors.grey[300]!, width: 1),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: isDark ? AppColors.darkDivider : Colors.grey[300]!, width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.primaryYellow, width: 1.5),
               ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Hủy',
+                style: TextStyle(
+                  color: theme.textTheme.bodyLarge?.color ?? (isDark ? AppColors.grayLight : Colors.grey[600]),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ElevatedButton(
             onPressed: () async {
               if (nameController.text.trim().isNotEmpty) {
@@ -164,15 +168,19 @@ class _MyVocabularyScreenState extends ConsumerState<MyVocabularyScreen> {
             child: const Text('Tạo', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
-      ),
+      );
+      },
     );
   }
 
   void _showAIHelperDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: theme.dialogBackgroundColor ?? (isDark ? AppColors.darkSurface : Colors.white),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -191,19 +199,19 @@ class _MyVocabularyScreenState extends ConsumerState<MyVocabularyScreen> {
               child: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'AI Assistant',
               style: TextStyle(
-                color: Color(0xFF1A1A1A),
+                color: theme.textTheme.titleLarge?.color ?? (isDark ? AppColors.darkOnSurface : const Color(0xFF1A1A1A)),
                 fontWeight: FontWeight.w700,
                 fontSize: 20,
               ),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Nhập chủ đề hoặc câu để AI tạo từ vựng cho bạn\n\n(Tính năng sẽ được tích hợp với API thực tế)',
-          style: TextStyle(color: Color(0xFF4A4A4A), height: 1.5),
+          style: TextStyle(color: theme.textTheme.bodyLarge?.color ?? (isDark ? AppColors.grayLight : const Color(0xFF4A4A4A)), height: 1.5),
         ),
         actions: [
           TextButton(
@@ -211,7 +219,7 @@ class _MyVocabularyScreenState extends ConsumerState<MyVocabularyScreen> {
             child: Text(
               'Hủy',
               style: TextStyle(
-                color: Colors.grey[600],
+                color: theme.textTheme.bodyLarge?.color ?? (isDark ? AppColors.grayLight : Colors.grey[600]),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -244,32 +252,36 @@ class _MyVocabularyScreenState extends ConsumerState<MyVocabularyScreen> {
             child: const Text('Tạo ngay', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
-      ),
+      );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : Colors.white),
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.go('/home'),
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: isDark ? AppColors.darkSurface : Colors.grey[100],
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A), size: 20),
+            child: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : const Color(0xFF1A1A1A)), size: 20),
           ),
         ),
-        title: const Text(
+        title: Text(
           'My Vocabulary',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : const Color(0xFF1A1A1A)),
             fontWeight: FontWeight.w800,
             fontSize: 24,
           ),
@@ -349,7 +361,7 @@ class _MyVocabularyScreenState extends ConsumerState<MyVocabularyScreen> {
   Widget _buildPersonalVocabularySection() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(

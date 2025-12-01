@@ -25,6 +25,8 @@ class ScheduleTabs extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (context, index) {
               final day = weekDays[index];
+              final theme = Theme.of(context);
+              final isDark = theme.brightness == Brightness.dark;
 
               return Center(
                 child: Container(
@@ -32,12 +34,12 @@ class ScheduleTabs extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: day.isStudied
                         ? AppColors.primaryYellow
-                        : AppColors.primaryWhite,
+                        : (theme.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite)),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: day.isStudied
                           ? AppColors.primaryYellow
-                          : AppColors.primaryBlack.withOpacity(0.2),
+                          : (isDark ? AppColors.darkDivider : AppColors.primaryBlack.withOpacity(0.2)),
                       width: 1.5,
                     ),
                   ),
@@ -46,8 +48,10 @@ class ScheduleTabs extends StatelessWidget {
                     children: [
                       Text(
                         day.label,
-                        style: const TextStyle(
-                          color: AppColors.primaryBlack,
+                        style: TextStyle(
+                          color: day.isStudied 
+                              ? AppColors.primaryBlack 
+                              : (theme.textTheme.bodyLarge?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack)),
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                         ),
@@ -65,7 +69,7 @@ class ScheduleTabs extends StatelessWidget {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppColors.primaryBlack.withOpacity(0.3),
+                                  color: (theme.textTheme.bodyLarge?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack)).withOpacity(0.3),
                                   width: 2,
                                 ),
                               ),

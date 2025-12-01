@@ -159,15 +159,18 @@ class _ChatTeacherScreenState extends State<ChatTeacherScreen> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.whiteOff,
+      backgroundColor: theme.scaffoldBackgroundColor,
       resizeToAvoidBottomInset: true,
       body: Column(
         children: [
           // Custom App Bar with Tabs
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : Colors.white),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),

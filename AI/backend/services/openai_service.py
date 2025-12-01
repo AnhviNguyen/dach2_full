@@ -183,6 +183,61 @@ async def chat_with_coach(
         raise
 
 
+async def chat_with_coach_ivy(
+    user_message: str,
+    conversation_history: List[Dict[str, Any]] = None,
+    use_system_prompt: bool = True
+) -> str:
+    """
+    Chat with Coach Ivy - Simple wrapper for generating text responses
+    
+    Args:
+        user_message: User's message/prompt
+        conversation_history: Optional conversation history
+        use_system_prompt: Whether to use system prompt (default: True)
+    
+    Returns:
+        str: GPT response text
+    """
+    try:
+        messages = []
+        
+        if use_system_prompt:
+            messages.append({
+                "role": "system",
+                "content": "Bạn là một AI chuyên nghiệp. Trả lời chính xác và đầy đủ theo yêu cầu."
+            })
+        
+        # Add conversation history if provided
+        if conversation_history:
+            messages.extend(conversation_history)
+        
+        # Add user message
+        messages.append({
+            "role": "user",
+            "content": user_message
+        })
+        
+        # Call ChatGPT
+        response = client.chat.completions.create(
+            model=settings.openai_model_name,
+            messages=messages,
+            temperature=0.7,  # Lower temperature for more consistent responses
+            max_tokens=2000  # Allow longer responses for roadmap/questions
+        )
+        
+        reply = response.choices[0].message.content.strip()
+        logger.info(f"GPT response generated (length: {len(reply)} chars)")
+        return reply
+        
+    except (APIError, RateLimitError) as e:
+        logger.error(f"Error in chat_with_coach_ivy: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Error in chat_with_coach_ivy: {e}")
+        raise
+
+
 def _analyze_emotion(text: str) -> str:
     """
     Analyze text to determine appropriate emotion tag for avatar

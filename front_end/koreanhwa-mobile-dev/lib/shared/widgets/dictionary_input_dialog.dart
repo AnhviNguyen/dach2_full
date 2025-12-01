@@ -69,26 +69,26 @@ class _DictionaryInputDialogState extends State<DictionaryInputDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(
                       Icons.translate,
-                      color: AppColors.primaryBlack,
+                      color: Theme.of(context).iconTheme.color ?? AppColors.primaryBlack,
                       size: 24,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Text(
                       'Tra từ điển',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
+                        color: Theme.of(context).textTheme.titleLarge?.color ?? AppColors.primaryBlack,
                       ),
                     ),
                   ],
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.primaryBlack),
+                  icon: Icon(Icons.close, color: Theme.of(context).iconTheme.color ?? AppColors.primaryBlack),
                   onPressed: () => Navigator.of(context).pop(),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -104,11 +104,11 @@ class _DictionaryInputDialogState extends State<DictionaryInputDialog> {
               autofocus: true,
               decoration: InputDecoration(
                 hintText: 'Nhập từ tiếng Hàn...',
-                prefixIcon: const Icon(Icons.search, color: AppColors.primaryBlack),
+                prefixIcon: Icon(Icons.search, color: Theme.of(context).iconTheme.color ?? AppColors.primaryBlack),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppColors.primaryBlack,
+                  borderSide: BorderSide(
+                    color: Theme.of(context).dividerColor,
                     width: 1,
                   ),
                 ),
@@ -120,15 +120,15 @@ class _DictionaryInputDialogState extends State<DictionaryInputDialog> {
                   ),
                 ),
                 filled: true,
-                fillColor: AppColors.primaryWhite,
+                fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? Theme.of(context).cardColor,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 16,
                 ),
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
-                color: AppColors.primaryBlack,
+                color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack,
               ),
               textInputAction: TextInputAction.search,
               onSubmitted: (_) => _handleLookup(),

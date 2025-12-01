@@ -57,7 +57,7 @@ class SpeakHeroCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Row(
@@ -103,8 +103,8 @@ class SpeakHeroCard extends StatelessWidget {
               const SizedBox(width: 12),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppColors.primaryBlack,
+                  backgroundColor: Theme.of(context).cardColor,
+                  foregroundColor: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                 ),

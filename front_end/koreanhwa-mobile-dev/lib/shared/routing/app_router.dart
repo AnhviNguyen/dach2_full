@@ -38,6 +38,7 @@ import 'package:koreanhwa_flutter/features/roadmap/presentation/screens/roadmap_
 import 'package:koreanhwa_flutter/features/roadmap/presentation/screens/roadmap_detail_screen.dart';
 import 'package:koreanhwa_flutter/features/roadmap/presentation/screens/roadmap_test_screen.dart';
 import 'package:koreanhwa_flutter/features/roadmap/presentation/screens/roadmap_survey_screen.dart';
+import 'package:koreanhwa_flutter/features/roadmap/presentation/screens/roadmap_goal_screen.dart';
 import 'package:koreanhwa_flutter/features/material/presentation/screens/material_screen.dart';
 import 'package:koreanhwa_flutter/features/material/presentation/screens/material_detail_screen.dart';
 import 'package:koreanhwa_flutter/services/roadmap_service.dart';
@@ -424,6 +425,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
           return RoadmapPlacementScreen(surveyData: extra);
+        },
+      ),
+      GoRoute(
+        path: '/roadmap/goal',
+        name: 'roadmap-goal',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return RoadmapGoalScreen(
+            currentLevel: extra?['currentLevel'] as int? ?? 1,
+            surveyData: extra?['surveyData'] as Map<String, dynamic>? ?? {},
+          );
         },
       ),
       GoRoute(

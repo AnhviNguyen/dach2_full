@@ -269,24 +269,27 @@ class _BlogDetailScreenState extends ConsumerState<BlogDetailScreen> {
 
     final contentBlocks = _parseContent(_post!.content);
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
-            backgroundColor: AppColors.primaryBlack,
+            backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryBlack),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.primaryWhite),
+              icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryWhite)),
               onPressed: () => context.pop(),
             ),
-            title: const Text(
+            title: Text(
               'Chi tiết bài viết',
-              style: TextStyle(color: AppColors.primaryWhite),
+              style: TextStyle(color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryWhite)),
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.share, color: AppColors.primaryWhite),
+                icon: Icon(Icons.share, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryWhite)),
                 onPressed: () {},
               ),
             ],

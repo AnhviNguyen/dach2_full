@@ -27,12 +27,18 @@ class MainBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bottomNavColor = isDark ? AppColors.darkSurface : const Color(0xFFF7F2DE);
+    final selectedColor = isDark ? AppColors.primaryYellow : AppColors.primaryBlack;
+    final unselectedColor = isDark ? AppColors.grayLight : AppColors.grayLight;
+    
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F2DE),
+        color: bottomNavColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Theme.of(context).dividerColor.withOpacity(0.2),
             blurRadius: 12,
             offset: const Offset(0, -2),
           ),
@@ -63,16 +69,14 @@ class MainBottomNavBar extends StatelessWidget {
                           padding: const EdgeInsets.all(8.0),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.primaryBlack.withOpacity(0.1)
+                                ? (isDark ? AppColors.primaryYellow.withOpacity(0.2) : AppColors.primaryBlack.withOpacity(0.1))
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
                             navItem.icon,
                             size: 26,
-                            color: isSelected
-                                ? AppColors.primaryBlack
-                                : AppColors.grayLight,
+                            color: isSelected ? selectedColor : unselectedColor,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -82,9 +86,7 @@ class MainBottomNavBar extends StatelessWidget {
                           style: TextStyle(
                             fontSize: isSelected ? 11 : 10,
                             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                            color: isSelected
-                                ? AppColors.primaryBlack
-                                : AppColors.grayLight,
+                            color: isSelected ? selectedColor : unselectedColor,
                           ),
                           child: Text(
                             navItem.label,
@@ -99,7 +101,7 @@ class MainBottomNavBar extends StatelessWidget {
                           height: 3,
                           width: isSelected ? 20 : 0,
                           decoration: BoxDecoration(
-                            color: AppColors.primaryBlack,
+                            color: selectedColor,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),

@@ -119,7 +119,7 @@ class _VocabularyCardState extends State<VocabularyCard> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.primaryWhite,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppColors.primaryBlack,

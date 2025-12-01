@@ -55,21 +55,24 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_errorMessage != null || _material == null) {
       return Scaffold(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.primaryWhite,
+          backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
             onPressed: () => context.go('/material'),
           ),
         ),
@@ -77,11 +80,11 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: AppColors.grayLight),
+              Icon(Icons.error_outline, size: 64, color: theme.iconTheme.color ?? AppColors.grayLight),
               const SizedBox(height: 16),
               Text(
                 _errorMessage ?? 'Không tìm thấy tài liệu',
-                style: const TextStyle(color: AppColors.primaryBlack),
+                style: TextStyle(color: theme.textTheme.bodyLarge?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -103,7 +106,7 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
     final pdfUrl = material.pdfUrl ?? 'https://kanata.edu.vn/wp-content/uploads/2022/10/Giao-trinh-Tieng-Han-Tong-hop-so-cap-1.pdf';
 
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -111,7 +114,7 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -208,7 +211,7 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                       child: Container(
                         constraints: const BoxConstraints(maxWidth: 800),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryWhite,
+                            color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
@@ -358,7 +361,7 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                         child: Container(
                           width: 320,
                           decoration: BoxDecoration(
-                            color: AppColors.primaryWhite,
+                            color: Theme.of(context).cardColor,
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.2),
@@ -432,7 +435,7 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                            color: Theme.of(context).cardColor,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),

@@ -58,10 +58,10 @@ class QuickAccessGrid extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             item.label,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primaryBlack,
+                              color: Theme.of(context).textTheme.bodySmall?.color ?? AppColors.primaryBlack,
                             ),
                             textAlign: TextAlign.center,
                           ),

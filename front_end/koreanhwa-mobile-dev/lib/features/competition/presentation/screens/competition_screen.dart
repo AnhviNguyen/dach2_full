@@ -145,27 +145,29 @@ class _CompetitionScreenState extends ConsumerState<CompetitionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Cuộc thi',
           style: TextStyle(
-            color: AppColors.primaryBlack,
+            color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
             fontWeight: FontWeight.bold,
             fontSize: 24,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.emoji_events, color: AppColors.primaryBlack),
+            icon: Icon(Icons.emoji_events, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.download, color: AppColors.primaryBlack),
+            icon: Icon(Icons.download, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
             onPressed: () {},
           ),
         ],
@@ -174,7 +176,7 @@ class _CompetitionScreenState extends ConsumerState<CompetitionScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            color: AppColors.primaryWhite,
+            color: theme.scaffoldBackgroundColor,
             child: Column(
               children: [
                 TextField(

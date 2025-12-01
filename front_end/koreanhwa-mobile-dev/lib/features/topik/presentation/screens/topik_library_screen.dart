@@ -56,9 +56,31 @@ class _TopikLibraryScreenState extends State<TopikLibraryScreen> {
 
     try {
       final response = await _apiService.getExams();
-      final examsList = (response['exams'] as List<dynamic>?)
-          ?.map((e) => TopikExam.fromJson({'examNumber': e.toString()}))
-          .toList() ?? [];
+      
+      // Backend trả về exams là Map với keys là "1" và "2"
+      // Mỗi key có một List các exam numbers
+      final examsData = response['exams'];
+      List<TopikExam> examsList = [];
+      
+      if (examsData is Map<String, dynamic>) {
+        // Parse từ Map format: {"1": ["35", "36"], "2": ["35", "36", "41"]}
+        examsData.forEach((topikLevel, examNumbers) {
+          if (examNumbers is List) {
+            for (var examNumber in examNumbers) {
+              examsList.add(TopikExam.fromJson({
+                'examNumber': examNumber.toString(),
+                'title': 'TOPIK $topikLevel - Exam $examNumber',
+              }));
+            }
+          }
+        });
+      } else if (examsData is List) {
+        // Fallback: nếu là List (format cũ)
+        examsList = examsData
+            .map((e) => TopikExam.fromJson({'examNumber': e.toString()}))
+            .toList()
+            .cast<TopikExam>();
+      }
       
       setState(() {
         _exams = examsList;
@@ -100,19 +122,22 @@ class _TopikLibraryScreenState extends State<TopikLibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFDE7),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
         ),
-        title: const Text(
+        title: Text(
           'Thư viện đề thi tiếng Hàn',
           style: TextStyle(
-            color: AppColors.primaryBlack,
+            color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),

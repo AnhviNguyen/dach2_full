@@ -114,8 +114,10 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Si
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [

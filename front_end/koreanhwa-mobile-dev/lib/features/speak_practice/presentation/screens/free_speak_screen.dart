@@ -327,9 +327,9 @@ class _FreeSpeakScreenState extends State<FreeSpeakScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.whiteOff,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 1,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -524,7 +524,7 @@ class _FreeSpeakScreenState extends State<FreeSpeakScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -583,7 +583,7 @@ class _FreeSpeakScreenState extends State<FreeSpeakScreen> {
                       )
                           : Icon(
                         _isRecording ? Icons.stop : Icons.mic,
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         size: 32,
                       ),
                     ),
@@ -612,9 +612,9 @@ class _FreeSpeakScreenState extends State<FreeSpeakScreen> {
                 color: AppColors.primaryYellow,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.psychology,
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 size: 20,
               ),
             ),
@@ -746,9 +746,9 @@ class _FreeSpeakScreenState extends State<FreeSpeakScreen> {
                 color: AppColors.primaryBlack,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.person,
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 size: 20,
               ),
             ),

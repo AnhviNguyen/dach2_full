@@ -6,6 +6,7 @@ class RoadmapTask {
   final int target;
   final int current;
   final bool completed;
+  final List<int>? days; // Các ngày cụ thể làm task này (cho timeline)
 
   RoadmapTask({
     required this.id,
@@ -15,6 +16,7 @@ class RoadmapTask {
     required this.target,
     required this.current,
     this.completed = false,
+    this.days,
   });
 
   factory RoadmapTask.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,9 @@ class RoadmapTask {
       target: json['target'] as int,
       current: json['current'] as int? ?? 0,
       completed: json['completed'] as bool? ?? false,
+      days: json['days'] != null
+          ? (json['days'] as List<dynamic>).map((d) => d as int).toList()
+          : null,
     );
   }
 
@@ -38,6 +43,7 @@ class RoadmapTask {
       'target': target,
       'current': current,
       'completed': completed,
+      if (days != null) 'days': days,
     };
   }
 }

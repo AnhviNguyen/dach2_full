@@ -13,6 +13,9 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Row(
       children: [
         Container(
@@ -21,15 +24,15 @@ class SectionHeader extends StatelessWidget {
             color: AppColors.primaryYellow.withOpacity(0.2),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, size: 20, color: AppColors.primaryBlack),
+          child: Icon(icon, size: 20, color: theme.iconTheme.color ?? (isDark ? Colors.white : AppColors.primaryBlack)),
         ),
         const SizedBox(width: 12),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: AppColors.primaryBlack,
+            color: theme.textTheme.titleLarge?.color ?? (isDark ? Colors.white : AppColors.primaryBlack),
           ),
         ),
       ],

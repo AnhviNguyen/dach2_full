@@ -566,3 +566,301 @@ def add_word_to_folder(
     finally:
         if conn:
             conn.close()
+
+
+def save_roadmap_progress(
+    user_id: int,
+    roadmap_id: str,
+    current_level: int,
+    target_level: int,
+    timeline_months: int,
+    total_days: int,
+    roadmap_data: Dict[str, Any]
+) -> bool:
+    """
+    Save or update roadmap progress for a user
+    
+    Args:
+        user_id: User ID
+        roadmap_id: Roadmap ID
+        current_level: Current level
+        target_level: Target level
+        timeline_months: Timeline in months
+        total_days: Total days
+        roadmap_data: Full roadmap data (JSON)
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    conn = None
+    try:
+        import json
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Check if roadmap exists
+            check_query = """
+                SELECT id FROM roadmap_progress
+                WHERE user_id = %s AND roadmap_id = %s
+            """
+            cursor.execute(check_query, (user_id, roadmap_id))
+            existing = cursor.fetchone()
+            
+            roadmap_json = json.dumps(roadmap_data)
+            
+            if existing:
+                # Update existing roadmap
+                update_query = """
+                    UPDATE roadmap_progress
+                    SET current_level = %s, target_level = %s, timeline_months = %s,
+                        total_days = %s, roadmap_data = %s, updated_at = NOW()
+                    WHERE user_id = %s AND roadmap_id = %s
+                """
+                cursor.execute(update_query, (
+                    current_level, target_level, timeline_months,
+                    total_days, roadmap_json, user_id, roadmap_id
+                ))
+            else:
+                # Insert new roadmap
+                insert_query = """
+                    INSERT INTO roadmap_progress
+                    (user_id, roadmap_id, current_level, target_level, timeline_months, total_days, roadmap_data)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(insert_query, (
+                    user_id, roadmap_id, current_level, target_level,
+                    timeline_months, total_days, roadmap_json
+                ))
+            
+            conn.commit()
+            logger.info(f"Saved roadmap progress for user {user_id}, roadmap {roadmap_id}")
+            return True
+            
+    except Exception as e:
+        logger.error(f"Error saving roadmap progress: {e}")
+        if conn:
+            conn.rollback()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_roadmap_progress(user_id: int, roadmap_id: str = None) -> Optional[Dict[str, Any]]:
+    """
+    Get roadmap progress for a user
+    
+    Args:
+        user_id: User ID
+        roadmap_id: Roadmap ID (optional, gets latest if not provided)
+        
+    Returns:
+        Dictionary with roadmap progress or None
+    """
+    conn = None
+    try:
+        import json
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            if roadmap_id:
+                query = """
+                    SELECT * FROM roadmap_progress
+                    WHERE user_id = %s AND roadmap_id = %s
+                """
+                cursor.execute(query, (user_id, roadmap_id))
+            else:
+                # Get latest roadmap
+                query = """
+                    SELECT * FROM roadmap_progress
+                    WHERE user_id = %s
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                """
+                cursor.execute(query, (user_id,))
+            
+            result = cursor.fetchone()
+            if result:
+                roadmap_data = json.loads(result['roadmap_data']) if result['roadmap_data'] else {}
+                return {
+                    'id': result['id'],
+                    'user_id': result['user_id'],
+                    'roadmap_id': result['roadmap_id'],
+                    'current_level': result['current_level'],
+                    'target_level': result['target_level'],
+                    'timeline_months': result['timeline_months'],
+                    'total_days': result['total_days'],
+                    'roadmap_data': roadmap_data,
+                    'created_at': result['created_at'].isoformat() if result['created_at'] else None,
+                    'updated_at': result['updated_at'].isoformat() if result['updated_at'] else None,
+                }
+            return None
+            
+    except Exception as e:
+        logger.error(f"Error getting roadmap progress: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def save_roadmap_task_progress(
+    user_id: int,
+    roadmap_id: str,
+    task_id: str,
+    task_type: str,
+    task_title: str,
+    task_description: str,
+    target: int,
+    current: int = None,
+    completed: bool = None
+) -> bool:
+    """
+    Save or update roadmap task progress
+    
+    Args:
+        user_id: User ID
+        roadmap_id: Roadmap ID
+        task_id: Task ID
+        task_type: Task type
+        task_title: Task title
+        task_description: Task description
+        target: Target value
+        current: Current value (optional, increments if not provided)
+        completed: Completed status (optional)
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Check if task progress exists
+            check_query = """
+                SELECT id, current, completed FROM roadmap_task_progress
+                WHERE user_id = %s AND roadmap_id = %s AND task_id = %s
+            """
+            cursor.execute(check_query, (user_id, roadmap_id, task_id))
+            existing = cursor.fetchone()
+            
+            if existing:
+                # Update existing task progress
+                update_fields = []
+                update_values = []
+                
+                if current is not None:
+                    update_fields.append("current = %s")
+                    update_values.append(current)
+                elif completed:
+                    # Auto-increment current if marking as completed
+                    new_current = min(existing['current'] + 1, target)
+                    update_fields.append("current = %s")
+                    update_values.append(new_current)
+                
+                if completed is not None:
+                    update_fields.append("completed = %s")
+                    update_values.append(completed)
+                    if completed:
+                        update_fields.append("completed_at = NOW()")
+                    else:
+                        update_fields.append("completed_at = NULL")
+                
+                update_fields.append("updated_at = NOW()")
+                update_values.extend([user_id, roadmap_id, task_id])
+                
+                update_query = f"""
+                    UPDATE roadmap_task_progress
+                    SET {', '.join(update_fields)}
+                    WHERE user_id = %s AND roadmap_id = %s AND task_id = %s
+                """
+                cursor.execute(update_query, tuple(update_values))
+            else:
+                # Insert new task progress
+                final_current = current if current is not None else (1 if completed else 0)
+                final_completed = completed if completed is not None else False
+                
+                if final_completed:
+                    insert_query = """
+                        INSERT INTO roadmap_task_progress
+                        (user_id, roadmap_id, task_id, task_type, task_title, task_description,
+                         target, current, completed, completed_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                    """
+                    cursor.execute(insert_query, (
+                        user_id, roadmap_id, task_id, task_type, task_title, task_description,
+                        target, final_current, final_completed
+                    ))
+                else:
+                    insert_query = """
+                        INSERT INTO roadmap_task_progress
+                        (user_id, roadmap_id, task_id, task_type, task_title, task_description,
+                         target, current, completed, completed_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NULL)
+                    """
+                    cursor.execute(insert_query, (
+                        user_id, roadmap_id, task_id, task_type, task_title, task_description,
+                        target, final_current, final_completed
+                    ))
+            
+            conn.commit()
+            logger.info(f"Saved task progress for user {user_id}, task {task_id}")
+            return True
+            
+    except Exception as e:
+        logger.error(f"Error saving roadmap task progress: {e}")
+        if conn:
+            conn.rollback()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_roadmap_task_progress(user_id: int, roadmap_id: str) -> List[Dict[str, Any]]:
+    """
+    Get all task progress for a roadmap
+    
+    Args:
+        user_id: User ID
+        roadmap_id: Roadmap ID
+        
+    Returns:
+        List of task progress dictionaries
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            query = """
+                SELECT * FROM roadmap_task_progress
+                WHERE user_id = %s AND roadmap_id = %s
+                ORDER BY created_at ASC
+            """
+            cursor.execute(query, (user_id, roadmap_id))
+            results = cursor.fetchall()
+            
+            tasks = []
+            for result in results:
+                tasks.append({
+                    'id': result['id'],
+                    'user_id': result['user_id'],
+                    'roadmap_id': result['roadmap_id'],
+                    'task_id': result['task_id'],
+                    'task_type': result['task_type'],
+                    'task_title': result['task_title'],
+                    'task_description': result['task_description'],
+                    'target': result['target'],
+                    'current': result['current'],
+                    'completed': result['completed'],
+                    'completed_at': result['completed_at'].isoformat() if result['completed_at'] else None,
+                    'created_at': result['created_at'].isoformat() if result['created_at'] else None,
+                    'updated_at': result['updated_at'].isoformat() if result['updated_at'] else None,
+                })
+            
+            return tasks
+            
+    except Exception as e:
+        logger.error(f"Error getting roadmap task progress: {e}")
+        return []
+    finally:
+        if conn:
+            conn.close()

@@ -32,20 +32,23 @@ class _CourseClassroomScreenState extends State<CourseClassroomScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : Colors.white),
         elevation: 0,
         title: Text(
           widget.courseTitle,
-          style: const TextStyle(
-            color: AppColors.primaryBlack,
+          style: TextStyle(
+            color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
             fontWeight: FontWeight.bold,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -53,7 +56,7 @@ class _CourseClassroomScreenState extends State<CourseClassroomScreen>
         children: [
           _buildSummary(),
           Container(
-            color: Colors.white,
+            color: theme.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
             child: TabBar(
               controller: _tabController,
               indicatorColor: AppColors.primaryYellow,
@@ -81,14 +84,17 @@ class _CourseClassroomScreenState extends State<CourseClassroomScreen>
   }
 
   Widget _buildSummary() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: theme.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
         border: Border(
-          top: BorderSide(color: Color(0xFFECECEC)),
-          bottom: BorderSide(color: Color(0xFFECECEC)),
+          top: BorderSide(color: isDark ? AppColors.darkDivider : const Color(0xFFECECEC)),
+          bottom: BorderSide(color: isDark ? AppColors.darkDivider : const Color(0xFFECECEC)),
         ),
       ),
       child: Row(
@@ -156,14 +162,17 @@ class _ContentTab extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         ...lessons.map(
-          (lesson) => Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
+          (lesson) {
+            final theme = Theme.of(context);
+            final isDark = theme.brightness == Brightness.dark;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isDark ? AppColors.darkDivider : Colors.grey.shade200),
+              ),
             child: Row(
               children: [
                 Icon(
@@ -196,8 +205,9 @@ class _ContentTab extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ),
+          );
+          },
+        ).toList(),
       ],
     );
   }

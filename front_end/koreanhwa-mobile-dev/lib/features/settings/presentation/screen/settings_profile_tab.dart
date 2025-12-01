@@ -153,7 +153,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.primaryBlack.withOpacity(0.1)),
               ),
@@ -226,13 +226,13 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                               color: AppColors.primaryBlack,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: AppColors.primaryWhite,
+                                color: Theme.of(context).cardColor,
                                 width: 2,
                               ),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.camera_alt,
-                              color: AppColors.primaryWhite,
+                              color: Theme.of(context).cardColor,
                               size: 16,
                             ),
                           ),
@@ -320,7 +320,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.primaryBlack.withOpacity(0.1)),
               ),
@@ -532,7 +532,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.primaryBlack.withOpacity(0.1)),
               ),

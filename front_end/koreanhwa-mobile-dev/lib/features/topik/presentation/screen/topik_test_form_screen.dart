@@ -111,9 +111,47 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
         _questionType = questionType;
       });
 
+      // Xác định TOPIK level từ examId hoặc tự động detect
+      String topikLevel = '1'; // Default
+      
+      // Kiểm tra nếu examId có chứa level info
+      if (widget.examId.contains('TK2') || widget.examId.contains('topik2')) {
+        topikLevel = '2';
+      } else if (widget.examId.contains('TK1') || widget.examId.contains('topik1')) {
+        topikLevel = '1';
+      } else {
+        // Tự động detect level bằng cách kiểm tra exam có trong level nào
+        try {
+          final examsResponse = await _apiService.getExams();
+          final exams = examsResponse['exams'] as Map<String, dynamic>?;
+          
+          if (exams != null) {
+            // Kiểm tra exam có trong TOPIK 2 trước (vì exam 83, 91 chỉ có trong TOPIK 2)
+            final topik2Exams = exams['2'] as List<dynamic>? ?? [];
+            if (topik2Exams.contains(examNumber)) {
+              topikLevel = '2';
+            } else {
+              // Nếu không có trong TOPIK 2, thử TOPIK 1
+              final topik1Exams = exams['1'] as List<dynamic>? ?? [];
+              if (topik1Exams.contains(examNumber)) {
+                topikLevel = '1';
+              } else {
+                // Nếu không tìm thấy trong cả 2, mặc định là 1
+                topikLevel = '1';
+              }
+            }
+          }
+        } catch (e) {
+          // Nếu lỗi khi check, mặc định là 1
+          debugPrint('Error checking exam level: $e');
+          topikLevel = '1';
+        }
+      }
+
       // Load questions từ API
       final response = await _apiService.getTopikQuestions(
         examNumber: examNumber,
+        topikLevel: topikLevel,
         questionType: questionType,
         limit: questionType == 'listening' ? 30 : 40, // 30 cho listening, 40 cho reading
       );
@@ -165,6 +203,9 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
           };
         }).toList();
 
+        // Lấy correct_answer từ API response
+        final correctAnswer = q['correct_answer'] as String?;
+        
         return {
           'id': questionId,
           'question': questionText,
@@ -172,6 +213,10 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
           'audio_url': audioUrl, // Lưu audio URL cho listening questions
           'question_id': q['question_id'] as String? ?? '', // Lưu question_id từ API
           'number': q['number'] as int? ?? (index + 1), // Lưu số thứ tự câu hỏi
+          'exam_number': examNumber, // Lưu exam number
+          'topik_level': topikLevel, // Lưu TOPIK level
+          'question_type': questionType, // Lưu question type
+          'correct_answer': correctAnswer, // Lưu đáp án đúng từ API
         };
       }).toList();
 
@@ -462,13 +507,16 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFDE7),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         elevation: 2,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -476,17 +524,17 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
           children: [
             Text(
               widget.examTitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: AppColors.primaryBlack,
+                color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
               ),
             ),
             Text(
               'Part 5',
               style: TextStyle(
                 fontSize: 12,
-                color: AppColors.primaryBlack.withOpacity(0.6),
+                color: (theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)).withOpacity(0.6),
               ),
             ),
           ],
@@ -536,7 +584,7 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryWhite,
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: AppColors.primaryYellow.withOpacity(0.5),
@@ -567,10 +615,10 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
                             ),
                           ),
                           child: _highlightEnabled
-                              ? const Icon(
+                              ? Icon(
                             Icons.check,
                             size: 12,
-                            color: AppColors.primaryWhite,
+                            color: Theme.of(context).cardColor,
                           )
                               : null,
                         ),
@@ -599,7 +647,7 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
                   Container(
                     padding: const EdgeInsets.all(32),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryWhite,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: AppColors.primaryYellow.withOpacity(0.5),
@@ -614,7 +662,7 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryWhite,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: Colors.red.withOpacity(0.5),
@@ -644,7 +692,7 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryWhite,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: AppColors.primaryYellow.withOpacity(0.5),
@@ -674,10 +722,10 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
                                 ),
                                 child: Text(
                                   'Câu $questionId',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.primaryWhite,
+                                    color: Theme.of(context).cardColor,
                                   ),
                                 ),
                               ),
@@ -791,7 +839,7 @@ class _TopikTestFormScreenState extends State<TopikTestFormScreen> {
                     margin: const EdgeInsets.all(24),
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryWhite,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(

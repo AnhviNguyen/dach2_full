@@ -67,20 +67,22 @@ class _QuizScreenState extends State<QuizScreen> {
     final vocab = widget.vocabList[_currentQuestion];
     final showResult = _selectedAnswer != null;
     final isCorrect = _selectedAnswer == vocab['vietnamese'];
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFEBEE),
+      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFFFEBEE),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF44336),
+        backgroundColor: isDark ? AppColors.darkSurface : const Color(0xFFF44336),
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryWhite),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppColors.primaryWhite),
         ),
-        title: const Text(
+        title: Text(
           'Quiz',
           style: TextStyle(
-            color: AppColors.primaryWhite,
+            color: isDark ? Colors.white : AppColors.primaryWhite,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -92,8 +94,8 @@ class _QuizScreenState extends State<QuizScreen> {
             child: Center(
               child: Text(
                 'Điểm: $_score / ${widget.vocabList.length}',
-                style: const TextStyle(
-                  color: AppColors.primaryWhite,
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppColors.primaryWhite,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -107,103 +109,109 @@ class _QuizScreenState extends State<QuizScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryWhite,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: const Color(0xFFF44336),
-                    width: 4,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFF44336).withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Câu ${_currentQuestion + 1} / ${widget.vocabList.length}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.primaryBlack.withOpacity(0.6),
+              Builder(
+                builder: (context) {
+                  final theme = Theme.of(context);
+                  final isDark = theme.brightness == Brightness.dark;
+                  return Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkDivider : const Color(0xFFF44336),
+                        width: 4,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF44336).withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      vocab['korean']!,
-                      style: const TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      vocab['pronunciation']!,
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: AppColors.primaryBlack.withOpacity(0.6),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ..._options.map((option) {
-                      final isSelected = _selectedAnswer == option;
-                      final isCorrectOption = option == vocab['vietnamese'];
-
-                      Color bgColor = AppColors.primaryBlack.withOpacity(0.05);
-                      Color textColor = AppColors.primaryBlack;
-                      if (showResult) {
-                        if (isCorrectOption) {
-                          bgColor = AppColors.success;
-                          textColor = AppColors.primaryWhite;
-                        } else if (isSelected && !isCorrectOption) {
-                          bgColor = const Color(0xFFF44336);
-                          textColor = AppColors.primaryWhite;
-                        }
-                      }
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: InkWell(
-                          onTap: _selectedAnswer == null
-                              ? () => _handleAnswer(option)
-                              : null,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: bgColor,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: showResult && isCorrectOption
-                                    ? AppColors.success
-                                    : showResult && isSelected && !isCorrectOption
-                                        ? const Color(0xFFF44336)
-                                        : AppColors.primaryBlack.withOpacity(0.1),
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              option,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: textColor,
-                              ),
-                            ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Câu ${_currentQuestion + 1} / ${widget.vocabList.length}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: (theme.textTheme.bodyMedium?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack)).withOpacity(0.6),
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ],
-                ),
+                        const SizedBox(height: 16),
+                        Text(
+                          vocab['korean']!,
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: theme.textTheme.displayMedium?.color ?? (isDark ? Colors.white : AppColors.primaryBlack),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          vocab['pronunciation']!,
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: (theme.textTheme.bodyMedium?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack)).withOpacity(0.6),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ..._options.map((option) {
+                          final isSelected = _selectedAnswer == option;
+                          final isCorrectOption = option == vocab['vietnamese'];
+
+                          Color bgColor = isDark ? AppColors.darkSurface : AppColors.primaryBlack.withOpacity(0.05);
+                          Color textColor = theme.textTheme.bodyLarge?.color ?? (isDark ? AppColors.darkOnSurface : AppColors.primaryBlack);
+                          if (showResult) {
+                            if (isCorrectOption) {
+                              bgColor = AppColors.success;
+                              textColor = AppColors.primaryWhite;
+                            } else if (isSelected && !isCorrectOption) {
+                              bgColor = const Color(0xFFF44336);
+                              textColor = AppColors.primaryWhite;
+                            }
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: InkWell(
+                              onTap: _selectedAnswer == null
+                                  ? () => _handleAnswer(option)
+                                  : null,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: bgColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: showResult && isCorrectOption
+                                        ? AppColors.success
+                                        : showResult && isSelected && !isCorrectOption
+                                            ? const Color(0xFFF44336)
+                                            : AppColors.primaryBlack.withOpacity(0.1),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  option,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: textColor,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),

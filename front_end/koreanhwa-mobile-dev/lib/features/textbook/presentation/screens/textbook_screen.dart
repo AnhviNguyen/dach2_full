@@ -306,9 +306,9 @@ class _TextbookScreenState extends State<TextbookScreen> {
         backgroundColor: Colors.transparent,
         builder: (context) => Container(
           height: MediaQuery.of(context).size.height * 0.9,
-          decoration: const BoxDecoration(
-            color: AppColors.primaryWhite,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: const Center(child: CircularProgressIndicator()),
         ),
@@ -391,20 +391,23 @@ class _TextbookScreenState extends State<TextbookScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     if (isLoading) {
       return Scaffold(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.primaryWhite,
+          backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
           elevation: 0,
           leading: IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
           ),
-          title: const Text(
+          title: Text(
             'Giáo trình',
             style: TextStyle(
-              color: AppColors.primaryBlack,
+              color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
               fontWeight: FontWeight.bold,
               fontSize: 20,
             ),
@@ -417,25 +420,25 @@ class _TextbookScreenState extends State<TextbookScreen> {
 
     if (textbooks.isEmpty) {
       return Scaffold(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.primaryWhite,
+          backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
           elevation: 0,
           leading: IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
           ),
-          title: const Text(
+          title: Text(
             'Giáo trình',
             style: TextStyle(
-              color: AppColors.primaryBlack,
+              color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
               fontWeight: FontWeight.bold,
               fontSize: 20,
             ),
           ),
           centerTitle: true,
         ),
-        body: const Center(child: Text('Không có giáo trình')),
+        body: Center(child: Text('Không có giáo trình', style: TextStyle(color: theme.textTheme.bodyLarge?.color))),
       );
     }
 
@@ -445,18 +448,18 @@ class _TextbookScreenState extends State<TextbookScreen> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         elevation: 0,
         leading: IconButton(
-          onPressed: () => context.go('/home'),
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          onPressed: () => Navigator.pop(context),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
         ),
-        title: const Text(
+        title: Text(
           'Giáo trình',
           style: TextStyle(
-            color: AppColors.primaryBlack,
+            color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -530,10 +533,12 @@ class _TextbookScreenState extends State<TextbookScreen> {
   Widget _buildTextbookCard(Textbook textbook) {
     final isExpanded = expandedBookId == textbook.bookNumber;
     final progress = textbook.completedLessons / textbook.totalLessons;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.primaryWhite,
+        color: theme.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: textbook.isLocked
@@ -585,9 +590,9 @@ class _TextbookScreenState extends State<TextbookScreen> {
                     ),
                     child: Center(
                       child: textbook.isLocked
-                          ? const Icon(
+                          ? Icon(
                               Icons.lock,
-                              color: AppColors.primaryWhite,
+                              color: Theme.of(context).cardColor,
                               size: 28,
                             )
                           : Text(
@@ -652,12 +657,12 @@ class _TextbookScreenState extends State<TextbookScreen> {
                                   color: AppColors.success,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Hoàn thành',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.primaryWhite,
+                                    color: Theme.of(context).cardColor,
                                   ),
                                 ),
                               ),
@@ -724,7 +729,7 @@ class _TextbookScreenState extends State<TextbookScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primaryWhite,
+                color: Theme.of(context).cardColor,
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.circular(20),
                 ),
@@ -756,7 +761,7 @@ class _TextbookScreenState extends State<TextbookScreen> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: isUnlocked
-                            ? AppColors.primaryWhite
+                            ? Theme.of(context).cardColor
                             : AppColors.primaryBlack.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(

@@ -40,11 +40,11 @@ class AppColors {
   static const Color lightOnSecondary = Color(0xFF000000);
 
   // Dark Theme Colors
-  static const Color darkBackground = Color(0xFF121212);
-  static const Color darkSurface = Color(0xFF1E1E1E);
+  static const Color darkBackground = Color(0xFF0D0D0D);
+  static const Color darkSurface = Color(0xFF1A1A1A);
   static const Color darkOnBackground = Color(0xFFFFFFFF);
-  static const Color darkOnSurface = Color(0xFFE0E0E0);
+  static const Color darkOnSurface = Color(0xFFEDEDED);
   static const Color darkOnPrimary = Color(0xFF000000);
-  static const Color darkOnSecondary = Color(0xFF000000);
+  static const Color darkDivider = Color(0xFF333333);
 }
 

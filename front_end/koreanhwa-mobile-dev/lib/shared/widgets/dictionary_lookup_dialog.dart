@@ -141,16 +141,16 @@ class _DictionaryLookupDialogState extends ConsumerState<DictionaryLookupDialog>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Tra từ điển',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primaryBlack,
+                    color: Theme.of(context).textTheme.titleLarge?.color ?? AppColors.primaryBlack,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.primaryBlack),
+                  icon: Icon(Icons.close, color: Theme.of(context).iconTheme.color ?? AppColors.primaryBlack),
                   onPressed: () => Navigator.of(context).pop(),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -172,15 +172,15 @@ class _DictionaryLookupDialogState extends ConsumerState<DictionaryLookupDialog>
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.translate, color: AppColors.primaryBlack, size: 24),
+                  Icon(Icons.translate, color: Theme.of(context).textTheme.titleLarge?.color ?? AppColors.primaryBlack, size: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       widget.word,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlack,
+                        color: Theme.of(context).textTheme.titleLarge?.color ?? AppColors.primaryBlack,
                       ),
                     ),
                   ),
@@ -207,8 +207,8 @@ class _DictionaryLookupDialogState extends ConsumerState<DictionaryLookupDialog>
                               Text(
                                 _errorMessage!,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: AppColors.primaryBlack,
+                                style: TextStyle(
+                                  color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack,
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -342,14 +342,14 @@ class _DictionaryLookupDialogState extends ConsumerState<DictionaryLookupDialog>
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: AppColors.primaryBlack.withOpacity(0.6)),
+              Icon(icon, size: 18, color: (Theme.of(context).iconTheme.color ?? AppColors.primaryBlack).withOpacity(0.6)),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primaryBlack.withOpacity(0.6),
+                  color: (Theme.of(context).textTheme.bodySmall?.color ?? AppColors.primaryBlack).withOpacity(0.6),
                 ),
               ),
             ],
@@ -359,10 +359,10 @@ class _DictionaryLookupDialogState extends ConsumerState<DictionaryLookupDialog>
             padding: const EdgeInsets.only(left: 26),
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: AppColors.primaryBlack,
+                color: Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.primaryBlack,
               ),
             ),
           ),

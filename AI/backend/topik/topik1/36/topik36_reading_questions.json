@@ -1,0 +1,1414 @@
+{
+  "url": "https://study4.com/tests/5110/practice/?part=12871",
+  "part": "reading",
+  "generated_at": "2025-11-26T09:23:40.839Z",
+  "total": 40,
+  "questions": [
+    {
+      "question_id": "207704",
+      "number": 1,
+      "intro_text": "무엇에 대한 이야기입니까? 알맞은 것을 고르 십시오.",
+      "intro_html": "<div><div>무엇에 대한 이야기입니까? 알맞은 것을 고르 십시오.</div>",
+      "prompt": "오빠가 있습니다. 언니도 있습니다.",
+      "prompt_html": "<div>오빠가 있습니다. 언니도 있습니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "이름",
+          "rawHtml": "A. 이름"
+        },
+        {
+          "option": "B",
+          "text": "가족",
+          "rawHtml": "B. 가족"
+        },
+        {
+          "option": "C",
+          "text": "생일",
+          "rawHtml": "C. 생일"
+        },
+        {
+          "option": "D",
+          "text": "친구",
+          "rawHtml": "D. 친구"
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207705",
+      "number": 2,
+      "intro_text": "무엇에 대한 이야기입니까? 알맞은 것을 고르 십시오.",
+      "intro_html": "<div><div>무엇에 대한 이야기입니까? 알맞은 것을 고르 십시오.</div>",
+      "prompt": "저는 회사원입니다. 자동차 회사에 다닙니다.",
+      "prompt_html": "<div>저는 회사원입니다. 자동차 회사에 다닙니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "취미",
+          "rawHtml": "A. 취미"
+        },
+        {
+          "option": "B",
+          "text": "장소",
+          "rawHtml": "B. 장소"
+        },
+        {
+          "option": "C",
+          "text": "주말",
+          "rawHtml": "C. 주말"
+        },
+        {
+          "option": "D",
+          "text": "직업",
+          "rawHtml": "D. 직업"
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207706",
+      "number": 3,
+      "intro_text": "무엇에 대한 이야기입니까? 알맞은 것을 고르 십시오.",
+      "intro_html": "<div><div>무엇에 대한 이야기입니까? 알맞은 것을 고르 십시오.</div>",
+      "prompt": "한국에는 봄, 여름, 가을, 겨울이 있습니다. 지금은 가을입니다.",
+      "prompt_html": "<div>한국에는 봄, 여름, 가을, 겨울이 있습니다. 지금은 가을입니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "계절",
+          "rawHtml": "A. 계절"
+        },
+        {
+          "option": "B",
+          "text": "나라",
+          "rawHtml": "B. 나라"
+        },
+        {
+          "option": "C",
+          "text": "시장",
+          "rawHtml": "C. 시장"
+        },
+        {
+          "option": "D",
+          "text": "휴일",
+          "rawHtml": "D. 휴일"
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207707",
+      "number": 4,
+      "intro_text": "(__)에 들어갈 가장 알맞은 것을 고르십시오.",
+      "intro_html": "<div><div>(__)에 들어갈 가장 알맞은 것을 고르십시오.</div>",
+      "prompt": "서점에 갑니다. (__)을 삽니다.",
+      "prompt_html": "<div>서점에 갑니다. (__)을 삽니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "책",
+          "rawHtml": "A. 책"
+        },
+        {
+          "option": "B",
+          "text": "물",
+          "rawHtml": "B. 물"
+        },
+        {
+          "option": "C",
+          "text": "옷",
+          "rawHtml": "C. 옷"
+        },
+        {
+          "option": "D",
+          "text": "빵",
+          "rawHtml": "D. 빵"
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207708",
+      "number": 5,
+      "intro_text": "(__)에 들어갈 가장 알맞은 것을 고르십시오.",
+      "intro_html": "<div><div>(__)에 들어갈 가장 알맞은 것을 고르십시오.</div>",
+      "prompt": "한국어가 어렵습니다. 친구(__) 물어봅니다.",
+      "prompt_html": "<div>한국어가 어렵습니다. 친구(__) 물어봅니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "의",
+          "rawHtml": "A. 의"
+        },
+        {
+          "option": "B",
+          "text": "를",
+          "rawHtml": "B. 를"
+        },
+        {
+          "option": "C",
+          "text": "에게",
+          "rawHtml": "C. 에게"
+        },
+        {
+          "option": "D",
+          "text": "에서",
+          "rawHtml": "D. 에서"
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207709",
+      "number": 6,
+      "intro_text": "(__)에 들어갈 가장 알맞은 것을 고르십시오.",
+      "intro_html": "<div><div>(__)에 들어갈 가장 알맞은 것을 고르십시오.</div>",
+      "prompt": "학교가 (__). 그래서 걸어서 갑니다.",
+      "prompt_html": "<div>학교가 (__). 그래서 걸어서 갑니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "작습니다",
+          "rawHtml": "A. 작습니다"
+        },
+        {
+          "option": "B",
+          "text": "많습니다",
+          "rawHtml": "B. 많습니다"
+        },
+        {
+          "option": "C",
+          "text": "가깝습니다",
+          "rawHtml": "C. 가깝습니다"
+        },
+        {
+          "option": "D",
+          "text": "깨끗합니다",
+          "rawHtml": "D. 깨끗합니다"
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207710",
+      "number": 7,
+      "intro_text": "(__)에 들어갈 가장 알맞은 것을 고르십시오.",
+      "intro_html": "<div><div>(__)에 들어갈 가장 알맞은 것을 고르십시오.</div>",
+      "prompt": "영화가 끝났습니다. 극장에서 (__).",
+      "prompt_html": "<div>영화가 끝났습니다. 극장에서 (__).</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "삽니다",
+          "rawHtml": "A. 삽니다"
+        },
+        {
+          "option": "B",
+          "text": "씁니다",
+          "rawHtml": "B. 씁니다"
+        },
+        {
+          "option": "C",
+          "text": "지냅니다",
+          "rawHtml": "C. 지냅니다"
+        },
+        {
+          "option": "D",
+          "text": "나갑니다",
+          "rawHtml": "D. 나갑니다"
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207711",
+      "number": 8,
+      "intro_text": "(__)에 들어갈 가장 알맞은 것을 고르십시오.",
+      "intro_html": "<div><div>(__)에 들어갈 가장 알맞은 것을 고르십시오.</div>",
+      "prompt": "바다 여행이 재미있었습니다. 다음에 (__) 갈 겁니다.",
+      "prompt_html": "<div>바다 여행이 재미있었습니다. 다음에 (__) 갈 겁니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "다시",
+          "rawHtml": "A. 다시"
+        },
+        {
+          "option": "B",
+          "text": "서로",
+          "rawHtml": "B. 서로"
+        },
+        {
+          "option": "C",
+          "text": "아주",
+          "rawHtml": "C. 아주"
+        },
+        {
+          "option": "D",
+          "text": "제일",
+          "rawHtml": "D. 제일"
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207712",
+      "number": 9,
+      "intro_text": "(__)에 들어갈 가장 알맞은 것을 고르십시오.",
+      "intro_html": "<div><div>(__)에 들어갈 가장 알맞은 것을 고르십시오.</div>",
+      "prompt": "눈이 옵니다. 그리고 바람도 (__).",
+      "prompt_html": "<div>눈이 옵니다. 그리고 바람도 (__).</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "줍니다",
+          "rawHtml": "A. 줍니다"
+        },
+        {
+          "option": "B",
+          "text": "붑니다",
+          "rawHtml": "B. 붑니다"
+        },
+        {
+          "option": "C",
+          "text": "옵니다",
+          "rawHtml": "C. 옵니다"
+        },
+        {
+          "option": "D",
+          "text": "됩니다",
+          "rawHtml": "D. 됩니다"
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207713",
+      "number": 10,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "다음을 읽고 맞지 않는 것을 고르십시오.",
+      "prompt_html": "<div>다음을 읽고 맞지 않는 것을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "금요일에 민수 씨를 만납니다.",
+          "rawHtml": "A. 금요일에 민수 씨를 만납니다."
+        },
+        {
+          "option": "B",
+          "text": "주말에 미영 씨와 산에 갑니다.",
+          "rawHtml": "B. 주말에 미영 씨와 산에 갑니다."
+        },
+        {
+          "option": "C",
+          "text": "일주일에 두 번 수영을 합니다.",
+          "rawHtml": "C. 일주일에 두 번 수영을 합니다."
+        },
+        {
+          "option": "D",
+          "text": "시원 이십이 일에 쇼핑을 합니다.",
+          "rawHtml": "D. 시원 이십이 일에 쇼핑을 합니다."
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p><img src=\"https://s4-media1.study4.com/media/topik_tests/img/29_10.webp\"></p></div>\n    </div>",
+        "images": [
+          "https://s4-media1.study4.com/media/topik_tests/img/29_10.webp"
+        ]
+      }
+    },
+    {
+      "question_id": "207714",
+      "number": 11,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "다음을 읽고 맞지 않는 것을 고르십시오.",
+      "prompt_html": "<div>다음을 읽고 맞지 않는 것을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "민수 씨는 도서관에 있습니다.",
+          "rawHtml": "A. 민수 씨는 도서관에 있습니다."
+        },
+        {
+          "option": "B",
+          "text": "마이클 씨는 도서관에 올 겁니다.",
+          "rawHtml": "B. 마이클 씨는 도서관에 올 겁니다."
+        },
+        {
+          "option": "C",
+          "text": "민수 씨는 10분 후에 전화할 겁니다.",
+          "rawHtml": "C. 민수 씨는 10분 후에 전화할 겁니다."
+        },
+        {
+          "option": "D",
+          "text": "마이클 씨는 민수 씨에게 전화를 했습니다.",
+          "rawHtml": "D. 마이클 씨는 민수 씨에게 전화를 했습니다."
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p><img src=\"https://s4-media1.study4.com/media/topik_tests/img/29_11.webp\"></p></div>\n    </div>",
+        "images": [
+          "https://s4-media1.study4.com/media/topik_tests/img/29_11.webp"
+        ]
+      }
+    },
+    {
+      "question_id": "207715",
+      "number": 12,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "다음을 읽고 맞지 않는 것을 고르십시오.",
+      "prompt_html": "<div>다음을 읽고 맞지 않는 것을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "엄마는 만 원을 냅니다.",
+          "rawHtml": "A. 엄마는 만 원을 냅니다."
+        },
+        {
+          "option": "B",
+          "text": "커피와 주스도 같이 만듭니다.",
+          "rawHtml": "B. 커피와 주스도 같이 만듭니다."
+        },
+        {
+          "option": "C",
+          "text": "요리 교실은 토요일마다 있습니다.",
+          "rawHtml": "C. 요리 교실은 토요일마다 있습니다."
+        },
+        {
+          "option": "D",
+          "text": "부모하고 아이가 불고기를 만듭니다.",
+          "rawHtml": "D. 부모하고 아이가 불고기를 만듭니다."
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p><img src=\"https://s4-media1.study4.com/media/topik_tests/img/29_12.webp\"></p></div>\n    </div>",
+        "images": [
+          "https://s4-media1.study4.com/media/topik_tests/img/29_12.webp"
+        ]
+      }
+    },
+    {
+      "question_id": "207716",
+      "number": 13,
+      "intro_text": "다음의 내용과 같은 것을 고르십시오.",
+      "intro_html": "<div><div>다음의 내용과 같은 것을 고르십시오.</div>",
+      "prompt": "저는 그림을 배웁니다. 주말마다 공원에가서그림을그립니다.가끔어머니와 미술관에 가서 구경을 합니다.",
+      "prompt_html": "<div>저는 그림을 배웁니다. 주말마다 공원에가서그림을그립니다.가끔어머니와 미술관에 가서 구경을 합니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "저는 어머니와 공원에 갑니다.",
+          "rawHtml": "A. 저는 어머니와 공원에 갑니다."
+        },
+        {
+          "option": "B",
+          "text": "어머니는 그림 공부를 합니다.",
+          "rawHtml": "B. 어머니는 그림 공부를 합니다."
+        },
+        {
+          "option": "C",
+          "text": "저는 공원에서 그림을 그립니다.",
+          "rawHtml": "C. 저는 공원에서 그림을 그립니다."
+        },
+        {
+          "option": "D",
+          "text": "어머니는 혼자 미술관에 갑니다.",
+          "rawHtml": "D. 어머니는 혼자 미술관에 갑니다."
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207717",
+      "number": 14,
+      "intro_text": "다음의 내용과 같은 것을 고르십시오.",
+      "intro_html": "<div><div>다음의 내용과 같은 것을 고르십시오.</div>",
+      "prompt": "오늘 저녁에 손님이 옵니다. 그래서 아침에 꽃도 사고 집도 청소했습니다. 회사가 끝나면 집에 일찍 가서 음식을 준비할 겁니다.",
+      "prompt_html": "<div>오늘 저녁에 손님이 옵니다. 그래서 아침에 꽃도 사고 집도 청소했습니다. 회사가 끝나면 집에 일찍 가서 음식을 준비할 겁니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "저녁에 청소를 할 겁니다.",
+          "rawHtml": "A. 저녁에 청소를 할 겁니다."
+        },
+        {
+          "option": "B",
+          "text": "손님과 저녁을 먹을 겁니다.",
+          "rawHtml": "B. 손님과 저녁을 먹을 겁니다."
+        },
+        {
+          "option": "C",
+          "text": "음식을 벌써 준비했습니다.",
+          "rawHtml": "C. 음식을 벌써 준비했습니다."
+        },
+        {
+          "option": "D",
+          "text": "손님이 꽃을 사 올 겁니다.",
+          "rawHtml": "D. 손님이 꽃을 사 올 겁니다."
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207718",
+      "number": 15,
+      "intro_text": "다음의 내용과 같은 것을 고르십시오.",
+      "intro_html": "<div><div>다음의 내용과 같은 것을 고르십시오.</div>",
+      "prompt": "저는 마음이 아프고 힘들 때 친구를 만납니다. 친구를 만나서 제 생각을 친구에게 이야기합니다. 그러면 기분이 좋고 즐겁습니다.",
+      "prompt_html": "<div>저는 마음이 아프고 힘들 때 친구를 만납니다. 친구를 만나서 제 생각을 친구에게 이야기합니다. 그러면 기분이 좋고 즐겁습니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "저는 친구의 이야기를 잘 듣습니다.",
+          "rawHtml": "A. 저는 친구의 이야기를 잘 듣습니다."
+        },
+        {
+          "option": "B",
+          "text": "저는 친구를 만나면 마음이 아픕니다.",
+          "rawHtml": "B. 저는 친구를 만나면 마음이 아픕니다."
+        },
+        {
+          "option": "C",
+          "text": "저는 기분이 좋을 때 친구를 만납니다.",
+          "rawHtml": "C. 저는 기분이 좋을 때 친구를 만납니다."
+        },
+        {
+          "option": "D",
+          "text": "저는 힘들 때 친구와 이야기를 합니다.",
+          "rawHtml": "D. 저는 힘들 때 친구와 이야기를 합니다."
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207719",
+      "number": 16,
+      "intro_text": "다음을 읽고 중심 생각을 고르십시오.",
+      "intro_html": "<div><div>다음을 읽고 중심 생각을 고르십시오.</div>",
+      "prompt": "저는 아이들에게 가방을 만들어 줍니다. 다른 사람에게도 자주 가방을 만들어서 선물합니다. 가방 만들기는 어렵지만 재미있습니다.",
+      "prompt_html": "<div>저는 아이들에게 가방을 만들어 줍니다. 다른 사람에게도 자주 가방을 만들어서 선물합니다. 가방 만들기는 어렵지만 재미있습니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "저는 가방 만들기가 어렵습니다.",
+          "rawHtml": "A. 저는 가방 만들기가 어렵습니다."
+        },
+        {
+          "option": "B",
+          "text": "저는 가방 만들기를 좋아합니다.",
+          "rawHtml": "B. 저는 가방 만들기를 좋아합니다."
+        },
+        {
+          "option": "C",
+          "text": "저는 다른 사람과 가방을 만듭니다.",
+          "rawHtml": "C. 저는 다른 사람과 가방을 만듭니다."
+        },
+        {
+          "option": "D",
+          "text": "저는 아이들에게 가방을 선물합니다.",
+          "rawHtml": "D. 저는 아이들에게 가방을 선물합니다."
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207720",
+      "number": 17,
+      "intro_text": "다음을 읽고 중심 생각을 고르십시오.",
+      "intro_html": "<div><div>다음을 읽고 중심 생각을 고르십시오.</div>",
+      "prompt": "친구가 다리가 아파서 수업에 못 왔습니다. 저는 오후에 친구에게 숙제를 말해 줄 겁니다. 내일은 친구 집에 가서 함께 학교에 가려고 합니다.",
+      "prompt_html": "<div>친구가 다리가 아파서 수업에 못 왔습니다. 저는 오후에 친구에게 숙제를 말해 줄 겁니다. 내일은 친구 집에 가서 함께 학교에 가려고 합니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "저는 친구를 도와줄 겁니다.",
+          "rawHtml": "A. 저는 친구를 도와줄 겁니다."
+        },
+        {
+          "option": "B",
+          "text": "저는 친구와 살고 싶습니다.",
+          "rawHtml": "B. 저는 친구와 살고 싶습니다."
+        },
+        {
+          "option": "C",
+          "text": "저는 친구 집에서 숙제를 할 겁니다.",
+          "rawHtml": "C. 저는 친구 집에서 숙제를 할 겁니다."
+        },
+        {
+          "option": "D",
+          "text": "저는 보통 친구와 같이 학교에 갑니다.",
+          "rawHtml": "D. 저는 보통 친구와 같이 학교에 갑니다."
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207721",
+      "number": 18,
+      "intro_text": "다음을 읽고 중심 생각을 고르십시오.",
+      "intro_html": "<div><div>다음을 읽고 중심 생각을 고르십시오.</div>",
+      "prompt": "형은 어릴 때 조용하고 말이 없었습니다. 그리고 혼자 있는 것을 좋아 했습니다. 그런데 지금은 재미있는 말도 많이 하고 사람들도 자주 만납니다.",
+      "prompt_html": "<div>형은 어릴 때 조용하고 말이 없었습니다. 그리고 혼자 있는 것을 좋아 했습니다. 그런데 지금은 재미있는 말도 많이 하고 사람들도 자주 만납니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "형은 옛날과 많이 다릅니다.",
+          "rawHtml": "A. 형은 옛날과 많이 다릅니다."
+        },
+        {
+          "option": "B",
+          "text": "형은 요즘 말을 잘 안 합니다.",
+          "rawHtml": "B. 형은 요즘 말을 잘 안 합니다."
+        },
+        {
+          "option": "C",
+          "text": "형은 재미있는 이야기를 못 합니다.",
+          "rawHtml": "C. 형은 재미있는 이야기를 못 합니다."
+        },
+        {
+          "option": "D",
+          "text": "형은 옛날에 사람들을 자주 만났습니다.",
+          "rawHtml": "D. 형은 옛날에 사람들을 자주 만났습니다."
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207722",
+      "number": 19,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "㉠에 들어갈 알맞은 말을 고르십시오.",
+      "prompt_html": "<div><strong>㉠</strong>에 들어갈 알맞은 말을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "손님이 별로 없습니다.",
+          "rawHtml": "A. 손님이 별로 없습니다."
+        },
+        {
+          "option": "B",
+          "text": "친절한 직원이 있습니다",
+          "rawHtml": "B. 친절한 직원이 있습니다"
+        },
+        {
+          "option": "C",
+          "text": "일하는 사람이 없습니다",
+          "rawHtml": "C. 일하는 사람이 없습니다"
+        },
+        {
+          "option": "D",
+          "text": "주인이 차를 직접 만듭니다",
+          "rawHtml": "D. 주인이 차를 직접 만듭니다"
+        }
+      ],
+      "context": {
+        "text": "[19~20]다음을 읽고 물음에 답하십시오.학교 앞에 새 카페가 문을 열었습니다. 이 카페에는 ㉠. 마시고 싶은 차를 준비해서 마시고 컵도 직접 씻습니다. 차를 마신 후에 차 값은 '돈을 넣는 곳에 내면 됩니다. 이 카페는 편하게 오래 앉아 있을 수 있고 값도 싸서 인기가 많습니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[19~20]</p><p>다음을 읽고 물음에 답하십시오.</p><p>학교 앞에 새 카페가 문을 열었습니다. 이 카페에는 <strong>㉠</strong>. 마시고 싶은 차를 준비해서 마시고 컵도 직접 씻습니다. 차를 마신 후에 차 값은 '돈을 넣는 곳에 내면 됩니다. 이 카페는 편하게 오래 앉아 있을 수 있고 값도 싸서 인기가 많습니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207723",
+      "number": 20,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "이 글의 내용과 같은 것을 고르십시오.",
+      "prompt_html": "<div>이 글의 내용과 같은 것을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "이 카페는 오래되었습니다.",
+          "rawHtml": "A. 이 카페는 오래되었습니다."
+        },
+        {
+          "option": "B",
+          "text": "카페의 차 값은 싸지 않습니다.",
+          "rawHtml": "B. 카페의 차 값은 싸지 않습니다."
+        },
+        {
+          "option": "C",
+          "text": "손님은 차를 주문하고 기다립니다.",
+          "rawHtml": "C. 손님은 차를 주문하고 기다립니다."
+        },
+        {
+          "option": "D",
+          "text": "이 카페는 편안해서 사람들이 좋아합니다.",
+          "rawHtml": "D. 이 카페는 편안해서 사람들이 좋아합니다."
+        }
+      ],
+      "context": {
+        "text": "[19~20]다음을 읽고 물음에 답하십시오.학교 앞에 새 카페가 문을 열었습니다. 이 카페에는 ㉠. 마시고 싶은 차를 준비해서 마시고 컵도 직접 씻습니다. 차를 마신 후에 차 값은 '돈을 넣는 곳에 내면 됩니다. 이 카페는 편하게 오래 앉아 있을 수 있고 값도 싸서 인기가 많습니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[19~20]</p><p>다음을 읽고 물음에 답하십시오.</p><p>학교 앞에 새 카페가 문을 열었습니다. 이 카페에는 <strong>㉠</strong>. 마시고 싶은 차를 준비해서 마시고 컵도 직접 씻습니다. 차를 마신 후에 차 값은 '돈을 넣는 곳에 내면 됩니다. 이 카페는 편하게 오래 앉아 있을 수 있고 값도 싸서 인기가 많습니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207724",
+      "number": 21,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "㉠에 들어갈 알맞은 말을 고르십시오.",
+      "prompt_html": "<div><strong>㉠</strong>에 들어갈 알맞은 말을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "받을 수 있습니다",
+          "rawHtml": "A. 받을 수 있습니다"
+        },
+        {
+          "option": "B",
+          "text": "예약할 수 있습니다",
+          "rawHtml": "B. 예약할 수 있습니다"
+        },
+        {
+          "option": "C",
+          "text": "빌릴 수 있습니다",
+          "rawHtml": "C. 빌릴 수 있습니다"
+        },
+        {
+          "option": "D",
+          "text": "이용할 수 있습니다",
+          "rawHtml": "D. 이용할 수 있습니다"
+        }
+      ],
+      "context": {
+        "text": "[21~22]다음을 읽고 물음에 답하십시오.120 전화는 편리합니다. 이 전화는 외국인도 ㉠. 호텔을 예약 하고 싶은 외국인은 여기에 전화하면 됩니다. 택시나 기차 예약도 도와 줍니다. 또한 외국어로 관광 안내도 받을 수 있습니다. 120 전화는 24시간 전화를 받습니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[21~22]</p><p>다음을 읽고 물음에 답하십시오.</p><p>120 전화는 편리합니다. 이 전화는 외국인도 <strong>㉠</strong>. 호텔을 예약 하고 싶은 외국인은 여기에 전화하면 됩니다. 택시나 기차 예약도 도와 줍니다. 또한 외국어로 관광 안내도 받을 수 있습니다. 120 전화는 24시간 전화를 받습니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207725",
+      "number": 22,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "무엇에 대한 이야기인지 고르십시오.",
+      "prompt_html": "<div>무엇에 대한 이야기인지 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "120 전화의 이용 시간",
+          "rawHtml": "A. 120 전화의 이용 시간"
+        },
+        {
+          "option": "B",
+          "text": "택시와 기차의 예약 방법",
+          "rawHtml": "B. 택시와 기차의 예약 방법"
+        },
+        {
+          "option": "C",
+          "text": "120 전화의 서비스 내용",
+          "rawHtml": "C. 120 전화의 서비스 내용"
+        },
+        {
+          "option": "D",
+          "text": "한국에서 관광하기 좋은 장소",
+          "rawHtml": "D. 한국에서 관광하기 좋은 장소"
+        }
+      ],
+      "context": {
+        "text": "[21~22]다음을 읽고 물음에 답하십시오.120 전화는 편리합니다. 이 전화는 외국인도 ㉠. 호텔을 예약 하고 싶은 외국인은 여기에 전화하면 됩니다. 택시나 기차 예약도 도와 줍니다. 또한 외국어로 관광 안내도 받을 수 있습니다. 120 전화는 24시간 전화를 받습니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[21~22]</p><p>다음을 읽고 물음에 답하십시오.</p><p>120 전화는 편리합니다. 이 전화는 외국인도 <strong>㉠</strong>. 호텔을 예약 하고 싶은 외국인은 여기에 전화하면 됩니다. 택시나 기차 예약도 도와 줍니다. 또한 외국어로 관광 안내도 받을 수 있습니다. 120 전화는 24시간 전화를 받습니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207726",
+      "number": 23,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "㉠에 들어갈 알맞은 말을 고르십시오.",
+      "prompt_html": "<div><strong>㉠</strong>에 들어갈 알맞은 말을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "저를 봐서",
+          "rawHtml": "A. 저를 봐서"
+        },
+        {
+          "option": "B",
+          "text": "저를 보면",
+          "rawHtml": "B. 저를 보면"
+        },
+        {
+          "option": "C",
+          "text": "저를 보거나",
+          "rawHtml": "C. 저를 보거나"
+        },
+        {
+          "option": "D",
+          "text": "저를 보니까",
+          "rawHtml": "D. 저를 보니까"
+        }
+      ],
+      "context": {
+        "text": "[23~24]다음을 읽고 물음에 답하십시오.저와 제 여동생은 같은 날 태어났습니다. 우리는 얼굴이 아주 비슷합니다. 머리색과 머리 모양도 같습니다. 또 청바지와 흰색 티셔츠를 좋아하는 것도 똑같습니다. 그리고 둘 다 작은 일에도 잘 웃습니다. 그래서 많은 사람들이 ㉠ 동생으로 생각합니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[23~24]</p><p>다음을 읽고 물음에 답하십시오.</p><p>저와 제 여동생은 같은 날 태어났습니다. 우리는 얼굴이 아주 비슷합니다. 머리색과 머리 모양도 같습니다. 또 청바지와 흰색 티셔츠를 좋아하는 것도 똑같습니다. 그리고 둘 다 작은 일에도 잘 웃습니다. 그래서 많은 사람들이 <strong>㉠</strong> 동생으로 생각합니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207727",
+      "number": 24,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "이 글의 내용과 같은 것을 고르십시오.",
+      "prompt_html": "<div>이 글의 내용과 같은 것을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "저와 여동생은 잘 웃지 않습니다.",
+          "rawHtml": "A. 저와 여동생은 잘 웃지 않습니다."
+        },
+        {
+          "option": "B",
+          "text": "저와 여동생은 머리 색깔이 다릅니다.",
+          "rawHtml": "B. 저와 여동생은 머리 색깔이 다릅니다."
+        },
+        {
+          "option": "C",
+          "text": "저와 여동생은 태어난 날이 같습니다.",
+          "rawHtml": "C. 저와 여동생은 태어난 날이 같습니다."
+        },
+        {
+          "option": "D",
+          "text": "저와 여동생은 청바지를 잘 입지 않습니다.",
+          "rawHtml": "D. 저와 여동생은 청바지를 잘 입지 않습니다."
+        }
+      ],
+      "context": {
+        "text": "[23~24]다음을 읽고 물음에 답하십시오.저와 제 여동생은 같은 날 태어났습니다. 우리는 얼굴이 아주 비슷합니다. 머리색과 머리 모양도 같습니다. 또 청바지와 흰색 티셔츠를 좋아하는 것도 똑같습니다. 그리고 둘 다 작은 일에도 잘 웃습니다. 그래서 많은 사람들이 ㉠ 동생으로 생각합니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[23~24]</p><p>다음을 읽고 물음에 답하십시오.</p><p>저와 제 여동생은 같은 날 태어났습니다. 우리는 얼굴이 아주 비슷합니다. 머리색과 머리 모양도 같습니다. 또 청바지와 흰색 티셔츠를 좋아하는 것도 똑같습니다. 그리고 둘 다 작은 일에도 잘 웃습니다. 그래서 많은 사람들이 <strong>㉠</strong> 동생으로 생각합니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207728",
+      "number": 25,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "㉠에 들어갈 알맞은 말을 고르십시오.",
+      "prompt_html": "<div><strong>㉠</strong>에 들어갈 알맞은 말을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "그래서",
+          "rawHtml": "A. 그래서"
+        },
+        {
+          "option": "B",
+          "text": "그리고",
+          "rawHtml": "B. 그리고"
+        },
+        {
+          "option": "C",
+          "text": "하지만",
+          "rawHtml": "C. 하지만"
+        },
+        {
+          "option": "D",
+          "text": "그런데",
+          "rawHtml": "D. 그런데"
+        }
+      ],
+      "context": {
+        "text": "[25~26]다음을 읽고 물음에 답하십시오.떡볶이는 종류가 많습니다. 보통 우리가 먹는 떡볶이는 맵지만 전통 떡볶이는 맵지 않습니다. 고추장을 넣지 않고 간장으로 만들기 때문입니다. ㉠ 매운 것을 못 먹는 아이들이나 외국인도 먹을 수 있습니다. 또 소고기와 여러 가지 채소가 들어 있기 때문에 맛도 좋고 건강에도 좋습니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[25~26]</p><p>다음을 읽고 물음에 답하십시오.</p><p>떡볶이는 종류가 많습니다. 보통 우리가 먹는 떡볶이는 맵지만 전통 떡볶이는 맵지 않습니다. 고추장을 넣지 않고 간장으로 만들기 때문입니다. <strong>㉠</strong> 매운 것을 못 먹는 아이들이나 외국인도 먹을 수 있습니다. 또 소고기와 여러 가지 채소가 들어 있기 때문에 맛도 좋고 건강에도 좋습니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207729",
+      "number": 26,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "이 글의 내용과 같은 것을 고르십시오.",
+      "prompt_html": "<div>이 글의 내용과 같은 것을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "떡볶이는 맛이 모두 같습니다.",
+          "rawHtml": "A. 떡볶이는 맛이 모두 같습니다."
+        },
+        {
+          "option": "B",
+          "text": "전통 떡볶이에는 소고기를 넣습니다.",
+          "rawHtml": "B. 전통 떡볶이에는 소고기를 넣습니다."
+        },
+        {
+          "option": "C",
+          "text": "전통 떡볶이는 맵지만 건강에 좋습니다.",
+          "rawHtml": "C. 전통 떡볶이는 맵지만 건강에 좋습니다."
+        },
+        {
+          "option": "D",
+          "text": "전통 떡볶이는 외국인이 먹기 어렵습니다.",
+          "rawHtml": "D. 전통 떡볶이는 외국인이 먹기 어렵습니다."
+        }
+      ],
+      "context": {
+        "text": "[25~26]다음을 읽고 물음에 답하십시오.떡볶이는 종류가 많습니다. 보통 우리가 먹는 떡볶이는 맵지만 전통 떡볶이는 맵지 않습니다. 고추장을 넣지 않고 간장으로 만들기 때문입니다. ㉠ 매운 것을 못 먹는 아이들이나 외국인도 먹을 수 있습니다. 또 소고기와 여러 가지 채소가 들어 있기 때문에 맛도 좋고 건강에도 좋습니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[25~26]</p><p>다음을 읽고 물음에 답하십시오.</p><p>떡볶이는 종류가 많습니다. 보통 우리가 먹는 떡볶이는 맵지만 전통 떡볶이는 맵지 않습니다. 고추장을 넣지 않고 간장으로 만들기 때문입니다. <strong>㉠</strong> 매운 것을 못 먹는 아이들이나 외국인도 먹을 수 있습니다. 또 소고기와 여러 가지 채소가 들어 있기 때문에 맛도 좋고 건강에도 좋습니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207730",
+      "number": 27,
+      "intro_text": "다음을 순서대로 맞게 나열한 것을 고르십시오.",
+      "intro_html": "<div><div>다음을 순서대로 맞게 나열한 것을 고르십시오.</div>",
+      "prompt": "(가) 주말마다 서울 여기저기를 다닙니다. (나) 찰리 씨는 서울에 사는 외국인입니다. (다) 왜냐하면 지하철은 편리하기 때문입니다. (라) 서울 구경을 할 때는 주로 지하철을 탑니다.",
+      "prompt_html": "<div><strong>(가)</strong> 주말마다 서울 여기저기를 다닙니다. </div><div><strong>(나)</strong> 찰리 씨는 서울에 사는 외국인입니다. </div><div><strong>(다)</strong> 왜냐하면 지하철은 편리하기 때문입니다. </div><div><strong>(라)</strong> 서울 구경을 할 때는 주로 지하철을 탑니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "(나) - (가) - (다) - (라)",
+          "rawHtml": "A. (나) - (가) - (다) - (라)"
+        },
+        {
+          "option": "B",
+          "text": "(나) - (가) - (라) - (다)",
+          "rawHtml": "B. (나) - (가) - (라) - (다)"
+        },
+        {
+          "option": "C",
+          "text": "(나) - (라) - (가) - (다)",
+          "rawHtml": "C. (나) - (라) - (가) - (다)"
+        },
+        {
+          "option": "D",
+          "text": "(나) - (라) - (다) - (가)",
+          "rawHtml": "D. (나) - (라) - (다) - (가)"
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207731",
+      "number": 28,
+      "intro_text": "다음을 순서대로 맞게 나열한 것을 고르십시오.",
+      "intro_html": "<div><div>다음을 순서대로 맞게 나열한 것을 고르십시오.</div>",
+      "prompt": "(가) 그 남자는 지금 제 남자 친구입니다. (나) 저는 우산이 없어서 그냥 건물 앞에 서 있었습니다. (다) 그때 어떤 남자가 저에게 와서 우산을 주었습니다. (라) 어느 날 회사 일이 끝나고 집에 가는데 갑자기 비가 왔습니다.",
+      "prompt_html": "<div><strong>(가)</strong> 그 남자는 지금 제 남자 친구입니다. </div><div><strong>(나)</strong> 저는 우산이 없어서 그냥 건물 앞에 서 있었습니다. </div><div><strong>(다)</strong> 그때 어떤 남자가 저에게 와서 우산을 주었습니다. </div><div><strong>(라)</strong> 어느 날 회사 일이 끝나고 집에 가는데 갑자기 비가 왔습니다.</div></div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "(라) - (가) - (나) - (다)",
+          "rawHtml": "A. (라) - (가) - (나) - (다)"
+        },
+        {
+          "option": "B",
+          "text": "(라) - (가) - (다) - (나)",
+          "rawHtml": "B. (라) - (가) - (다) - (나)"
+        },
+        {
+          "option": "C",
+          "text": "(라) - (나) - (가) - (다)",
+          "rawHtml": "C. (라) - (나) - (가) - (다)"
+        },
+        {
+          "option": "D",
+          "text": "(라) - (나) - (다) - (가)",
+          "rawHtml": "D. (라) - (나) - (다) - (가)"
+        }
+      ],
+      "context": {
+        "text": "",
+        "html": "",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207732",
+      "number": 29,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "다음 문장이 들어갈 곳을 고르십시오.",
+      "prompt_html": "<div>다음 문장이 들어갈 곳을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "㉠",
+          "rawHtml": "A. ㉠"
+        },
+        {
+          "option": "B",
+          "text": "㉡",
+          "rawHtml": "B. ㉡"
+        },
+        {
+          "option": "C",
+          "text": "㉢",
+          "rawHtml": "C. ㉢"
+        },
+        {
+          "option": "D",
+          "text": "㉣",
+          "rawHtml": "D. ㉣"
+        }
+      ],
+      "context": {
+        "text": "[29~30]다음을 읽고 물음에 답하십시오.저는 어릴 때부터 춤추는 것을 좋아했습니다. ㉠ 요즘도 매일 혼자 거울을 보면서 춤 연습을 합니다.㉡ 주말에는 가끔 친구들과 같이 지하철역이나 공원에서 공연도 합니다. ㉢ 사람들의 박수 소리를 들으면 기분이 좋아져서 더 열심히 춤을 춥니다. ㉣",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[29~30]</p><p>다음을 읽고 물음에 답하십시오.</p><p>저는 어릴 때부터 춤추는 것을 좋아했습니다. <strong>㉠</strong> 요즘도 매일 혼자 거울을 보면서 춤 연습을 합니다.<strong>㉡</strong> 주말에는 가끔 친구들과 같이 지하철역이나 공원에서 공연도 합니다. <strong>㉢</strong> 사람들의 박수 소리를 들으면 기분이 좋아져서 더 열심히 춤을 춥니다. <strong>㉣</strong></p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207733",
+      "number": 30,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "이 글의 내용과 같은 것을 고르십시오.",
+      "prompt_html": "<div>이 글의 내용과 같은 것을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "저는 날마다 춤 연습을 합니다.",
+          "rawHtml": "A. 저는 날마다 춤 연습을 합니다."
+        },
+        {
+          "option": "B",
+          "text": "저는 공연 보는 것을 좋아합니다.",
+          "rawHtml": "B. 저는 공연 보는 것을 좋아합니다."
+        },
+        {
+          "option": "C",
+          "text": "저는 요즘 춤에 관심이 생겼습니다.",
+          "rawHtml": "C. 저는 요즘 춤에 관심이 생겼습니다."
+        },
+        {
+          "option": "D",
+          "text": "저는 혼자 공원에서 공연을 합니다.",
+          "rawHtml": "D. 저는 혼자 공원에서 공연을 합니다."
+        }
+      ],
+      "context": {
+        "text": "[29~30]다음을 읽고 물음에 답하십시오.저는 어릴 때부터 춤추는 것을 좋아했습니다. ㉠ 요즘도 매일 혼자 거울을 보면서 춤 연습을 합니다.㉡ 주말에는 가끔 친구들과 같이 지하철역이나 공원에서 공연도 합니다. ㉢ 사람들의 박수 소리를 들으면 기분이 좋아져서 더 열심히 춤을 춥니다. ㉣",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[29~30]</p><p>다음을 읽고 물음에 답하십시오.</p><p>저는 어릴 때부터 춤추는 것을 좋아했습니다. <strong>㉠</strong> 요즘도 매일 혼자 거울을 보면서 춤 연습을 합니다.<strong>㉡</strong> 주말에는 가끔 친구들과 같이 지하철역이나 공원에서 공연도 합니다. <strong>㉢</strong> 사람들의 박수 소리를 들으면 기분이 좋아져서 더 열심히 춤을 춥니다. <strong>㉣</strong></p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207734",
+      "number": 31,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "㉠에 들어갈 알맞은 말을 고르십시오.",
+      "prompt_html": "<div><strong>㉠</strong>에 들어갈 알맞은 말을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "바꾸면",
+          "rawHtml": "A. 바꾸면"
+        },
+        {
+          "option": "B",
+          "text": "바꿔도",
+          "rawHtml": "B. 바꿔도"
+        },
+        {
+          "option": "C",
+          "text": "바꾸려고",
+          "rawHtml": "C. 바꾸려고"
+        },
+        {
+          "option": "D",
+          "text": "바꾸지만",
+          "rawHtml": "D. 바꾸지만"
+        }
+      ],
+      "context": {
+        "text": "[31~32]다음을 읽고 물음에 답하십시오.인주시청 앞 도로는 주말에 차가 다닐 수 없습니다. 복잡한 길을 걷기 편한 거리로 ㉠ 인주시가 이곳을 '차 없는 거리'로 만든 것입니다. 사람들은 주말마다 이곳에서 자기가 안 쓰는 물건이나 직접 만든 물건을 사고팝니다. 배가 고프면 길에서 김밥이나 아이스크림을 사 먹을 수도 있습 니다. 자유롭고 밝은 분위기 때문에 젊은 사람들이 이곳을 많이 찾고 있습니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[31~32]</p><p>다음을 읽고 물음에 답하십시오.</p><p>인주시청 앞 도로는 주말에 차가 다닐 수 없습니다. 복잡한 길을 걷기 편한 거리로 <strong>㉠</strong> 인주시가 이곳을 '차 없는 거리'로 만든 것입니다. 사람들은 주말마다 이곳에서 자기가 안 쓰는 물건이나 직접 만든 물건을 사고팝니다. 배가 고프면 길에서 김밥이나 아이스크림을 사 먹을 수도 있습 니다. 자유롭고 밝은 분위기 때문에 젊은 사람들이 이곳을 많이 찾고 있습니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207735",
+      "number": 32,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "이 글의 내용과 같은 것을 고르십시오.",
+      "prompt_html": "<div>이 글의 내용과 같은 것을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "평일에는 이 도로에 차가 다닐 수 없습니다.",
+          "rawHtml": "A. 평일에는 이 도로에 차가 다닐 수 없습니다."
+        },
+        {
+          "option": "B",
+          "text": "배가 고프면 이곳에서 음식을 직접 만듭니다.",
+          "rawHtml": "B. 배가 고프면 이곳에서 음식을 직접 만듭니다."
+        },
+        {
+          "option": "C",
+          "text": "사람들이 많아지면서 거리가 더 복잡해졌습니다.",
+          "rawHtml": "C. 사람들이 많아지면서 거리가 더 복잡해졌습니다."
+        },
+        {
+          "option": "D",
+          "text": "이 도로는 젊은 사람들이 좋아하는 곳이 되었습니다.",
+          "rawHtml": "D. 이 도로는 젊은 사람들이 좋아하는 곳이 되었습니다."
+        }
+      ],
+      "context": {
+        "text": "[31~32]다음을 읽고 물음에 답하십시오.인주시청 앞 도로는 주말에 차가 다닐 수 없습니다. 복잡한 길을 걷기 편한 거리로 ㉠ 인주시가 이곳을 '차 없는 거리'로 만든 것입니다. 사람들은 주말마다 이곳에서 자기가 안 쓰는 물건이나 직접 만든 물건을 사고팝니다. 배가 고프면 길에서 김밥이나 아이스크림을 사 먹을 수도 있습 니다. 자유롭고 밝은 분위기 때문에 젊은 사람들이 이곳을 많이 찾고 있습니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[31~32]</p><p>다음을 읽고 물음에 답하십시오.</p><p>인주시청 앞 도로는 주말에 차가 다닐 수 없습니다. 복잡한 길을 걷기 편한 거리로 <strong>㉠</strong> 인주시가 이곳을 '차 없는 거리'로 만든 것입니다. 사람들은 주말마다 이곳에서 자기가 안 쓰는 물건이나 직접 만든 물건을 사고팝니다. 배가 고프면 길에서 김밥이나 아이스크림을 사 먹을 수도 있습 니다. 자유롭고 밝은 분위기 때문에 젊은 사람들이 이곳을 많이 찾고 있습니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207736",
+      "number": 33,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "김윤미 씨는 왜 이 글을 썼습니까?",
+      "prompt_html": "<div>김윤미 씨는 왜 이 글을 썼습니까?</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "그림책을 팔고 싶어서",
+          "rawHtml": "A. 그림책을 팔고 싶어서"
+        },
+        {
+          "option": "B",
+          "text": "그림책을 바꾸고 싶어서",
+          "rawHtml": "B. 그림책을 바꾸고 싶어서"
+        },
+        {
+          "option": "C",
+          "text": "그림책을 소개하고 싶어서",
+          "rawHtml": "C. 그림책을 소개하고 싶어서"
+        },
+        {
+          "option": "D",
+          "text": "그림책에 대해 물어보고 싶어서",
+          "rawHtml": "D. 그림책에 대해 물어보고 싶어서"
+        }
+      ],
+      "context": {
+        "text": "[33~34]다음을 읽고 물음에 답하십시오.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[33~34]</p><p>다음을 읽고 물음에 답하십시오.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207737",
+      "number": 34,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "이 글의 내용과 같은 것을 고르십시오.",
+      "prompt_html": "<div>이 글의 내용과 같은 것을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "이 그림책은 새 책입니다.",
+          "rawHtml": "A. 이 그림책은 새 책입니다."
+        },
+        {
+          "option": "B",
+          "text": "여러 번 읽었지만 깨끗합니다.",
+          "rawHtml": "B. 여러 번 읽었지만 깨끗합니다."
+        },
+        {
+          "option": "C",
+          "text": "초등학교 가기 전에 읽는 책입니다.",
+          "rawHtml": "C. 초등학교 가기 전에 읽는 책입니다."
+        },
+        {
+          "option": "D",
+          "text": "책값에 배달 비용도 들어 있습니다.",
+          "rawHtml": "D. 책값에 배달 비용도 들어 있습니다."
+        }
+      ],
+      "context": {
+        "text": "[33~34]다음을 읽고 물음에 답하십시오.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[33~34]</p><p>다음을 읽고 물음에 답하십시오.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207738",
+      "number": 35,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "㉠에 들어갈 알맞은 말을 고르십시오.",
+      "prompt_html": "<div><strong>㉠</strong>에 들어갈 알맞은 말을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "준비해도 됩니다",
+          "rawHtml": "A. 준비해도 됩니다"
+        },
+        {
+          "option": "B",
+          "text": "준비할 수 있습니다",
+          "rawHtml": "B. 준비할 수 있습니다"
+        },
+        {
+          "option": "C",
+          "text": "준비되어 있습니다",
+          "rawHtml": "C. 준비되어 있습니다"
+        },
+        {
+          "option": "D",
+          "text": "준비된 적이 있습니다",
+          "rawHtml": "D. 준비된 적이 있습니다"
+        }
+      ],
+      "context": {
+        "text": "[35~36]다음을 읽고 물음에 답하십시오.다음 달 15일부터 경기도 부천에서 국제만화축제가 열립니다. 축제에서는 여러 나라의 만화를 볼 수 있습니다. 어릴 때 본 추억의 만화책부터 요즘 유행하는 만화책까지 다양하게 ㉠. 또 유명한 만화가의 사인도 받을 수 있습니다. 그리고 만화가들이 축제에 참가하는 사람들의 얼굴을 그려 줍니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[35~36]</p><p>다음을 읽고 물음에 답하십시오.</p><p>다음 달 15일부터 경기도 부천에서 국제만화축제가 열립니다. 축제에서는 여러 나라의 만화를 볼 수 있습니다. 어릴 때 본 추억의 만화책부터 요즘 유행하는 만화책까지 다양하게 <strong>㉠</strong>. 또 유명한 만화가의 사인도 받을 수 있습니다. 그리고 만화가들이 축제에 참가하는 사람들의 얼굴을 그려 줍니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207739",
+      "number": 36,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "이 글의 내용과 같은 것을 고르십시오.",
+      "prompt_html": "<div>이 글의 내용과 같은 것을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "국제만화축제가 지금 열리고 있습니다.",
+          "rawHtml": "A. 국제만화축제가 지금 열리고 있습니다."
+        },
+        {
+          "option": "B",
+          "text": "이 축제에서 옛날 만화책은 볼 수 없습니다.",
+          "rawHtml": "B. 이 축제에서 옛날 만화책은 볼 수 없습니다."
+        },
+        {
+          "option": "C",
+          "text": "이 축제에서 다른 나라의 만화를 볼 수 있습니다.",
+          "rawHtml": "C. 이 축제에서 다른 나라의 만화를 볼 수 있습니다."
+        },
+        {
+          "option": "D",
+          "text": "사람들에게 유명한 만화가의 얼굴을 그려 줍니다.",
+          "rawHtml": "D. 사람들에게 유명한 만화가의 얼굴을 그려 줍니다."
+        }
+      ],
+      "context": {
+        "text": "[35~36]다음을 읽고 물음에 답하십시오.다음 달 15일부터 경기도 부천에서 국제만화축제가 열립니다. 축제에서는 여러 나라의 만화를 볼 수 있습니다. 어릴 때 본 추억의 만화책부터 요즘 유행하는 만화책까지 다양하게 ㉠. 또 유명한 만화가의 사인도 받을 수 있습니다. 그리고 만화가들이 축제에 참가하는 사람들의 얼굴을 그려 줍니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[35~36]</p><p>다음을 읽고 물음에 답하십시오.</p><p>다음 달 15일부터 경기도 부천에서 국제만화축제가 열립니다. 축제에서는 여러 나라의 만화를 볼 수 있습니다. 어릴 때 본 추억의 만화책부터 요즘 유행하는 만화책까지 다양하게 <strong>㉠</strong>. 또 유명한 만화가의 사인도 받을 수 있습니다. 그리고 만화가들이 축제에 참가하는 사람들의 얼굴을 그려 줍니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207740",
+      "number": 37,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "㉠에 들어갈 알맞은 말을 고르십시오.",
+      "prompt_html": "<div><strong>㉠</strong>에 들어갈 알맞은 말을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "내야 합니다",
+          "rawHtml": "A. 내야 합니다"
+        },
+        {
+          "option": "B",
+          "text": "많이 냅니다",
+          "rawHtml": "B. 많이 냅니다"
+        },
+        {
+          "option": "C",
+          "text": "별로 없습니다",
+          "rawHtml": "C. 별로 없습니다"
+        },
+        {
+          "option": "D",
+          "text": "받지 않습니다",
+          "rawHtml": "D. 받지 않습니다"
+        }
+      ],
+      "context": {
+        "text": "[37~38]다음을 읽고 물음에 답하십시오.김지호 씨는 미용사입니다. 도시의 큰 미용실에서 일하고 있습니다. 손님이 많고 바쁘지만 한 달에 한 번은 시골의 작은 마을을 찾아갑니다. 거기서 사람들의 머리를 예쁘게 잘라 줍니다. 돈은 ㉠. 그 대신 마을 사람들의 집에서 식사를 하면서 재미있는 이야기를 듣습니다. 김지호 씨는 그곳에 가는 날이 즐겁습니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[37~38]</p><p>다음을 읽고 물음에 답하십시오.</p><p>김지호 씨는 미용사입니다. 도시의 큰 미용실에서 일하고 있습니다. 손님이 많고 바쁘지만 한 달에 한 번은 시골의 작은 마을을 찾아갑니다. 거기서 사람들의 머리를 예쁘게 잘라 줍니다. 돈은 <strong>㉠</strong>. 그 대신 마을 사람들의 집에서 식사를 하면서 재미있는 이야기를 듣습니다. 김지호 씨는 그곳에 가는 날이 즐겁습니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207741",
+      "number": 38,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "이 글의 내용과 같은 것을 고르십시오.",
+      "prompt_html": "<div>이 글의 내용과 같은 것을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "김지호 씨는 바쁠 때 시골에 가지 못합니다.",
+          "rawHtml": "A. 김지호 씨는 바쁠 때 시골에 가지 못합니다."
+        },
+        {
+          "option": "B",
+          "text": "도시보다 시골의 작은 마을에 손님이 더 많습니다.",
+          "rawHtml": "B. 도시보다 시골의 작은 마을에 손님이 더 많습니다."
+        },
+        {
+          "option": "C",
+          "text": "마을 사람들은 김지호 씨의 이야기를 재미있게 듣습니다.",
+          "rawHtml": "C. 마을 사람들은 김지호 씨의 이야기를 재미있게 듣습니다."
+        },
+        {
+          "option": "D",
+          "text": "김지호 씨는 시골 사람들과 함께 있는 시간을 좋아합니다.",
+          "rawHtml": "D. 김지호 씨는 시골 사람들과 함께 있는 시간을 좋아합니다."
+        }
+      ],
+      "context": {
+        "text": "[37~38]다음을 읽고 물음에 답하십시오.김지호 씨는 미용사입니다. 도시의 큰 미용실에서 일하고 있습니다. 손님이 많고 바쁘지만 한 달에 한 번은 시골의 작은 마을을 찾아갑니다. 거기서 사람들의 머리를 예쁘게 잘라 줍니다. 돈은 ㉠. 그 대신 마을 사람들의 집에서 식사를 하면서 재미있는 이야기를 듣습니다. 김지호 씨는 그곳에 가는 날이 즐겁습니다.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[37~38]</p><p>다음을 읽고 물음에 답하십시오.</p><p>김지호 씨는 미용사입니다. 도시의 큰 미용실에서 일하고 있습니다. 손님이 많고 바쁘지만 한 달에 한 번은 시골의 작은 마을을 찾아갑니다. 거기서 사람들의 머리를 예쁘게 잘라 줍니다. 돈은 <strong>㉠</strong>. 그 대신 마을 사람들의 집에서 식사를 하면서 재미있는 이야기를 듣습니다. 김지호 씨는 그곳에 가는 날이 즐겁습니다.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207742",
+      "number": 39,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "㉠에 들어갈 알맞은 말을 고르십시오.",
+      "prompt_html": "<div><strong>㉠</strong>에 들어갈 알맞은 말을 고르십시오.</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "보고 싶을 겁니다",
+          "rawHtml": "A. 보고 싶을 겁니다"
+        },
+        {
+          "option": "B",
+          "text": "보고 싶었습니다",
+          "rawHtml": "B. 보고 싶었습니다"
+        },
+        {
+          "option": "C",
+          "text": "좋아지고 있습니다",
+          "rawHtml": "C. 좋아지고 있습니다"
+        },
+        {
+          "option": "D",
+          "text": "좋아지려고 합니다",
+          "rawHtml": "D. 좋아지려고 합니다"
+        }
+      ],
+      "context": {
+        "text": "[39~40]다음을 읽고 물음에 답하십시오.우리 집에는 나무가 하나 있습니다. 제가 태어났을 때 우리 아버지가 심으신 것입니다. 그래서 저하고 나이가 같습니다. 어릴 때는 그 나무가 저보다 작았는데 지금은 저보다 큽니다. 제가 물을 주고 키워서 나무와 정이 많이 들었습니다. 그러나 이제 그 나무와 헤어져야 합니다. 다음 주에 우리 가족이 이사를 하기 때문입니다. 저는 그 나무가 무척 ㉠.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[39~40]</p><p>다음을 읽고 물음에 답하십시오.</p><p>우리 집에는 나무가 하나 있습니다. 제가 태어났을 때 우리 아버지가 심으신 것입니다. 그래서 저하고 나이가 같습니다. 어릴 때는 그 나무가 저보다 작았는데 지금은 저보다 큽니다. 제가 물을 주고 키워서 나무와 정이 많이 들었습니다. 그러나 이제 그 나무와 헤어져야 합니다. 다음 주에 우리 가족이 이사를 하기 때문입니다. 저는 그 나무가 무척 <strong>㉠</strong>.</p></div>\n    </div>",
+        "images": []
+      }
+    },
+    {
+      "question_id": "207743",
+      "number": 40,
+      "intro_text": null,
+      "intro_html": null,
+      "prompt": "이 글의 내용으로 알 수 있는 것은 무엇입니까?",
+      "prompt_html": "<div>이 글의 내용으로 알 수 있는 것은 무엇입니까?</div>",
+      "answers": [
+        {
+          "option": "A",
+          "text": "저는 이사를 가서 나무를 심을 겁니다.",
+          "rawHtml": "A. 저는 이사를 가서 나무를 심을 겁니다."
+        },
+        {
+          "option": "B",
+          "text": "저는 나무와 헤어지게 되어서 슬픕니다.",
+          "rawHtml": "B. 저는 나무와 헤어지게 되어서 슬픕니다."
+        },
+        {
+          "option": "C",
+          "text": "저는 나무 때문에 이사를 갈 수 없습니다.",
+          "rawHtml": "C. 저는 나무 때문에 이사를 갈 수 없습니다."
+        },
+        {
+          "option": "D",
+          "text": "저는 나무가 보고 싶을 때 그 집에 갈 겁니다.",
+          "rawHtml": "D. 저는 나무가 보고 싶을 때 그 집에 갈 겁니다."
+        }
+      ],
+      "context": {
+        "text": "[39~40]다음을 읽고 물음에 답하십시오.우리 집에는 나무가 하나 있습니다. 제가 태어났을 때 우리 아버지가 심으신 것입니다. 그래서 저하고 나이가 같습니다. 어릴 때는 그 나무가 저보다 작았는데 지금은 저보다 큽니다. 제가 물을 주고 키워서 나무와 정이 많이 들었습니다. 그러나 이제 그 나무와 헤어져야 합니다. 다음 주에 우리 가족이 이사를 하기 때문입니다. 저는 그 나무가 무척 ㉠.",
+        "html": "<div class=\"context-content text-highlightable\">\n        <div><p>[39~40]</p><p>다음을 읽고 물음에 답하십시오.</p><p>우리 집에는 나무가 하나 있습니다. 제가 태어났을 때 우리 아버지가 심으신 것입니다. 그래서 저하고 나이가 같습니다. 어릴 때는 그 나무가 저보다 작았는데 지금은 저보다 큽니다. 제가 물을 주고 키워서 나무와 정이 많이 들었습니다. 그러나 이제 그 나무와 헤어져야 합니다. 다음 주에 우리 가족이 이사를 하기 때문입니다. 저는 그 나무가 무척 <strong>㉠</strong>.</p></div>\n    </div>",
+        "images": []
+      }
+    }
+  ]
+}

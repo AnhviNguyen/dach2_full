@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_placement_result.dart';
 import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_section.dart';
 import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_day.dart';
+import 'package:koreanhwa_flutter/features/roadmap/data/models/roadmap_period.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RoadmapService {
@@ -11,6 +13,11 @@ class RoadmapService {
   static const String _keyPlacementResult = 'roadmap_placement_result';
   static const String _keyUserLevel = 'roadmap_user_level';
   static const String _keyTextbookUnlock = 'roadmap_textbook_unlock';
+  static const String _keyRoadmapTimeline = 'roadmap_timeline';
+  static const String _keyRoadmapId = 'roadmap_id';
+  
+  static RoadmapTimeline? _roadmapTimeline;
+  static String? _roadmapId;
 
   static bool hasCompletedPlacement() {
     return _placementResult != null;
@@ -148,6 +155,60 @@ class RoadmapService {
 
   static double getProgress() {
     return getCompletedDays() / 18.0;
+  }
+
+  /// Save roadmap timeline
+  static Future<void> saveRoadmapTimeline(Map<String, dynamic> roadmapData) async {
+    try {
+      _roadmapTimeline = RoadmapTimeline.fromJson(roadmapData);
+      _roadmapId = roadmapData['roadmap_id'] as String?;
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keyRoadmapTimeline, jsonEncode(roadmapData));
+      if (_roadmapId != null) {
+        await prefs.setString(_keyRoadmapId, _roadmapId!);
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
+  
+  /// Get roadmap ID
+  static String? getRoadmapId() {
+    return _roadmapId;
+  }
+  
+  /// Load roadmap ID from storage
+  static Future<String?> loadRoadmapId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _roadmapId = prefs.getString(_keyRoadmapId);
+      return _roadmapId;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Load roadmap timeline
+  static Future<RoadmapTimeline?> loadRoadmapTimeline() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timelineJson = prefs.getString(_keyRoadmapTimeline);
+      
+      if (timelineJson != null) {
+        final data = jsonDecode(timelineJson) as Map<String, dynamic>;
+        _roadmapTimeline = RoadmapTimeline.fromJson(data);
+        return _roadmapTimeline;
+      }
+    } catch (e) {
+      // Handle error
+    }
+    return null;
+  }
+
+  /// Get roadmap timeline
+  static RoadmapTimeline? getRoadmapTimeline() {
+    return _roadmapTimeline;
   }
 }
 

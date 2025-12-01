@@ -61,20 +61,23 @@ class _CompetitionInfoScreenState extends ConsumerState<CompetitionInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.primaryWhite,
+          backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
             onPressed: () => context.pop(),
           ),
-          title: const Text(
+          title: Text(
             'Đang tải...',
             style: TextStyle(
-              color: AppColors.primaryBlack,
+              color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -86,18 +89,18 @@ class _CompetitionInfoScreenState extends ConsumerState<CompetitionInfoScreen> {
     final competition = _competition;
     if (competition == null || _errorMessage != null) {
       return Scaffold(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.primaryWhite,
+          backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+            icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
             onPressed: () => context.pop(),
           ),
-          title: const Text(
+          title: Text(
             'Lỗi',
             style: TextStyle(
-              color: AppColors.primaryBlack,
+              color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack),
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -127,12 +130,12 @@ class _CompetitionInfoScreenState extends ConsumerState<CompetitionInfoScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.primaryWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryWhite,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? (isDark ? AppColors.darkSurface : AppColors.primaryWhite),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlack),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? (isDark ? Colors.white : AppColors.primaryBlack)),
           onPressed: () => context.pop(),
         ),
         title: Text(

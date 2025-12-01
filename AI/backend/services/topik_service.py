@@ -1,52 +1,37 @@
 """
 TOPIK Service - Load and manage TOPIK exam questions
 
-TOPIK 1 có 2 phần thi chính:
+TOPIK 1 và TOPIK 2 có cấu trúc khác nhau:
 ===========================================
-1. PHẦN NGHE (LISTENING):
-   - Số lượng câu hỏi: 30 câu (cố định cho TOPIK 1)
-   - Mỗi câu hỏi có file audio riêng
-   - Audio URL được lưu trong context.audio
-   - Format: topik{exam_number}_listen_questions.json
-   - Ví dụ: topik35_listen_questions.json
+TOPIK 1:
+- Listening: 30 câu (có audio)
+- Reading: 40 câu (không audio)
+- KHÔNG có file answers
 
-2. PHẦN ĐỌC (READING):
-   - Số lượng câu hỏi: 40 câu (cố định cho TOPIK 1)
-   - KHÔNG có audio (chỉ text)
-   - Format: topik{exam_number}_reading_questions.json
-   - Ví dụ: topik35_reading_questions.json
+TOPIK 2:
+- Listening: 50 câu (có audio)
+- Reading: 50 câu (không audio)
+- CÓ file answers riêng:
+  * topik{exam_number}_listening_answers.json
+  * topik{exam_number}_reading_answers.json
 
 CẤU TRÚC THƯ MỤC:
 ===========================================
-TOPIK_DIR/
-  ├── 35/
-  │   ├── topik35_listen_questions.json (30 câu, có audio)
-  │   └── topik35_reading_questions.json (40 câu, không audio)
-  ├── 36/
-  │   ├── topik36_listen_questions.json
-  │   └── topik36_reading_questions.json
-  └── 37/
-      ├── topik37_listen_questions.json
-      └── topik37_reading_questions.json
-
-CẤU TRÚC JSON:
-===========================================
-{
-  "url": "...",
-  "total": 30,  // Số lượng câu hỏi (30 cho listening, 40 cho reading)
-  "questions": [
-    {
-      "question_id": "...",
-      "number": 1,  // Số thứ tự câu hỏi (1-30 cho listening, 1-40 cho reading)
-      "prompt": "...",
-      "answers": [...],
-      "context": {
-        "audio": "https://...",  // CHỈ CÓ trong listening questions
-        "images": []
-      }
-    }
-  ]
-}
+topik/
+  ├── topik1/
+  │   ├── 35/
+  │   │   ├── topik35_listen_questions.json
+  │   │   └── topik35_reading_questions.json
+  │   ├── 36/
+  │   └── 37/
+  └── topik2/
+      ├── 35/
+      │   ├── topik35_listen_questions.json
+      │   ├── topik35_listening_answers.json
+      │   ├── topik35_reading_questions.json
+      │   └── topik35_reading_answers.json
+      ├── 36/
+      └── ...
 """
 import json
 import logging
@@ -56,19 +41,25 @@ from typing import List, Dict, Optional, Any, Literal
 logger = logging.getLogger(__name__)
 
 # Path to TOPIK directory
-# Cấu trúc: TOPIK_DIR/{exam_number}/topik{exam_number}_listen_questions.json
-#           TOPIK_DIR/{exam_number}/topik{exam_number}_reading_questions.json
-TOPIK_DIR = Path(r"C:\Users\admin\Downloads\topik1")
+# Cấu trúc: TOPIK_DIR/topik1/{exam_number}/...
+#           TOPIK_DIR/topik2/{exam_number}/...
+TOPIK_DIR = Path(__file__).parent.parent / "topik"
 
-# Cache for loaded questions
+# Cache for loaded questions and answers
 _questions_cache: Dict[str, Dict[str, Any]] = {}
+_answers_cache: Dict[str, Dict[str, Any]] = {}
 
 
-def load_topik_questions(exam_number: str, question_type: Literal["listening", "reading"]) -> Dict[str, Any]:
+def load_topik_questions(
+    topik_level: Literal["1", "2"],
+    exam_number: str,
+    question_type: Literal["listening", "reading"]
+) -> Dict[str, Any]:
     """
     Load TOPIK questions from JSON file
     
     Args:
+        topik_level: TOPIK level ("1" or "2")
         exam_number: Exam number (e.g., "35", "36", "37")
         question_type: Type of questions ("listening" or "reading")
     
@@ -76,13 +67,15 @@ def load_topik_questions(exam_number: str, question_type: Literal["listening", "
         Dictionary containing questions data with structure:
         {
             "url": "...",
-            "total": 30 or 40,  // 30 cho listening, 40 cho reading
+            "total": 30/40/50,  // 30 listening, 40 reading cho TOPIK 1; 50/50 cho TOPIK 2
             "question_type": "listening" or "reading",
-            "has_audio": True/False,  // True cho listening, False cho reading
+            "has_audio": True/False,
+            "topik_level": "1" or "2",
+            "has_answers": True/False,  // True cho TOPIK 2
             "questions": [...]
         }
     """
-    cache_key = f"{exam_number}_{question_type}"
+    cache_key = f"{topik_level}_{exam_number}_{question_type}"
     
     if cache_key in _questions_cache:
         return _questions_cache[cache_key]
@@ -94,16 +87,18 @@ def load_topik_questions(exam_number: str, question_type: Literal["listening", "
     }
     
     file_type = type_mapping.get(question_type, "listen")
-    file_path = TOPIK_DIR / exam_number / f"topik{exam_number}_{file_type}_questions.json"
+    file_path = TOPIK_DIR / f"topik{topik_level}" / exam_number / f"topik{exam_number}_{file_type}_questions.json"
     
     if not file_path.exists():
         logger.warning(f"TOPIK file not found: {file_path}")
         return {
-            "error": f"File not found for exam {exam_number}, type {question_type}",
+            "error": f"File not found for TOPIK {topik_level}, exam {exam_number}, type {question_type}",
             "questions": [],
             "total": 0,
             "question_type": question_type,
-            "has_audio": question_type == "listening"
+            "topik_level": topik_level,
+            "has_audio": question_type == "listening",
+            "has_answers": topik_level == "2"
         }
     
     try:
@@ -112,7 +107,9 @@ def load_topik_questions(exam_number: str, question_type: Literal["listening", "
         
         # Add metadata
         data["question_type"] = question_type
+        data["topik_level"] = topik_level
         data["has_audio"] = question_type == "listening"
+        data["has_answers"] = topik_level == "2"
         
         # Extract audio URLs from questions (for listening)
         if question_type == "listening":
@@ -127,7 +124,7 @@ def load_topik_questions(exam_number: str, question_type: Literal["listening", "
             logger.info(f"Found {audio_count} audio files in {data.get('total', 0)} listening questions")
         
         _questions_cache[cache_key] = data
-        logger.info(f"✅ Loaded TOPIK {exam_number} {question_type}: {data.get('total', 0)} questions")
+        logger.info(f"✅ Loaded TOPIK {topik_level} exam {exam_number} {question_type}: {data.get('total', 0)} questions")
         return data
     except Exception as e:
         logger.error(f"Error loading TOPIK questions: {e}", exc_info=True)
@@ -136,15 +133,73 @@ def load_topik_questions(exam_number: str, question_type: Literal["listening", "
             "questions": [],
             "total": 0,
             "question_type": question_type,
-            "has_audio": question_type == "listening"
+            "topik_level": topik_level,
+            "has_audio": question_type == "listening",
+            "has_answers": topik_level == "2"
         }
 
 
-def get_topik_question(exam_number: str, question_type: Literal["listening", "reading"], question_id: str) -> Optional[Dict[str, Any]]:
+def load_topik_answers(
+    topik_level: Literal["1", "2"],
+    exam_number: str,
+    question_type: Literal["listening", "reading"]
+) -> Optional[Dict[str, Any]]:
+    """
+    Load TOPIK answers from JSON file (chỉ có cho TOPIK 2)
+    
+    Args:
+        topik_level: TOPIK level ("1" or "2")
+        exam_number: Exam number
+        question_type: Type of questions
+    
+    Returns:
+        Dictionary with answers data or None if not found/not available
+    """
+    # TOPIK 1 không có answers
+    if topik_level == "1":
+        return None
+    
+    cache_key = f"{topik_level}_{exam_number}_{question_type}_answers"
+    
+    if cache_key in _answers_cache:
+        return _answers_cache[cache_key]
+    
+    # Map question_type to filename
+    type_mapping = {
+        "listening": "listening",
+        "reading": "reading"
+    }
+    
+    file_type = type_mapping.get(question_type, "listening")
+    file_path = TOPIK_DIR / f"topik{topik_level}" / exam_number / f"topik{exam_number}_{file_type}_answers.json"
+    
+    if not file_path.exists():
+        logger.warning(f"TOPIK answers file not found: {file_path}")
+        return None
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        _answers_cache[cache_key] = data
+        logger.info(f"✅ Loaded TOPIK {topik_level} exam {exam_number} {question_type} answers: {data.get('total', 0)} answers")
+        return data
+    except Exception as e:
+        logger.error(f"Error loading TOPIK answers: {e}", exc_info=True)
+        return None
+
+
+def get_topik_question(
+    topik_level: Literal["1", "2"],
+    exam_number: str,
+    question_type: Literal["listening", "reading"],
+    question_id: str
+) -> Optional[Dict[str, Any]]:
     """
     Get a specific question by ID
     
     Args:
+        topik_level: TOPIK level ("1" or "2")
         exam_number: Exam number
         question_type: Type of questions
         question_id: Question ID
@@ -152,7 +207,7 @@ def get_topik_question(exam_number: str, question_type: Literal["listening", "re
     Returns:
         Question data if found, None otherwise
     """
-    data = load_topik_questions(exam_number, question_type)
+    data = load_topik_questions(topik_level, exam_number, question_type)
     questions = data.get("questions", [])
     
     for question in questions:
@@ -162,11 +217,17 @@ def get_topik_question(exam_number: str, question_type: Literal["listening", "re
     return None
 
 
-def get_topik_question_by_number(exam_number: str, question_type: Literal["listening", "reading"], number: int) -> Optional[Dict[str, Any]]:
+def get_topik_question_by_number(
+    topik_level: Literal["1", "2"],
+    exam_number: str,
+    question_type: Literal["listening", "reading"],
+    number: int
+) -> Optional[Dict[str, Any]]:
     """
     Get a specific question by question number
     
     Args:
+        topik_level: TOPIK level ("1" or "2")
         exam_number: Exam number
         question_type: Type of questions
         number: Question number (1-indexed)
@@ -174,7 +235,7 @@ def get_topik_question_by_number(exam_number: str, question_type: Literal["liste
     Returns:
         Question data if found, None otherwise
     """
-    data = load_topik_questions(exam_number, question_type)
+    data = load_topik_questions(topik_level, exam_number, question_type)
     questions = data.get("questions", [])
     
     for question in questions:
@@ -184,66 +245,134 @@ def get_topik_question_by_number(exam_number: str, question_type: Literal["liste
     return None
 
 
-def list_available_exams() -> List[str]:
+def get_correct_answer(
+    topik_level: Literal["1", "2"],
+    exam_number: str,
+    question_type: Literal["listening", "reading"],
+    question_id: str
+) -> Optional[str]:
+    """
+    Get correct answer for a question (chỉ có cho TOPIK 2)
+    
+    Args:
+        topik_level: TOPIK level ("1" or "2")
+        exam_number: Exam number
+        question_type: Type of questions
+        question_id: Question ID
+    
+    Returns:
+        Correct answer option (e.g., "A", "B", "C", "D") or None
+    """
+    if topik_level == "1":
+        return None
+    
+    answers_data = load_topik_answers(topik_level, exam_number, question_type)
+    if not answers_data:
+        return None
+    
+    answers = answers_data.get("answers", [])
+    for answer in answers:
+        if answer.get("question_id") == question_id:
+            return answer.get("correct_option")
+    
+    return None
+
+
+def list_available_exams(topik_level: Optional[Literal["1", "2"]] = None) -> Dict[str, List[str]]:
     """
     List all available exam numbers
     
+    Args:
+        topik_level: TOPIK level ("1" or "2") - if None, returns both
+    
     Returns:
-        List of exam numbers (as strings)
+        Dictionary with "1" and/or "2" as keys, each containing list of exam numbers
     """
-    if not TOPIK_DIR.exists():
-        return []
+    result = {}
     
-    exams = []
-    for item in TOPIK_DIR.iterdir():
-        if item.is_dir() and item.name.isdigit():
-            exams.append(item.name)
+    if topik_level is None:
+        levels = ["1", "2"]
+    else:
+        levels = [topik_level]
     
-    return sorted(exams)
+    for level in levels:
+        level_dir = TOPIK_DIR / f"topik{level}"
+        if not level_dir.exists():
+            result[level] = []
+            continue
+        
+        exams = []
+        for item in level_dir.iterdir():
+            if item.is_dir() and item.name.isdigit():
+                exams.append(item.name)
+        
+        result[level] = sorted(exams)
+    
+    return result
 
 
-def get_topik_stats() -> Dict[str, Any]:
+def get_topik_stats(topik_level: Optional[Literal["1", "2"]] = None) -> Dict[str, Any]:
     """
     Get statistics about available TOPIK data
     
+    Args:
+        topik_level: TOPIK level ("1" or "2") - if None, returns stats for both
+    
     Returns:
-        Dictionary with statistics including:
-        - Total exams available
-        - For each exam: listening questions (30) and reading questions (40)
-        - Total questions across all exams
+        Dictionary with statistics
     """
-    exams = list_available_exams()
+    if topik_level is None:
+        levels = ["1", "2"]
+    else:
+        levels = [topik_level]
+    
     stats = {
-        "total_exams": len(exams),
-        "exams": [],
-        "directory": str(TOPIK_DIR),
+        "topik_levels": {},
+        "total_exams": 0,
         "total_listening_questions": 0,
         "total_reading_questions": 0,
-        "question_counts": {
-            "listening": 30,  # TOPIK 1 listening has 30 questions
-            "reading": 40     # TOPIK 1 reading has 40 questions
-        }
+        "directory": str(TOPIK_DIR)
     }
     
-    for exam in exams:
-        listening_data = load_topik_questions(exam, "listening")
-        reading_data = load_topik_questions(exam, "reading")
+    for level in levels:
+        exams = list_available_exams(level).get(level, [])
+        level_stats = {
+            "total_exams": len(exams),
+            "exams": [],
+            "total_listening_questions": 0,
+            "total_reading_questions": 0,
+            "question_counts": {
+                "listening": 30 if level == "1" else 50,
+                "reading": 40 if level == "1" else 50
+            },
+            "has_answers": level == "2"
+        }
         
-        listening_count = listening_data.get("total", 0)
-        reading_count = reading_data.get("total", 0)
+        for exam in exams:
+            listening_data = load_topik_questions(level, exam, "listening")
+            reading_data = load_topik_questions(level, exam, "reading")
+            
+            listening_count = listening_data.get("total", 0)
+            reading_count = reading_data.get("total", 0)
+            
+            level_stats["total_listening_questions"] += listening_count
+            level_stats["total_reading_questions"] += reading_count
+            
+            level_stats["exams"].append({
+                "exam_number": exam,
+                "listening_questions": listening_count,
+                "reading_questions": reading_count,
+                "has_listening_audio": listening_data.get("has_audio", False),
+                "has_reading_audio": reading_data.get("has_audio", False),
+                "has_answers": level == "2"
+            })
         
-        stats["total_listening_questions"] += listening_count
-        stats["total_reading_questions"] += reading_count
-        
-        stats["exams"].append({
-            "exam_number": exam,
-            "listening_questions": listening_count,  # Should be 30 for TOPIK 1
-            "reading_questions": reading_count,      # Should be 40 for TOPIK 1
-            "has_listening_audio": listening_data.get("has_audio", False),
-            "has_reading_audio": reading_data.get("has_audio", False)
-        })
+        level_stats["total_questions"] = level_stats["total_listening_questions"] + level_stats["total_reading_questions"]
+        stats["topik_levels"][level] = level_stats
+        stats["total_exams"] += len(exams)
+        stats["total_listening_questions"] += level_stats["total_listening_questions"]
+        stats["total_reading_questions"] += level_stats["total_reading_questions"]
     
     stats["total_questions"] = stats["total_listening_questions"] + stats["total_reading_questions"]
     
     return stats
-
