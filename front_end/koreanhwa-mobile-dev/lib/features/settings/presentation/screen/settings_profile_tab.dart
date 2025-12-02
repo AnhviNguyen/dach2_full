@@ -7,6 +7,7 @@ import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 import 'package:koreanhwa_flutter/features/auth/data/services/user_api_service.dart';
 import 'package:koreanhwa_flutter/core/utils/user_utils.dart';
 import 'package:koreanhwa_flutter/core/storage/shared_preferences_service.dart';
+import 'package:koreanhwa_flutter/core/config/api_config.dart';
 
 class SettingsProfileTab extends StatefulWidget {
   const SettingsProfileTab({super.key});
@@ -16,13 +17,14 @@ class SettingsProfileTab extends StatefulWidget {
 }
 
 class _SettingsProfileTabState extends State<SettingsProfileTab> {
-  late ProfileSettings _profile;
+  ProfileSettings? _profile;
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
   final UserApiService _userApiService = UserApiService();
   File? _avatarFile;
   String? _avatarPath;
   bool _isSaving = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -31,11 +33,65 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
   }
 
   Future<void> _loadProfile() async {
-    final settings = await SettingsService.getSettings();
     setState(() {
-      _profile = settings.profile;
-      _avatarPath = _profile.avatar;
+      _isLoading = true;
     });
+
+    try {
+      // Load from backend first
+      final userId = await UserUtils.getUserId();
+      if (userId != null) {
+        // Use getUserById endpoint instead
+        final user = await _userApiService.getUserById(userId);
+        
+        // Parse name into firstName and lastName
+        final nameParts = user.name.split(' ');
+        final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+        final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+        
+        // Load local settings for fields not in backend
+        final settings = await SettingsService.getSettings();
+        
+        setState(() {
+          _profile = ProfileSettings(
+            firstName: firstName,
+            lastName: lastName,
+            email: user.email,
+            phone: settings.profile.phone, // Not in backend
+            avatar: user.avatar ?? '', // Load from backend
+            level: user.level ?? 'Sơ cấp 1',
+            goal: settings.profile.goal, // Not in backend
+            birthday: settings.profile.birthday, // Not in backend
+            location: settings.profile.location, // Not in backend
+            bio: settings.profile.bio, // Not in backend
+            interests: settings.profile.interests, // Not in backend
+            studyTime: settings.profile.studyTime, // Not in backend
+            timezone: settings.profile.timezone, // Not in backend
+          );
+          _avatarPath = user.avatar; // Always load from backend
+          _isLoading = false;
+        });
+        
+        // Update SharedPreferences with user data
+        await SharedPreferencesService.saveUser(user);
+      } else {
+        // Fallback to local settings if no userId
+        final settings = await SettingsService.getSettings();
+        setState(() {
+          _profile = settings.profile;
+          _avatarPath = settings.profile.avatar;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      // Fallback to local settings on error
+      final settings = await SettingsService.getSettings();
+      setState(() {
+        _profile = settings.profile;
+        _avatarPath = settings.profile.avatar;
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -53,27 +109,76 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
           _avatarPath = image.path;
         });
         
-        // Update profile with new avatar path
-        final updatedProfile = ProfileSettings(
-          firstName: _profile.firstName,
-          lastName: _profile.lastName,
-          email: _profile.email,
-          phone: _profile.phone,
-          avatar: image.path, // Store local path
-          level: _profile.level,
-          goal: _profile.goal,
-          birthday: _profile.birthday,
-          location: _profile.location,
-          bio: _profile.bio,
-          interests: _profile.interests,
-          studyTime: _profile.studyTime,
-          timezone: _profile.timezone,
-        );
-        
-        await SettingsService.updateProfile(updatedProfile);
-        setState(() {
-          _profile = updatedProfile;
-        });
+        // Upload image to server immediately
+        final userId = await UserUtils.getUserId();
+        if (userId != null && _profile != null) {
+          try {
+            final updatedUser = await _userApiService.uploadAvatar(userId, image.path);
+            
+            // Update profile with new avatar URL from server
+            final updatedProfile = ProfileSettings(
+              firstName: _profile!.firstName,
+              lastName: _profile!.lastName,
+              email: _profile!.email,
+              phone: _profile!.phone,
+              avatar: updatedUser.avatar ?? image.path, // Use server URL
+              level: _profile!.level,
+              goal: _profile!.goal,
+              birthday: _profile!.birthday,
+              location: _profile!.location,
+              bio: _profile!.bio,
+              interests: _profile!.interests,
+              studyTime: _profile!.studyTime,
+              timezone: _profile!.timezone,
+            );
+            
+            await SettingsService.updateProfile(updatedProfile);
+            
+            // Update SharedPreferences with new user data
+            await SharedPreferencesService.saveUser(updatedUser);
+            
+            setState(() {
+              _profile = updatedProfile;
+              _avatarPath = updatedUser.avatar;
+              _avatarFile = null; // Clear local file after upload
+            });
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Đã tải ảnh lên thành công')),
+              );
+            }
+          } catch (uploadError) {
+            // If upload fails, keep local file for now
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Lỗi khi tải ảnh lên: ${uploadError.toString()}')),
+              );
+            }
+          }
+        } else if (_profile != null) {
+          // No userId, just save locally
+          final updatedProfile = ProfileSettings(
+            firstName: _profile!.firstName,
+            lastName: _profile!.lastName,
+            email: _profile!.email,
+            phone: _profile!.phone,
+            avatar: image.path, // Store local path
+            level: _profile!.level,
+            goal: _profile!.goal,
+            birthday: _profile!.birthday,
+            location: _profile!.location,
+            bio: _profile!.bio,
+            interests: _profile!.interests,
+            studyTime: _profile!.studyTime,
+            timezone: _profile!.timezone,
+          );
+          
+          await SettingsService.updateProfile(updatedProfile);
+          setState(() {
+            _profile = updatedProfile;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -85,38 +190,70 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
   }
 
   Future<void> _saveProfile() async {
-    if (_formKey.currentState!.validate()) {
+    if (_formKey.currentState!.validate() && _profile != null) {
       setState(() {
         _isSaving = true;
       });
 
       try {
         // Save to SharedPreferences
-        await SettingsService.updateProfile(_profile);
+        await SettingsService.updateProfile(_profile!);
 
         // Save to database via API
         final userId = await UserUtils.getUserId();
         if (userId != null) {
+          // If there's a local file that hasn't been uploaded, upload it now
+          if (_avatarFile != null && !_profile!.avatar.startsWith('http://') && !_profile!.avatar.startsWith('https://')) {
+            try {
+              final uploadedUser = await _userApiService.uploadAvatar(userId, _avatarFile!.path);
+              setState(() {
+                _avatarPath = uploadedUser.avatar;
+                _avatarFile = null; // Clear after upload
+              });
+              
+              // Update profile with server URL
+              final updatedProfile = ProfileSettings(
+                firstName: _profile!.firstName,
+                lastName: _profile!.lastName,
+                email: _profile!.email,
+                phone: _profile!.phone,
+                avatar: uploadedUser.avatar ?? _profile!.avatar,
+                level: _profile!.level,
+                goal: _profile!.goal,
+                birthday: _profile!.birthday,
+                location: _profile!.location,
+                bio: _profile!.bio,
+                interests: _profile!.interests,
+                studyTime: _profile!.studyTime,
+                timezone: _profile!.timezone,
+              );
+              await SettingsService.updateProfile(updatedProfile);
+              setState(() {
+                _profile = updatedProfile;
+              });
+            } catch (uploadError) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Lỗi khi tải ảnh lên: ${uploadError.toString()}')),
+                );
+              }
+            }
+          }
+          
           final updateData = <String, dynamic>{
-            'name': '${_profile.firstName} ${_profile.lastName}'.trim(),
-            'level': _profile.level,
+            'name': '${_profile!.firstName} ${_profile!.lastName}'.trim(),
+            'level': _profile!.level,
           };
           
-          // Only include avatar if it's a URL (not local path)
-          if (_profile.avatar.startsWith('http://') || _profile.avatar.startsWith('https://')) {
-            updateData['avatar'] = _profile.avatar;
-          } else if (_avatarFile != null) {
-            // TODO: Upload image to server and get URL
-            // For now, we'll skip avatar upload if it's a local file
+          // Include avatar URL if it's from server
+          if (_profile!.avatar.startsWith('http://') || _profile!.avatar.startsWith('https://')) {
+            updateData['avatar'] = _profile!.avatar;
           }
 
           final updatedUser = await _userApiService.updateUser(userId, updateData);
           
           // Update SharedPreferences with new user data
-          final user = await SharedPreferencesService.getUser();
-          if (user != null) {
-            await SharedPreferencesService.saveUser(updatedUser);
-          }
+          await SharedPreferencesService.saveUser(updatedUser);
         }
 
         if (mounted) {
@@ -142,6 +279,18 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading indicator while loading
+    if (_isLoading || _profile == null) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    final profile = _profile!;
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Form(
@@ -187,33 +336,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                                     fit: BoxFit.cover,
                                   ),
                                 )
-                              : (_profile.avatar.startsWith('http://') || _profile.avatar.startsWith('https://'))
-                                  ? ClipOval(
-                                      child: Image.network(
-                                        _profile.avatar,
-                                        width: 96,
-                                        height: 96,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => Text(
-                                          _profile.firstName.isNotEmpty ? _profile.firstName[0].toUpperCase() : 'U',
-                                          style: const TextStyle(
-                                            fontSize: 32,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.primaryBlack,
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  : Center(
-                                      child: Text(
-                                        _profile.avatar.isNotEmpty ? _profile.avatar : (_profile.firstName.isNotEmpty ? _profile.firstName[0].toUpperCase() : 'U'),
-                                        style: const TextStyle(
-                                          fontSize: 32,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primaryBlack,
-                                        ),
-                                      ),
-                                    ),
+                              : _buildAvatarWidget(profile.avatar, profile.firstName),
                         ),
 
                         // ICON CAMERA
@@ -340,58 +463,62 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                     children: [
                       Expanded(
                         child: TextFormField(
-                          initialValue: _profile.firstName,
+                          initialValue: profile.firstName,
                           decoration: const InputDecoration(
                             labelText: 'Họ',
                             border: OutlineInputBorder(),
                           ),
                           onChanged: (value) {
-                            setState(() {
-                              _profile = ProfileSettings(
-                                firstName: value,
-                                lastName: _profile.lastName,
-                                email: _profile.email,
-                                phone: _profile.phone,
-                                avatar: _avatarPath ?? _profile.avatar,
-                                level: _profile.level,
-                                goal: _profile.goal,
-                                birthday: _profile.birthday,
-                                location: _profile.location,
-                                bio: _profile.bio,
-                                interests: _profile.interests,
-                                studyTime: _profile.studyTime,
-                                timezone: _profile.timezone,
-                              );
-                            });
+                            if (_profile != null) {
+                              setState(() {
+                                _profile = ProfileSettings(
+                                  firstName: value,
+                                  lastName: _profile!.lastName,
+                                  email: _profile!.email,
+                                  phone: _profile!.phone,
+                                  avatar: _avatarPath ?? _profile!.avatar,
+                                  level: _profile!.level,
+                                  goal: _profile!.goal,
+                                  birthday: _profile!.birthday,
+                                  location: _profile!.location,
+                                  bio: _profile!.bio,
+                                  interests: _profile!.interests,
+                                  studyTime: _profile!.studyTime,
+                                  timezone: _profile!.timezone,
+                                );
+                              });
+                            }
                           },
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: TextFormField(
-                          initialValue: _profile.lastName,
+                          initialValue: profile.lastName,
                           decoration: const InputDecoration(
                             labelText: 'Tên',
                             border: OutlineInputBorder(),
                           ),
                           onChanged: (value) {
-                            setState(() {
-                              _profile = ProfileSettings(
-                                firstName: _profile.firstName,
-                                lastName: value,
-                                email: _profile.email,
-                                phone: _profile.phone,
-                                avatar: _avatarPath ?? _profile.avatar,
-                                level: _profile.level,
-                                goal: _profile.goal,
-                                birthday: _profile.birthday,
-                                location: _profile.location,
-                                bio: _profile.bio,
-                                interests: _profile.interests,
-                                studyTime: _profile.studyTime,
-                                timezone: _profile.timezone,
-                              );
-                            });
+                            if (_profile != null) {
+                              setState(() {
+                                _profile = ProfileSettings(
+                                  firstName: _profile!.firstName,
+                                  lastName: value,
+                                  email: _profile!.email,
+                                  phone: _profile!.phone,
+                                  avatar: _avatarPath ?? _profile!.avatar,
+                                  level: _profile!.level,
+                                  goal: _profile!.goal,
+                                  birthday: _profile!.birthday,
+                                  location: _profile!.location,
+                                  bio: _profile!.bio,
+                                  interests: _profile!.interests,
+                                  studyTime: _profile!.studyTime,
+                                  timezone: _profile!.timezone,
+                                );
+                              });
+                            }
                           },
                         ),
                       ),
@@ -399,58 +526,62 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
-                    initialValue: _profile.email,
+                    initialValue: profile.email,
                     decoration: const InputDecoration(
                       labelText: 'Email',
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.emailAddress,
                     onChanged: (value) {
-                      setState(() {
-                        _profile = ProfileSettings(
-                          firstName: _profile.firstName,
-                          lastName: _profile.lastName,
-                          email: value,
-                          phone: _profile.phone,
-                          avatar: _avatarPath ?? _profile.avatar,
-                          level: _profile.level,
-                          goal: _profile.goal,
-                          birthday: _profile.birthday,
-                          location: _profile.location,
-                          bio: _profile.bio,
-                          interests: _profile.interests,
-                          studyTime: _profile.studyTime,
-                          timezone: _profile.timezone,
-                        );
-                      });
+                      if (_profile != null) {
+                        setState(() {
+                          _profile = ProfileSettings(
+                            firstName: _profile!.firstName,
+                            lastName: _profile!.lastName,
+                            email: value,
+                            phone: _profile!.phone,
+                            avatar: _avatarPath ?? _profile!.avatar,
+                            level: _profile!.level,
+                            goal: _profile!.goal,
+                            birthday: _profile!.birthday,
+                            location: _profile!.location,
+                            bio: _profile!.bio,
+                            interests: _profile!.interests,
+                            studyTime: _profile!.studyTime,
+                            timezone: _profile!.timezone,
+                          );
+                        });
+                      }
                     },
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
-                    initialValue: _profile.phone,
+                    initialValue: profile.phone,
                     decoration: const InputDecoration(
                       labelText: 'Số điện thoại',
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.phone,
                     onChanged: (value) {
-                      setState(() {
-                        _profile = ProfileSettings(
-                          firstName: _profile.firstName,
-                          lastName: _profile.lastName,
-                          email: _profile.email,
-                          phone: value,
-                          avatar: _avatarPath ?? _profile.avatar,
-                          level: _profile.level,
-                          goal: _profile.goal,
-                          birthday: _profile.birthday,
-                          location: _profile.location,
-                          bio: _profile.bio,
-                          interests: _profile.interests,
-                          studyTime: _profile.studyTime,
-                          timezone: _profile.timezone,
-                        );
-                      });
+                      if (_profile != null) {
+                        setState(() {
+                          _profile = ProfileSettings(
+                            firstName: _profile!.firstName,
+                            lastName: _profile!.lastName,
+                            email: _profile!.email,
+                            phone: value,
+                            avatar: _avatarPath ?? _profile!.avatar,
+                            level: _profile!.level,
+                            goal: _profile!.goal,
+                            birthday: _profile!.birthday,
+                            location: _profile!.location,
+                            bio: _profile!.bio,
+                            interests: _profile!.interests,
+                            studyTime: _profile!.studyTime,
+                            timezone: _profile!.timezone,
+                          );
+                        });
+                      }
                     },
                   ),
                   const SizedBox(height: 16),
@@ -458,7 +589,7 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                     children: [
                       Expanded(
                         child: TextFormField(
-                          initialValue: _profile.birthday,
+                          initialValue: profile.birthday,
                           decoration: const InputDecoration(
                             labelText: 'Ngày sinh',
                             border: OutlineInputBorder(),
@@ -471,22 +602,22 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                               firstDate: DateTime(1900),
                               lastDate: DateTime.now(),
                             );
-                            if (date != null) {
+                            if (date != null && _profile != null) {
                               setState(() {
                                 _profile = ProfileSettings(
-                                  firstName: _profile.firstName,
-                                  lastName: _profile.lastName,
-                                  email: _profile.email,
-                                  phone: _profile.phone,
-                                  avatar: _avatarPath ?? _profile.avatar,
-                                  level: _profile.level,
-                                  goal: _profile.goal,
+                                  firstName: _profile!.firstName,
+                                  lastName: _profile!.lastName,
+                                  email: _profile!.email,
+                                  phone: _profile!.phone,
+                                  avatar: _avatarPath ?? _profile!.avatar,
+                                  level: _profile!.level,
+                                  goal: _profile!.goal,
                                   birthday: '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
-                                  location: _profile.location,
-                                  bio: _profile.bio,
-                                  interests: _profile.interests,
-                                  studyTime: _profile.studyTime,
-                                  timezone: _profile.timezone,
+                                  location: _profile!.location,
+                                  bio: _profile!.bio,
+                                  interests: _profile!.interests,
+                                  studyTime: _profile!.studyTime,
+                                  timezone: _profile!.timezone,
                                 );
                               });
                             }
@@ -496,29 +627,31 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: TextFormField(
-                          initialValue: _profile.location,
+                          initialValue: profile.location,
                           decoration: const InputDecoration(
                             labelText: 'Địa điểm',
                             border: OutlineInputBorder(),
                           ),
                           onChanged: (value) {
-                            setState(() {
-                              _profile = ProfileSettings(
-                                firstName: _profile.firstName,
-                                lastName: _profile.lastName,
-                                email: _profile.email,
-                                phone: _profile.phone,
-                                avatar: _avatarPath ?? _profile.avatar,
-                                level: _profile.level,
-                                goal: _profile.goal,
-                                birthday: _profile.birthday,
-                                location: value,
-                                bio: _profile.bio,
-                                interests: _profile.interests,
-                                studyTime: _profile.studyTime,
-                                timezone: _profile.timezone,
-                              );
-                            });
+                            if (_profile != null) {
+                              setState(() {
+                                _profile = ProfileSettings(
+                                  firstName: _profile!.firstName,
+                                  lastName: _profile!.lastName,
+                                  email: _profile!.email,
+                                  phone: _profile!.phone,
+                                  avatar: _avatarPath ?? _profile!.avatar,
+                                  level: _profile!.level,
+                                  goal: _profile!.goal,
+                                  birthday: _profile!.birthday,
+                                  location: value,
+                                  bio: _profile!.bio,
+                                  interests: _profile!.interests,
+                                  studyTime: _profile!.studyTime,
+                                  timezone: _profile!.timezone,
+                                );
+                              });
+                            }
                           },
                         ),
                       ),
@@ -609,26 +742,26 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                       // MOBILE - xếp dọc
                       if (isNarrow) ...[
                         buildDropdown(
-                          value: _profile.level,
+                          value: profile.level,
                           label: 'Cấp độ hiện tại',
                           items: levelItems,
                           onChanged: (value) {
-                            if (value != null) {
+                            if (value != null && _profile != null) {
                               setState(() {
                                 _profile = ProfileSettings(
-                                  firstName: _profile.firstName,
-                                  lastName: _profile.lastName,
-                                  email: _profile.email,
-                                  phone: _profile.phone,
-                                  avatar: _profile.avatar,
+                                  firstName: _profile!.firstName,
+                                  lastName: _profile!.lastName,
+                                  email: _profile!.email,
+                                  phone: _profile!.phone,
+                                  avatar: _profile!.avatar,
                                   level: value,
-                                  goal: _profile.goal,
-                                  birthday: _profile.birthday,
-                                  location: _profile.location,
-                                  bio: _profile.bio,
-                                  interests: _profile.interests,
-                                  studyTime: _profile.studyTime,
-                                  timezone: _profile.timezone,
+                                  goal: _profile!.goal,
+                                  birthday: _profile!.birthday,
+                                  location: _profile!.location,
+                                  bio: _profile!.bio,
+                                  interests: _profile!.interests,
+                                  studyTime: _profile!.studyTime,
+                                  timezone: _profile!.timezone,
                                 );
                               });
                             }
@@ -637,26 +770,26 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                         const SizedBox(height: 12),
 
                         buildDropdown(
-                          value: _profile.goal,
+                          value: profile.goal,
                           label: 'Mục tiêu học tập',
                           items: goalItems,
                           onChanged: (value) {
-                            if (value != null) {
+                            if (value != null && _profile != null) {
                               setState(() {
                                 _profile = ProfileSettings(
-                                  firstName: _profile.firstName,
-                                  lastName: _profile.lastName,
-                                  email: _profile.email,
-                                  phone: _profile.phone,
-                                  avatar: _profile.avatar,
-                                  level: _profile.level,
+                                  firstName: _profile!.firstName,
+                                  lastName: _profile!.lastName,
+                                  email: _profile!.email,
+                                  phone: _profile!.phone,
+                                  avatar: _profile!.avatar,
+                                  level: _profile!.level,
                                   goal: value,
-                                  birthday: _profile.birthday,
-                                  location: _profile.location,
-                                  bio: _profile.bio,
-                                  interests: _profile.interests,
-                                  studyTime: _profile.studyTime,
-                                  timezone: _profile.timezone,
+                                  birthday: _profile!.birthday,
+                                  location: _profile!.location,
+                                  bio: _profile!.bio,
+                                  interests: _profile!.interests,
+                                  studyTime: _profile!.studyTime,
+                                  timezone: _profile!.timezone,
                                 );
                               });
                             }
@@ -665,26 +798,26 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                         const SizedBox(height: 12),
 
                         buildDropdown(
-                          value: _profile.studyTime,
+                          value: profile.studyTime,
                           label: 'Thời gian học tập',
                           items: studyTimeItems,
                           onChanged: (value) {
-                            if (value != null) {
+                            if (value != null && _profile != null) {
                               setState(() {
                                 _profile = ProfileSettings(
-                                  firstName: _profile.firstName,
-                                  lastName: _profile.lastName,
-                                  email: _profile.email,
-                                  phone: _profile.phone,
-                                  avatar: _profile.avatar,
-                                  level: _profile.level,
-                                  goal: _profile.goal,
-                                  birthday: _profile.birthday,
-                                  location: _profile.location,
-                                  bio: _profile.bio,
-                                  interests: _profile.interests,
+                                  firstName: _profile!.firstName,
+                                  lastName: _profile!.lastName,
+                                  email: _profile!.email,
+                                  phone: _profile!.phone,
+                                  avatar: _profile!.avatar,
+                                  level: _profile!.level,
+                                  goal: _profile!.goal,
+                                  birthday: _profile!.birthday,
+                                  location: _profile!.location,
+                                  bio: _profile!.bio,
+                                  interests: _profile!.interests,
                                   studyTime: value,
-                                  timezone: _profile.timezone,
+                                  timezone: _profile!.timezone,
                                 );
                               });
                             }
@@ -693,25 +826,25 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                         const SizedBox(height: 12),
 
                         buildDropdown(
-                          value: _profile.timezone,
+                          value: profile.timezone,
                           label: 'Múi giờ',
                           items: timezoneItems,
                           onChanged: (value) {
-                            if (value != null) {
+                            if (value != null && _profile != null) {
                               setState(() {
                                 _profile = ProfileSettings(
-                                  firstName: _profile.firstName,
-                                  lastName: _profile.lastName,
-                                  email: _profile.email,
-                                  phone: _profile.phone,
-                                  avatar: _profile.avatar,
-                                  level: _profile.level,
-                                  goal: _profile.goal,
-                                  birthday: _profile.birthday,
-                                  location: _profile.location,
-                                  bio: _profile.bio,
-                                  interests: _profile.interests,
-                                  studyTime: _profile.studyTime,
+                                  firstName: _profile!.firstName,
+                                  lastName: _profile!.lastName,
+                                  email: _profile!.email,
+                                  phone: _profile!.phone,
+                                  avatar: _profile!.avatar,
+                                  level: _profile!.level,
+                                  goal: _profile!.goal,
+                                  birthday: _profile!.birthday,
+                                  location: _profile!.location,
+                                  bio: _profile!.bio,
+                                  interests: _profile!.interests,
+                                  studyTime: _profile!.studyTime,
                                   timezone: value,
                                 );
                               });
@@ -726,26 +859,26 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                           children: [
                             Expanded(
                               child: buildDropdown(
-                                value: _profile.level,
+                                value: profile.level,
                                 label: 'Cấp độ hiện tại',
                                 items: levelItems,
                                 onChanged: (value) {
-                                  if (value != null) {
+                                  if (value != null && _profile != null) {
                                     setState(() {
                                       _profile = ProfileSettings(
-                                        firstName: _profile.firstName,
-                                        lastName: _profile.lastName,
-                                        email: _profile.email,
-                                        phone: _profile.phone,
-                                        avatar: _avatarPath ?? _profile.avatar,
+                                        firstName: _profile!.firstName,
+                                        lastName: _profile!.lastName,
+                                        email: _profile!.email,
+                                        phone: _profile!.phone,
+                                        avatar: _avatarPath ?? _profile!.avatar,
                                         level: value,
-                                        goal: _profile.goal,
-                                        birthday: _profile.birthday,
-                                        location: _profile.location,
-                                        bio: _profile.bio,
-                                        interests: _profile.interests,
-                                        studyTime: _profile.studyTime,
-                                        timezone: _profile.timezone,
+                                        goal: _profile!.goal,
+                                        birthday: _profile!.birthday,
+                                        location: _profile!.location,
+                                        bio: _profile!.bio,
+                                        interests: _profile!.interests,
+                                        studyTime: _profile!.studyTime,
+                                        timezone: _profile!.timezone,
                                       );
                                     });
                                   }
@@ -755,26 +888,26 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: buildDropdown(
-                                value: _profile.goal,
+                                value: profile.goal,
                                 label: 'Mục tiêu học tập',
                                 items: goalItems,
                                 onChanged: (value) {
-                                  if (value != null) {
+                                  if (value != null && _profile != null) {
                                     setState(() {
                                       _profile = ProfileSettings(
-                                        firstName: _profile.firstName,
-                                        lastName: _profile.lastName,
-                                        email: _profile.email,
-                                        phone: _profile.phone,
-                                        avatar: _avatarPath ?? _profile.avatar,
-                                        level: _profile.level,
+                                        firstName: _profile!.firstName,
+                                        lastName: _profile!.lastName,
+                                        email: _profile!.email,
+                                        phone: _profile!.phone,
+                                        avatar: _avatarPath ?? _profile!.avatar,
+                                        level: _profile!.level,
                                         goal: value,
-                                        birthday: _profile.birthday,
-                                        location: _profile.location,
-                                        bio: _profile.bio,
-                                        interests: _profile.interests,
-                                        studyTime: _profile.studyTime,
-                                        timezone: _profile.timezone,
+                                        birthday: _profile!.birthday,
+                                        location: _profile!.location,
+                                        bio: _profile!.bio,
+                                        interests: _profile!.interests,
+                                        studyTime: _profile!.studyTime,
+                                        timezone: _profile!.timezone,
                                       );
                                     });
                                   }
@@ -788,26 +921,26 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                           children: [
                             Expanded(
                               child: buildDropdown(
-                                value: _profile.studyTime,
+                                value: profile.studyTime,
                                 label: 'Thời gian học tập',
                                 items: studyTimeItems,
                                 onChanged: (value) {
-                                  if (value != null) {
+                                  if (value != null && _profile != null) {
                                     setState(() {
                                       _profile = ProfileSettings(
-                                        firstName: _profile.firstName,
-                                        lastName: _profile.lastName,
-                                        email: _profile.email,
-                                        phone: _profile.phone,
-                                        avatar: _avatarPath ?? _profile.avatar,
-                                        level: _profile.level,
-                                        goal: _profile.goal,
-                                        birthday: _profile.birthday,
-                                        location: _profile.location,
-                                        bio: _profile.bio,
-                                        interests: _profile.interests,
+                                        firstName: _profile!.firstName,
+                                        lastName: _profile!.lastName,
+                                        email: _profile!.email,
+                                        phone: _profile!.phone,
+                                        avatar: _avatarPath ?? _profile!.avatar,
+                                        level: _profile!.level,
+                                        goal: _profile!.goal,
+                                        birthday: _profile!.birthday,
+                                        location: _profile!.location,
+                                        bio: _profile!.bio,
+                                        interests: _profile!.interests,
                                         studyTime: value,
-                                        timezone: _profile.timezone,
+                                        timezone: _profile!.timezone,
                                       );
                                     });
                                   }
@@ -817,25 +950,25 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: buildDropdown(
-                                value: _profile.timezone,
+                                value: profile.timezone,
                                 label: 'Múi giờ',
                                 items: timezoneItems,
                                 onChanged: (value) {
-                                  if (value != null) {
+                                  if (value != null && _profile != null) {
                                     setState(() {
                                       _profile = ProfileSettings(
-                                        firstName: _profile.firstName,
-                                        lastName: _profile.lastName,
-                                        email: _profile.email,
-                                        phone: _profile.phone,
-                                        avatar: _avatarPath ?? _profile.avatar,
-                                        level: _profile.level,
-                                        goal: _profile.goal,
-                                        birthday: _profile.birthday,
-                                        location: _profile.location,
-                                        bio: _profile.bio,
-                                        interests: _profile.interests,
-                                        studyTime: _profile.studyTime,
+                                        firstName: _profile!.firstName,
+                                        lastName: _profile!.lastName,
+                                        email: _profile!.email,
+                                        phone: _profile!.phone,
+                                        avatar: _avatarPath ?? _profile!.avatar,
+                                        level: _profile!.level,
+                                        goal: _profile!.goal,
+                                        birthday: _profile!.birthday,
+                                        location: _profile!.location,
+                                        bio: _profile!.bio,
+                                        interests: _profile!.interests,
+                                        studyTime: _profile!.studyTime,
                                         timezone: value,
                                       );
                                     });
@@ -889,6 +1022,42 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
     );
   }
 
+  Widget _buildAvatarWidget(String avatarPath, String firstName) {
+    final avatarUrl = ApiConfig.getAvatarUrl(avatarPath);
+    
+    if (avatarUrl != null) {
+      return ClipOval(
+        child: Image.network(
+          avatarUrl,
+          width: 96,
+          height: 96,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Center(
+            child: Text(
+              firstName.isNotEmpty ? firstName[0].toUpperCase() : 'U',
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryBlack,
+              ),
+            ),
+          ),
+        ),
+      );
+    } else {
+      return Center(
+        child: Text(
+          firstName.isNotEmpty ? firstName[0].toUpperCase() : 'U',
+          style: const TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryBlack,
+          ),
+        ),
+      );
+    }
+  }
+
   void _showAddInterestDialog() {
     final controller = TextEditingController();
     showDialog(
@@ -909,23 +1078,23 @@ class _SettingsProfileTabState extends State<SettingsProfileTab> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
+              if (controller.text.trim().isNotEmpty && _profile != null) {
                 setState(() {
-                  final newInterests = List<String>.from(_profile.interests)..add(controller.text.trim());
+                  final newInterests = List<String>.from(_profile!.interests)..add(controller.text.trim());
                   _profile = ProfileSettings(
-                    firstName: _profile.firstName,
-                    lastName: _profile.lastName,
-                    email: _profile.email,
-                    phone: _profile.phone,
-                    avatar: _profile.avatar,
-                    level: _profile.level,
-                    goal: _profile.goal,
-                    birthday: _profile.birthday,
-                    location: _profile.location,
-                    bio: _profile.bio,
+                    firstName: _profile!.firstName,
+                    lastName: _profile!.lastName,
+                    email: _profile!.email,
+                    phone: _profile!.phone,
+                    avatar: _profile!.avatar,
+                    level: _profile!.level,
+                    goal: _profile!.goal,
+                    birthday: _profile!.birthday,
+                    location: _profile!.location,
+                    bio: _profile!.bio,
                     interests: newInterests,
-                    studyTime: _profile.studyTime,
-                    timezone: _profile.timezone,
+                    studyTime: _profile!.studyTime,
+                    timezone: _profile!.timezone,
                   );
                 });
                 Navigator.pop(context);

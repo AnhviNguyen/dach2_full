@@ -24,7 +24,7 @@ class ApiConfig {
     if (kIsWeb) {
       return 'http://localhost:8080/api';
     } else if (Platform.isAndroid) {
-      return 'http://192.168.1.8:8080/api';
+      return 'http://192.168.1.242:8080/api';
     } else if (Platform.isIOS) {
       // iOS simulator có thể dùng localhost
       // Nếu chạy trên thiết bị thật, set API_BASE_URL với IP máy host
@@ -59,5 +59,38 @@ class ApiConfig {
   static const String storageAccessToken = 'access_token';
   static const String storageRefreshToken = 'refresh_token';
   static const String storageTokenExpiry = 'token_expiry';
+
+  /// Lấy base URL cho images (không có /api suffix)
+  /// Ví dụ: http://192.168.1.242:8080
+  static String get imageBaseUrl {
+    final url = baseUrl;
+    // Remove /api suffix nếu có
+    if (url.endsWith('/api')) {
+      return url.substring(0, url.length - 4);
+    }
+    return url;
+  }
+
+  /// Ghép baseUrl với avatar path tương đối
+  /// 
+  /// [relativePath] - Path tương đối từ backend (e.g., "uploads/avatars/filename.jpg")
+  /// Nếu [relativePath] đã là URL đầy đủ (http:// hoặc https://), trả về nguyên vẹn
+  /// Nếu [relativePath] null hoặc empty, trả về null
+  static String? getAvatarUrl(String? relativePath) {
+    if (relativePath == null || relativePath.isEmpty) {
+      return null;
+    }
+    
+    // Nếu đã là URL đầy đủ, trả về nguyên vẹn
+    if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+      return relativePath;
+    }
+    
+    // Remove leading slash nếu có
+    final cleanPath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
+    
+    // Ghép với imageBaseUrl
+    return '$imageBaseUrl/$cleanPath';
+  }
 }
 

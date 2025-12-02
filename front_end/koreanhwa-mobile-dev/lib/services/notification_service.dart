@@ -42,80 +42,17 @@ class NotificationService {
   }
 
   static Future<void> _requestPermissions() async {
-    // Android 13+ requires notification permission
-    await _notifications
+    final androidImplementation = _notifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+            AndroidFlutterLocalNotificationsPlugin>();
+    
+    // Android 13+ requires notification permission
+    await androidImplementation?.requestNotificationsPermission();
   }
 
   static void _onNotificationTapped(NotificationResponse response) {
     // Handle notification tap
     // You can navigate to specific screen here
-  }
-
-  /// Schedule a daily study reminder
-  static Future<void> scheduleStudyReminder({
-    required int hour,
-    required int minute,
-    required String message,
-  }) async {
-    await initialize();
-
-    // Cancel existing reminder first
-    await cancelStudyReminder();
-
-    // Schedule new reminder
-    await _notifications.zonedSchedule(
-      0, // Notification ID
-      'Nhắc nhở học tập',
-      message,
-      _nextInstanceOfTime(hour, minute),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'study_reminder',
-          'Nhắc nhở học tập',
-          channelDescription: 'Thông báo nhắc nhở học tập hàng ngày',
-          importance: Importance.high,
-          priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
-        ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
-  }
-
-  /// Cancel study reminder
-  static Future<void> cancelStudyReminder() async {
-    await _notifications.cancel(0);
-  }
-
-  /// Get next instance of specified time
-  static tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-    );
-
-    // If time has passed today, schedule for tomorrow
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-
-    return scheduledDate;
   }
 
   /// Schedule quiet hours (disable notifications during this time)

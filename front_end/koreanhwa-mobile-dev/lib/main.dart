@@ -7,6 +7,7 @@ import 'package:koreanhwa_flutter/controllers/theme_provider.dart';
 import 'package:koreanhwa_flutter/controllers/locale_provider.dart';
 import 'package:koreanhwa_flutter/services/notification_service.dart';
 import 'package:koreanhwa_flutter/services/settings_service.dart';
+import 'package:koreanhwa_flutter/shared/widgets/usage_tracker_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,25 +34,27 @@ class KoreanHwaApp extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     final router = ref.watch(appRouterProvider);
 
-    return MaterialApp.router(
-      title: 'KoreanHwa',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeMode,
-      routerConfig: router,
-      // Localization support
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('vi', 'VN'), // Vietnamese
-        Locale('en', 'US'), // English
-        Locale('ko', 'KR'), // Korean
-      ],
-      locale: locale, // Use locale from provider
+    return UsageTrackerWrapper(
+      child: MaterialApp.router(
+        title: 'KoreanHwa',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
+        routerConfig: router,
+        // Localization support
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('vi', 'VN'), // Vietnamese
+          Locale('en', 'US'), // English
+          Locale('ko', 'KR'), // Korean
+        ],
+        locale: locale, // Use locale from provider
+      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:koreanhwa_flutter/models/settings_model.dart';
 import 'package:koreanhwa_flutter/services/settings_service.dart';
+import 'package:koreanhwa_flutter/services/app_usage_service.dart';
 import 'package:koreanhwa_flutter/shared/theme/app_colors.dart';
 
 class SettingsMotivationTab extends StatefulWidget {
@@ -12,6 +13,8 @@ class SettingsMotivationTab extends StatefulWidget {
 
 class _SettingsMotivationTabState extends State<SettingsMotivationTab> {
   late MotivationSettings _motivation;
+  final AppUsageService _usageService = AppUsageService.instance;
+  int _dailyGoalMinutes = 30; // Default daily goal in minutes
 
   @override
   void initState() {
@@ -23,6 +26,7 @@ class _SettingsMotivationTabState extends State<SettingsMotivationTab> {
     final settings = await SettingsService.getSettings();
     setState(() {
       _motivation = settings.motivation;
+      _dailyGoalMinutes = settings.study.dailyGoal;
     });
   }
 
@@ -74,60 +78,70 @@ class _SettingsMotivationTabState extends State<SettingsMotivationTab> {
                 Row(
                   children: [
                     Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.warning.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              '${_motivation.studyStreak.current}',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.warning,
-                              ),
+                      child: ValueListenableBuilder<int>(
+                        valueListenable: _usageService.currentStreak,
+                        builder: (context, currentStreak, child) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.warning.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            Text(
-                              'Streak hiện tại',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.grayLight,
-                              ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  '$currentStreak',
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.warning,
+                                  ),
+                                ),
+                                Text(
+                                  'Streak hiện tại',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.grayLight,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.info.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              '${_motivation.studyStreak.longest}',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.info,
-                              ),
+                      child: ValueListenableBuilder<int>(
+                        valueListenable: _usageService.longestStreak,
+                        builder: (context, longestStreak, child) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.info.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            Text(
-                              'Kỷ lục',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.grayLight,
-                              ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  '$longestStreak',
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.info,
+                                  ),
+                                ),
+                                Text(
+                                  'Kỷ lục',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.grayLight,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -246,6 +260,115 @@ class _SettingsMotivationTabState extends State<SettingsMotivationTab> {
                     ),
                   );
                 }),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Today's Usage
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.primaryBlack.withOpacity(0.1)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Thời gian học hôm nay',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlack,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(Icons.access_time, color: AppColors.primaryYellow, size: 24),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                ValueListenableBuilder<int>(
+                  valueListenable: _usageService.todayUsageSeconds,
+                  builder: (context, seconds, child) {
+                    final hours = seconds ~/ 3600;
+                    final minutes = (seconds % 3600) ~/ 60;
+                    final secs = seconds % 60;
+                    
+                    String timeText;
+                    if (hours > 0) {
+                      timeText = '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+                    } else {
+                      timeText = '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+                    }
+                    
+                    // Get daily goal from state
+                    final dailyGoalSeconds = _dailyGoalMinutes * 60;
+                    final progress = seconds >= dailyGoalSeconds ? 1.0 : seconds / dailyGoalSeconds;
+                    
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryYellow.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primaryYellow.withOpacity(0.3),
+                              width: 2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                timeText,
+                                style: TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryBlack,
+                                  fontFeatures: [const FontFeature.tabularFigures()],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Mục tiêu: $_dailyGoalMinutes phút',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.grayLight,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: progress,
+                          backgroundColor: AppColors.grayLight.withOpacity(0.2),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            progress >= 1.0 ? AppColors.success : AppColors.primaryYellow,
+                          ),
+                          minHeight: 8,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          progress >= 1.0
+                              ? '✅ Đã hoàn thành mục tiêu ngày!'
+                              : 'Còn ${(dailyGoalSeconds - seconds) ~/ 60} phút để đạt mục tiêu',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: progress >= 1.0 ? AppColors.success : AppColors.grayLight,
+                            fontWeight: progress >= 1.0 ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ],
             ),
           ),

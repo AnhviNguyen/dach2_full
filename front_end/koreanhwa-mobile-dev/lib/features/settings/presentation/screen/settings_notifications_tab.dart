@@ -30,28 +30,6 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
   Future<void> _updateNotifications() async {
     await SettingsService.updateNotifications(_notifications);
     
-    // Update study reminder notification if enabled
-    if (_notifications.studyReminders && _notifications.pushNotifications) {
-      // Parse study time from profile settings
-      // For now, we'll use a default time (can be improved to get from profile)
-      final studyTime = _notifications.studyReminders ? '20:00' : null;
-      if (studyTime != null) {
-        final parts = studyTime.split(':');
-        if (parts.length == 2) {
-          final hour = int.tryParse(parts[0]) ?? 20;
-          final minute = int.tryParse(parts[1]) ?? 0;
-          await NotificationService.scheduleStudyReminder(
-            hour: hour,
-            minute: minute,
-            message: 'Đã đến giờ học tập rồi! Hãy dành ít phút để học tiếng Hàn nhé! 🔥',
-          );
-        }
-      }
-    } else {
-      // Cancel reminder if disabled
-      await NotificationService.cancelStudyReminder();
-    }
-    
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -60,6 +38,55 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
         ),
       );
     }
+  }
+
+  /// Trigger demo notification after delay (simulating server processing)
+  Future<void> _triggerDemoNotification(String type) async {
+    // Delay 4 seconds to simulate server processing
+    await Future.delayed(const Duration(seconds: 4));
+
+    if (!mounted) return;
+
+    String title;
+    String body;
+
+    switch (type) {
+      case 'study':
+        title = '⏰ Nhắc nhở học tập';
+        body = '⏰ Đã đến giờ học! Hãy dành 15 phút học từ vựng nhé.';
+        break;
+      case 'competition':
+        title = '🏆 Cuộc thi mới';
+        body = '🏆 Cuộc thi mới: "Thử thách Tiếng Hàn Mùa Hè" vừa bắt đầu!';
+        break;
+      case 'blog':
+        title = '📰 Blog mới';
+        body = '📰 Blog mới: "5 mẹo nhớ từ vựng siêu tốc" vừa được đăng.';
+        break;
+      case 'streak':
+        title = '🔥 Cảnh báo Streak';
+        body = '🔥 Cảnh báo: Bạn sắp mất chuỗi Streak 10 ngày! Vào học ngay.';
+        break;
+      case 'friend':
+        title = '👋 Hoạt động bạn bè';
+        body = '👋 Bạn bè: Minh vừa hoàn thành bài kiểm tra mức độ 3.';
+        break;
+      case 'achievement':
+        title = '🎉 Thành tích mới';
+        body = '🎉 Chúc mừng! Bạn vừa đạt thành tích "Học viên chăm chỉ".';
+        break;
+      case 'general':
+      default:
+        title = '✅ Cập nhật';
+        body = '✅ Đã cập nhật cài đặt thành công.';
+        break;
+    }
+
+    // Show notification
+    await NotificationService.showNotification(
+      title: title,
+      body: body,
+    );
   }
 
   @override
@@ -121,6 +148,10 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
                       );
                     });
                     await _updateNotifications();
+                    // Trigger demo notification when enabled
+                    if (value) {
+                      _triggerDemoNotification('general');
+                    }
                   },
                 ),
                 const Divider(),
@@ -147,6 +178,10 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
                       );
                     });
                     _updateNotifications();
+                    // Trigger demo notification when enabled
+                    if (value) {
+                      _triggerDemoNotification('study');
+                    }
                   },
                 ),
                 const Divider(),
@@ -173,6 +208,10 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
                       );
                     });
                     _updateNotifications();
+                    // Trigger demo notification when enabled
+                    if (value) {
+                      _triggerDemoNotification('streak');
+                    }
                   },
                 ),
                 const Divider(),
@@ -199,6 +238,10 @@ class _SettingsNotificationsTabState extends State<SettingsNotificationsTab> {
                       );
                     });
                     _updateNotifications();
+                    // Trigger demo notification when enabled
+                    if (value) {
+                      _triggerDemoNotification('achievement');
+                    }
                   },
                 ),
               ],

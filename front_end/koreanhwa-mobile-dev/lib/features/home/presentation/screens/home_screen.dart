@@ -28,6 +28,8 @@ import 'package:koreanhwa_flutter/features/home/presentation/widgets/stat_chips.
 import 'package:koreanhwa_flutter/features/home/presentation/widgets/streak_section.dart';
 import 'package:koreanhwa_flutter/features/home/presentation/widgets/schedule_tabs.dart';
 import 'package:koreanhwa_flutter/features/home/presentation/widgets/section_header.dart';
+import 'package:koreanhwa_flutter/core/config/api_config.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:koreanhwa_flutter/features/auth/providers/auth_provider.dart';
 import 'package:koreanhwa_flutter/features/home/data/models/lesson_card_data.dart';
 import 'package:koreanhwa_flutter/core/storage/shared_preferences_service.dart';
@@ -394,34 +396,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: CircleAvatar(
               radius: 24,
               backgroundColor: AppColors.primaryYellow,
-              child: user?.avatar != null && 
-                     user!.avatar!.isNotEmpty && 
-                     (user.avatar!.startsWith('http://') || user.avatar!.startsWith('https://'))
-                  ? ClipOval(
-                      child: CachedNetworkImage(
-                        imageUrl: user.avatar!,
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const CircularProgressIndicator(),
-                        errorWidget: (context, url, error) => Text(
-                          user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? AppColors.primaryBlack : AppColors.primaryBlack,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Text(
-                      user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.primaryBlack : AppColors.primaryBlack,
-                      ),
-                    ),
+              child: _buildUserAvatar(user?.avatar, user?.name ?? '', 48, isDark),
             ),
           ),
           const SizedBox(width: 12),
@@ -482,6 +457,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildDrawer() {
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     const colorRed = Color(0xFFEF4444);
     
     return Drawer(
@@ -513,38 +490,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ],
                         ),
-                        child: CircleAvatar(
-                          radius: 30,
-                          backgroundColor: AppColors.primaryYellow,
-                          child: user?.avatar != null && 
-                                 user!.avatar!.isNotEmpty && 
-                                 (user.avatar!.startsWith('http://') || user.avatar!.startsWith('https://'))
-                              ? ClipOval(
-                                  child: CachedNetworkImage(
-                                    imageUrl: user.avatar!,
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => const CircularProgressIndicator(),
-                                    errorWidget: (context, url, error) => Text(
-                                      user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryBlack,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : Text(
-                                  user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primaryBlack,
-                                  ),
-                                ),
-                        ),
+                          child: CircleAvatar(
+                            radius: 30,
+                            backgroundColor: AppColors.primaryYellow,
+                            child: _buildUserAvatar(user?.avatar, user?.name ?? '', 60, isDark),
+                          ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -1626,6 +1576,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     
     return weekDays;
+  }
+
+  Widget _buildUserAvatar(String? avatarPath, String name, double size, bool isDark) {
+    final avatarUrl = ApiConfig.getAvatarUrl(avatarPath);
+    
+    if (avatarUrl != null) {
+      return ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: avatarUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => const CircularProgressIndicator(),
+          errorWidget: (context, url, error) => Text(
+            name.isNotEmpty ? name[0].toUpperCase() : 'U',
+            style: TextStyle(
+              fontSize: size * 0.4,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.primaryBlack : AppColors.primaryBlack,
+            ),
+          ),
+        ),
+      );
+    } else {
+      return Text(
+        name.isNotEmpty ? name[0].toUpperCase() : 'U',
+        style: TextStyle(
+          fontSize: size * 0.4,
+          fontWeight: FontWeight.bold,
+          color: isDark ? AppColors.primaryBlack : AppColors.primaryBlack,
+        ),
+      );
+    }
   }
 }
 
